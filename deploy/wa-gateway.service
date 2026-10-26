@@ -1,0 +1,15 @@
+[Unit]
+Description=Gateway WhatsApp (Baileys)
+After=network.target
+
+[Service]
+User=__USER__
+WorkingDirectory=/opt/barbearia/wa-gateway
+EnvironmentFile=/opt/barbearia/.env
+Environment=NODE_OPTIONS=--max-old-space-size=256
+ExecStart=/usr/bin/node index.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
