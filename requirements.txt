@@ -5,3 +5,5 @@ gunicorn>=22.0
 google-api-python-client>=2.120
 google-auth>=2.28
 tzdata
+gspread
+google-auth
