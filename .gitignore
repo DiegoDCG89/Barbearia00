@@ -2,11 +2,12 @@ venv/
 __pycache__/
 .env
 *.db
-*.db-wal
-*.db-shm
 data/
 backups/
+secrets/
 node_modules/
 wa-gateway/auth/
+credenciais-google.json
+google-sa.json
 *.json.key
 .tools/
