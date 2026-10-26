@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Área do barbeiro – {{ shop.name }}</title>
+{% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+<header class="bg-gray-900 text-white px-4 py-3 flex justify-between items-center"><strong>{{ shop.short_name }} · {{ barber }}</strong><a href="/" class="underline text-sm">Ver site</a></header>
+<nav id="tabs" class="bg-white shadow flex gap-5 px-4 overflow-x-auto text-sm font-semibold">
+  <button data-t="ag" class="py-3 border-b-2 border-gray-900">Minha agenda</button><button data-t="gan" class="py-3 border-b-2 border-transparent">Meus ganhos</button>
+  <button data-t="fol" class="py-3 border-b-2 border-transparent">Minhas folgas</button><button data-t="sen" class="py-3 border-b-2 border-transparent">Senha</button>
+</nav>
+
+<main class="max-w-3xl mx-auto p-4">
+  <section id="ag">
+    <label class="text-sm">Dia <input id="day" type="date" class="border rounded p-1"></label>
+    <div id="appts" class="mt-3 space-y-2"></div>
+  </section>
+
+  <section id="gan" hidden>
+    <label class="text-sm">Mês <input id="month" type="month" class="border rounded p-1"></label>
+    <div id="cards" class="grid grid-cols-2 sm:grid-cols-5 gap-2 my-3"></div>
+    <div id="items" class="overflow-x-auto"></div>
+  </section>
+
+  <section id="fol" hidden>
+    <form id="folform" class="bg-white p-4 rounded shadow grid grid-cols-2 sm:grid-cols-4 gap-2 items-end mb-3">
+      <label class="text-xs text-gray-600">De<input name="from" type="date" required class="border p-2 rounded w-full"></label>
+      <label class="text-xs text-gray-600">Até (opcional)<input name="to" type="date" class="border p-2 rounded w-full"></label>
+      <label class="text-xs text-gray-600">Das<input name="t_from" type="time" class="border p-2 rounded w-full"></label>
+      <label class="text-xs text-gray-600">Às<input name="t_to" type="time" class="border p-2 rounded w-full"></label>
+      <label class="text-xs text-gray-600 col-span-2 sm:col-span-3">Motivo<input name="reason" maxlength="80" placeholder="Ex.: Consulta médica" class="border p-2 rounded w-full"></label>
+      <button class="bg-gray-900 text-white rounded p-2">Adicionar</button>
+      <p class="text-xs text-gray-500 col-span-2 sm:col-span-4">Deixe “Das/Às” em branco para bloquear o dia inteiro. Se já houver clientes marcados, avise-os.</p>
+    </form>
+    <div id="fol-list" class="overflow-x-auto"></div>
+  </section>
+
+  <section id="sen" hidden>
+    <form id="senform" class="bg-white p-4 rounded shadow space-y-2 max-w-sm">
+      <label class="block text-xs text-gray-600">Senha atual<input name="current" type="password" autocomplete="current-password" required class="border p-2 rounded w-full"></label>
+      <label class="block text-xs text-gray-600">Nova senha (mínimo 8 caracteres)<input name="new" type="password" autocomplete="new-password" minlength="8" required class="border p-2 rounded w-full"></label>
+      <button class="bg-gray-900 text-white rounded p-2 w-full">Trocar senha</button>
+      <p class="text-xs text-gray-500">Depois de trocar, o navegador pedirá a nova senha no próximo acesso.</p>
+    </form>
+  </section>
+</main>
+
+<dialog id="paydlg" class="rounded-xl p-0 w-full max-w-md backdrop:bg-gray-900/70">
+  <form id="payform" class="p-5 space-y-3">
+    <h2 id="paytitle" class="font-bold text-lg"></h2>
+    <label class="block text-xs text-gray-600">Forma de pagamento<select name="method" class="border p-2 rounded w-full">
+      <option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
+    <div class="grid grid-cols-2 gap-2">
+      <label class="block text-xs text-gray-600">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-2 rounded w-full"></label>
+      <label class="block text-xs text-gray-600">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-2 rounded w-full"></label>
+    </div>
+    <p id="paytot" class="text-sm text-gray-700"></p>
+    <div class="flex gap-2"><button class="flex-1 bg-green-600 text-white rounded p-2 font-semibold">Concluir atendimento</button><button type="button" id="paycancel" class="border rounded p-2">Voltar</button></div>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = n => 'R$ ' + (+n || 0).toFixed(2).replace('.', ',');
+const fmtD = d => d.split('-').reverse().join('/');
+const api = async (u, b) => {
+  const r = await fetch(u, b === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(b)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { alert(j.error || 'Erro'); throw new Error(j.error || r.status); }
+  return j;
+};
+const table = (head, rows) => `<table class="w-full bg-white rounded shadow text-sm"><thead class="bg-gray-200 text-left"><tr>${head.map(h => `<th class="p-2">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr class="border-t">${r.map(c => `<td class="p-2">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const today = new Date().toLocaleDateString('en-CA');
+$('#day').value = today; $('#month').value = today.slice(0, 7);
+const STP = {agendado: 'Agendado', concluido: 'Concluído', cancelado: 'Cancelado', faltou: 'Faltou'};
+const STC = {agendado: 'bg-blue-100 text-blue-800', concluido: 'bg-green-100 text-green-800', cancelado: 'bg-gray-200 text-gray-600', faltou: 'bg-red-100 text-red-700'};
+
+const LOAD = {ag: agenda, gan: ganhos, fol: folgas, sen: () => {}};
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => { const on = x === b; x.classList.toggle('border-gray-900', on); x.classList.toggle('border-transparent', !on); });
+  ['ag', 'gan', 'fol', 'sen'].forEach(t => $('#' + t).hidden = t !== b.dataset.t); LOAD[b.dataset.t]();
+});
+
+async function agenda() {
+  const d = await api('/api/barber/appointments?day=' + $('#day').value);
+  $('#appts').innerHTML = d.length ? d.map(a => `<div class="bg-white rounded shadow p-3 flex flex-wrap items-center gap-2 justify-between">
+    <div><p class="font-bold">${esc(a.start_at.slice(11))}–${esc(a.end_at.slice(11))} · ${esc(a.client_name)}</p>
+      <p class="text-sm text-gray-600">${esc(a.service)} · ${brl(a.price)}${a.phone ? ` · <a class="text-blue-700 underline" target="_blank" rel="noopener" href="https://wa.me/${esc(a.phone)}">${esc(a.phone)}</a>` : ''}</p></div>
+    <div class="flex items-center gap-2"><span class="text-xs font-semibold rounded-full px-2 py-1 ${STC[a.status]}">${STP[a.status] || a.status}</span>
+      ${a.status === 'agendado' ? `<button data-id="${a.id}" data-s="concluido" data-price="${a.price}" data-name="${esc(a.client_name)}" class="text-green-700 font-semibold text-sm">Concluir</button>
+      <button data-id="${a.id}" data-s="faltou" class="text-amber-700 text-sm">Faltou</button><button data-id="${a.id}" data-s="cancelado" class="text-red-600 text-sm">Cancelar</button>` : ''}</div></div>`).join('')
+    : '<p class="text-sm text-gray-500">Nenhum agendamento neste dia.</p>';
+}
+$('#day').onchange = agenda;
+let PAY = null;
+$('#appts').onclick = async e => {
+  const b = e.target.closest('button[data-id]'); if (!b) return;
+  if (b.dataset.s === 'concluido') {
+    PAY = {id: b.dataset.id, price: +b.dataset.price}; let last = ''; try { last = localStorage.getItem('lastPayB') || ''; } catch (x) {}
+    $('#paytitle').textContent = 'Concluir: ' + b.dataset.name; $('#payform').reset(); if (last) $('#payform').elements.method.value = last; payTotal(); $('#paydlg').showModal(); return;
+  }
+  if (b.dataset.s === 'cancelado' && !confirm('Cancelar este agendamento? O cliente não é avisado automaticamente.')) return;
+  await api(`/api/barber/appointments/${b.dataset.id}/status`, {status: b.dataset.s}); agenda();
+};
+function payTotal() {
+  const f = $('#payform').elements, disc = +f.discount.value || 0, tip = +f.tip.value || 0;
+  $('#paytot').innerHTML = `Serviço ${brl(PAY.price)} − desconto ${brl(disc)} = <b>${brl(PAY.price - disc)}</b>` + (tip ? ` · gorjeta ${brl(tip)}` : '');
+}
+$('#payform').addEventListener('input', payTotal);
+$('#paycancel').onclick = () => $('#paydlg').close();
+$('#payform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements; try { localStorage.setItem('lastPayB', f.method.value); } catch (x) {}
+  try { await api(`/api/barber/appointments/${PAY.id}/status`, {status: 'concluido', method: f.method.value, discount: f.discount.value, tip: f.tip.value}); } catch (x) { return; }
+  $('#paydlg').close(); agenda();
+};
+
+async function ganhos() {
+  const d = await api('/api/barber/earnings?month=' + $('#month').value), card = (t, v, c = '') => `<div class="bg-white rounded shadow p-3"><p class="text-xs text-gray-500">${t}</p><p class="text-lg font-bold ${c}">${v}</p></div>`;
+  $('#cards').innerHTML = card('Atendimentos', d.n) + card('Bruto', brl(d.gross)) + card(`Comissão (${d.pct}%)`, brl(d.commission)) + card('Gorjetas', brl(d.tips)) + card('Total a receber', brl(d.total), 'text-green-700');
+  $('#items').innerHTML = d.items.length ? table(['Data', 'Descrição', 'Valor'], d.items.map(i => [fmtD(i.day), esc(i.description), brl(i.amount)])) : '<p class="text-sm text-gray-500">Nenhum atendimento lançado neste mês.</p>';
+}
+$('#month').onchange = ganhos;
+
+async function folgas() {
+  const d = await api('/api/barber/timeoff');
+  $('#fol-list').innerHTML = d.length ? table(['Período', 'Horário', 'Motivo', ''], d.map(r => [r.day_from === r.day_to ? fmtD(r.day_from) : `${fmtD(r.day_from)} a ${fmtD(r.day_to)}`,
+    r.t_from ? `${r.t_from}–${r.t_to}` : 'Dia todo', esc(r.reason || (r.own ? '' : 'Feriado/folga da barbearia')), r.own ? `<button data-del="${r.id}" class="text-red-600">Remover</button>` : ''])) : '<p class="text-sm text-gray-500">Nenhuma folga cadastrada.</p>';
+}
+$('#fol-list').onclick = async e => { const b = e.target.closest('button[data-del]'); if (b && confirm('Remover esta folga?')) { await api('/api/barber/timeoff/delete', {id: +b.dataset.del}); folgas(); } };
+$('#folform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements;
+  const r = await api('/api/barber/timeoff', {from: f.from.value, to: f.to.value, t_from: f.t_from.value, t_to: f.t_to.value, reason: f.reason.value});
+  if (r.conflicts) alert(`Atenção: já existe(m) ${r.conflicts} agendamento(s) nesse período. Avise os clientes.`);
+  e.target.reset(); folgas();
+};
+$('#senform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements;
+  await api('/api/barber/password', {current: f.current.value, new: f.new.value}); alert('Senha trocada. O navegador vai pedir a nova senha.'); e.target.reset();
+};
+agenda();
+</script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP – Barbearia</title><meta name="robots" content="noindex">
+{% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
+</head>
+<body class="bg-gray-100">
+<header class="bg-gray-900 text-white px-4 py-3 flex justify-between"><strong>ERP · {{ shop.short_name }}</strong><span><a href="/api/admin/backup" class="underline mr-4" title="Baixa uma cópia do banco de dados">Baixar backup</a><a href="/" class="underline">Ver site</a></span></header>
+<div id="alertbar" class="hidden bg-red-600 text-white text-sm px-4 py-2"></div>
+<nav class="bg-white border-b flex gap-4 px-4 overflow-x-auto" id="tabs">
+  <button data-t="lembretes" class="py-3">Lembretes <span id="badge" class="bg-red-600 text-white rounded-full px-2 text-xs hidden">0</span></button><button data-t="caixa" class="py-3 font-bold">Caixa</button><button data-t="agenda" class="py-3">Agenda</button>
+  <button data-t="lanc" class="py-3">Gastos / Contas</button><button data-t="estoque" class="py-3">Estoque</button><button data-t="prev" class="py-3">Previsão de compra</button><button data-t="cad" class="py-3">Cadastros</button><button data-t="hor" class="py-3">Horários</button><button data-t="cli" class="py-3">Clientes</button><button data-t="rel" class="py-3">Relatórios</button><button data-t="site" class="py-3">Site</button><button data-t="bkp" class="py-3">Sistema</button><button data-t="priv" class="py-3">Privacidade</button>{% if demo %}<button data-t="wa" class="py-3 text-green-700">WhatsApp (demo)</button>{% endif %}
+</nav>
+<main class="container mx-auto p-4 space-y-4">
+
+<section id="lembretes" hidden><p class="text-sm text-gray-600 mb-2">Clique em <b>Enviar</b> (abre o WhatsApp Business com a mensagem pronta) e depois em <b>Feito</b>. A lista atualiza sozinha a cada minuto.</p><div id="rem"></div></section>
+
+<section id="caixa">
+  <div class="bg-white rounded shadow p-4 mb-6">
+    <div class="flex flex-wrap items-end gap-3 mb-3"><h2 class="font-bold">Fechamento do dia</h2>
+      <label class="text-sm">Dia <input type="date" id="cday" class="border rounded p-1"></label></div>
+    <div id="cl-cards" class="grid sm:grid-cols-4 gap-3 mb-3"></div>
+    <div id="cl-methods" class="overflow-x-auto mb-3"></div>
+    <div id="cl-barbers" class="overflow-x-auto mb-3"></div>
+    <form id="clform" class="grid sm:grid-cols-4 gap-2 items-end">
+      <label class="text-xs text-gray-600">Dinheiro na abertura (troco)<input name="opening" type="number" step="0.01" min="0" class="border p-2 rounded w-full"></label>
+      <label class="text-xs text-gray-600">Dinheiro contado na gaveta<input name="counted" type="number" step="0.01" min="0" required class="border p-2 rounded w-full"></label>
+      <label class="text-xs text-gray-600">Observações<input name="notes" maxlength="200" class="border p-2 rounded w-full"></label>
+      <button class="bg-gray-900 text-white rounded p-2">Fechar caixa</button></form>
+    <p id="cl-hint" class="text-xs text-gray-500 mt-2"></p><div id="cl-result" class="text-sm mt-2"></div><div id="cl-recent" class="text-xs text-gray-500 mt-2"></div>
+  </div>
+  <label class="text-sm">Mês <input type="month" id="month" class="border rounded p-1"></label>
+  <div class="grid sm:grid-cols-3 gap-4 my-4" id="cards"></div>
+  <div id="mmethods" class="text-sm text-gray-600 mb-4"></div>
+  <h2 class="font-bold mb-2">Repasse por barbeiro</h2><div id="barbers" class="overflow-x-auto"></div>
+  <h2 class="font-bold my-2">Lançamentos do mês</h2><div id="txs" class="overflow-x-auto"></div></section>
+
+<section id="agenda" hidden>
+  <form id="newappt" class="bg-white p-4 rounded shadow grid sm:grid-cols-6 gap-2 mb-4 items-end">
+    <h2 class="font-bold sm:col-span-6">Novo agendamento <span class="text-xs font-normal text-gray-500">(telefone ou balcão)</span></h2>
+    <label class="text-xs text-gray-600 sm:col-span-2">Cliente<input name="name" required maxlength="80" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600 sm:col-span-2">WhatsApp (opcional)<input name="phone" type="tel" placeholder="(12) 99999-9999" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">Barbeiro<select name="barber" id="nb" required class="border p-2 rounded w-full"></select></label>
+    <label class="text-xs text-gray-600">Serviço<select name="service" id="ns" required class="border p-2 rounded w-full"></select></label>
+    <label class="text-xs text-gray-600">Data<input name="date" id="nd" type="date" required class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600 sm:col-span-2">Horário livre<select id="nt" class="border p-2 rounded w-full"></select></label>
+    <label class="text-xs text-gray-600">ou outro horário<input id="nto" type="time" step="300" class="border p-2 rounded w-full"></label>
+    <label class="text-sm flex items-center gap-2 sm:col-span-3"><input type="checkbox" name="concluido"> Já atendido (lançar no caixa)</label>
+    <label class="text-sm flex items-center gap-2 sm:col-span-3"><input type="checkbox" name="consent"> Cliente autorizou receber mensagens no WhatsApp</label>
+    <div id="npayrow" class="hidden sm:col-span-6 grid sm:grid-cols-3 gap-2">
+      <label class="text-xs text-gray-600">Forma de pagamento<select name="method" class="border p-2 rounded w-full"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
+      <label class="text-xs text-gray-600">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-2 rounded w-full"></label>
+      <label class="text-xs text-gray-600">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-2 rounded w-full"></label>
+    </div>
+    <button class="bg-gray-900 text-white rounded p-2 sm:col-span-6">Agendar</button>
+  </form>
+  <label class="text-sm">Dia <input type="date" id="day" class="border rounded p-1"></label><div id="appts" class="mt-3 overflow-x-auto"></div></section>
+
+<section id="lanc" hidden><form id="txform" class="bg-white p-4 rounded shadow grid sm:grid-cols-5 gap-2">
+  <select name="kind" class="border p-2 rounded"><option value="saida">Gasto / Conta</option><option value="entrada">Receita avulsa</option></select>
+  <select name="category" class="border p-2 rounded"><option>Conta Fixa</option><option>Gasto</option><option>Aluguel</option><option>Energia</option><option>Água</option><option>Internet</option><option>Outros</option></select>
+  <input name="description" placeholder="Descrição" maxlength="120" class="border p-2 rounded">
+  <input name="amount" type="number" step="0.01" min="0.01" placeholder="Valor" required class="border p-2 rounded">
+  <input name="day" type="date" required class="border p-2 rounded">
+  <select name="method" class="border p-2 rounded"><option value="">Pagamento (opcional)</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select>
+  <button class="bg-gray-900 text-white rounded p-2 sm:col-span-5">Lançar</button></form></section>
+
+<section id="estoque" hidden><div id="prods" class="overflow-x-auto"></div>
+  <form id="mvform" class="bg-white p-4 rounded shadow grid sm:grid-cols-5 gap-2 mt-4">
+    <select name="product" id="mvprod" class="border p-2 rounded"></select>
+    <select name="mode" class="border p-2 rounded"><option value="venda">Venda</option><option value="compra">Compra (entrada)</option><option value="consumo">Consumo interno</option></select>
+    <input name="qty" type="number" min="1" placeholder="Qtd" required class="border p-2 rounded">
+    <input name="cost" type="number" step="0.01" min="0" placeholder="Custo total (compra)" class="border p-2 rounded">
+    <select name="method" class="border p-2 rounded" title="Forma de pagamento (só para vendas)"><option value="">Pagamento da venda</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select>
+    <button class="bg-gray-900 text-white rounded p-2">Registrar</button></form></section>
+
+<section id="prev" hidden><p class="text-sm text-gray-600 mb-2">Média móvel ponderada das últimas 8 semanas de consumo, horizonte de 30 dias, com 15% de folga.</p><div id="fc" class="overflow-x-auto"></div></section>
+<section id="hor" hidden>
+  <div class="flex items-end gap-3 mb-3"><label class="text-sm">Barbeiro <select id="hb" class="border p-2 rounded"></select></label>
+    <button id="hsave" class="bg-gray-900 text-white rounded px-3 py-2 text-sm">Salvar horários</button></div>
+  <p class="text-xs text-gray-500 mb-2">Marque os dias em que o barbeiro atende. O almoço é opcional (deixe em branco se não houver).</p>
+  <div id="hgrid" class="overflow-x-auto mb-8"></div>
+  <h2 class="font-bold mb-2">Folgas, férias e feriados</h2>
+  <form id="toform" class="bg-white p-4 rounded shadow grid sm:grid-cols-6 gap-2 items-end mb-3">
+    <label class="text-xs text-gray-600 sm:col-span-2">Quem<select name="barber" id="tb" class="border p-2 rounded w-full"></select></label>
+    <label class="text-xs text-gray-600">De<input name="from" type="date" required class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">Até (opcional)<input name="to" type="date" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">Das<input name="t_from" type="time" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">Às<input name="t_to" type="time" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600 sm:col-span-4">Motivo<input name="reason" maxlength="80" placeholder="Ex.: Férias, Consulta médica" class="border p-2 rounded w-full"></label>
+    <button class="bg-gray-900 text-white rounded p-2 sm:col-span-2">Adicionar folga</button>
+    <p class="text-xs text-gray-500 sm:col-span-6">Deixe "Das/Às" em branco para bloquear o dia inteiro.</p>
+  </form>
+  <div class="flex items-end gap-2 mb-4"><label class="text-sm">Feriados nacionais de <input id="hy" type="number" min="2000" max="2100" class="border p-2 rounded w-24"></label>
+    <button id="hol" class="bg-blue-600 text-white rounded px-3 py-2 text-sm">Cadastrar feriados</button></div>
+  <div id="to-list" class="overflow-x-auto"></div>
+</section>
+
+<section id="cli" hidden>
+  <div class="flex gap-2 mb-3"><input id="cq" placeholder="Buscar por nome ou WhatsApp" class="border p-2 rounded flex-1 max-w-md"></div>
+  <div id="cl-list" class="overflow-x-auto"></div>
+  <div id="cl-detail" class="mt-6"></div>
+</section>
+
+<section id="rel" hidden>
+  <p class="text-sm text-gray-600 mb-3">Baixe planilhas (CSV) para abrir no Excel ou no Google Planilhas: separador “;”, valores com vírgula e acentos corretos. Escolha o período:</p>
+  <div class="flex flex-wrap items-end gap-3 mb-4">
+    <label class="text-sm">De <input id="rfrom" type="date" class="border rounded p-1"></label>
+    <label class="text-sm">Até <input id="rto" type="date" class="border rounded p-1"></label></div>
+  <div id="rlinks" class="grid sm:grid-cols-2 gap-3"></div>
+  <p class="text-xs text-gray-500 mt-3">Agendamentos e clientes contêm dados pessoais (nome e WhatsApp): guarde e compartilhe com cuidado.</p>
+</section>
+
+<section id="site" hidden>
+  <h2 class="font-bold mb-2">Dados da barbearia</h2>
+  <form id="siteform" class="bg-white p-4 rounded shadow grid sm:grid-cols-2 gap-2 mb-2 items-end">
+    <label class="text-xs text-gray-600">Nome<input name="name" maxlength="80" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">Nome curto (painel e área do barbeiro)<input name="short_name" maxlength="40" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">Marca no logo do site (ex.: 00)<input name="brand" maxlength="12" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600 sm:col-span-2">Endereço<input name="address" maxlength="160" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">WhatsApp da barbearia (botão no site)<input name="whatsapp" type="tel" placeholder="(12) 99999-9999" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600">Instagram<input name="instagram" placeholder="@usuario ou link do perfil" class="border p-2 rounded w-full"></label>
+    <label class="text-xs text-gray-600 sm:col-span-2">Descrição curta (aparece no Google e ao compartilhar o link)<input name="tagline" maxlength="200" class="border p-2 rounded w-full"></label>
+    <button class="bg-gray-900 text-white rounded p-2 sm:col-span-2">Salvar dados</button>
+  </form>
+  <p class="text-xs text-gray-500 mb-8">Campo em branco = volta ao padrão. Sem WhatsApp, o botão flutuante do site não aparece.</p>
+  <h2 class="font-bold mb-2">Galeria de fotos do site</h2>
+  <form id="galform" class="bg-white p-4 rounded shadow flex flex-wrap gap-2 items-end mb-3">
+    <label class="text-xs text-gray-600">Fotos (JPG, PNG ou WEBP, até 3 MB cada)<input name="file" type="file" multiple accept="image/jpeg,image/png,image/webp" required class="border p-2 rounded block"></label>
+    <label class="text-xs text-gray-600">Legenda (opcional)<input name="caption" maxlength="120" class="border p-2 rounded"></label>
+    <button class="bg-gray-900 text-white rounded px-3 py-2">Enviar</button></form>
+  <div id="gal-list" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+</section>
+
+<section id="priv" hidden>
+  <p class="text-sm text-gray-600 mb-3">Atenda pedidos de clientes (LGPD): veja tudo o que o sistema guarda sobre um WhatsApp ou anonimize o cliente. Nome e telefone são apagados; o valor pago continua no caixa, sem identificação.</p>
+  <form id="privform" class="bg-white p-4 rounded shadow flex flex-wrap gap-2 items-end">
+    <label class="text-xs text-gray-600">WhatsApp do cliente<input name="phone" required placeholder="(12) 99999-9999" class="border p-2 rounded"></label>
+    <button class="bg-gray-900 text-white rounded px-3 py-2">Ver dados</button>
+    <button type="button" id="privdel" class="bg-red-600 text-white rounded px-3 py-2">Anonimizar cliente</button></form>
+  <pre id="privout" class="bg-white rounded shadow p-4 mt-3 text-xs overflow-x-auto hidden"></pre>
+  <p id="privret" class="text-xs text-gray-500 mt-3"></p>
+</section>
+
+<section id="bkp" hidden>
+  <div id="bkp-info" class="bg-white rounded shadow p-4 space-y-2 text-sm"></div>
+  <div class="flex gap-2 mt-4"><a href="/api/admin/backup" class="bg-gray-900 text-white rounded px-3 py-2 text-sm">Baixar cópia agora</a>
+  <button id="bkp-up" class="bg-blue-600 text-white rounded px-3 py-2 text-sm">Enviar para a nuvem agora</button></div>
+</section>
+
+<section id="cad" hidden>
+  <div id="gcal-info" class="bg-blue-50 border border-blue-200 text-blue-900 text-sm rounded p-3 mb-4"></div>
+  <div class="flex gap-2 mb-4"><button id="gsync" class="bg-blue-600 text-white rounded px-3 py-2 text-sm">Enviar agendamentos futuros ao Google Agenda</button></div>
+  <div id="ent-barbers" class="mb-8"></div><div id="ent-services" class="mb-8"></div><div id="ent-products"></div>
+</section>
+{% if demo %}<section id="wa" hidden>
+  <div class="flex gap-2 mb-3"><button id="seed" class="bg-gray-900 text-white rounded px-3 py-2">1. Criar dados de demonstração</button>
+  <button id="runrem" class="bg-green-600 text-white rounded px-3 py-2">2. Disparar lembretes agora</button></div>
+  <p class="text-sm text-gray-600 mb-2">Modo demonstração: nenhuma mensagem real é enviada. Abaixo, o que o cliente receberia.</p>
+  <div id="chat" class="max-w-md mx-auto bg-[#e5ddd5] rounded-xl p-3 space-y-2 min-h-[200px]"></div></section>{% endif %}
+</main>
+
+<dialog id="accdlg" class="rounded-xl p-0 w-full max-w-md backdrop:bg-gray-900/70">
+  <form id="accform" class="p-5 space-y-3">
+    <h2 id="acctitle" class="font-bold text-lg"></h2>
+    <p class="text-xs text-gray-500">O barbeiro entra em <b id="accurl"></b> e vê só a própria agenda, os próprios ganhos e as próprias folgas.</p>
+    <label class="block text-xs text-gray-600">Usuário (3 a 30 letras minúsculas, números, ponto, hífen ou _)<input name="login" required maxlength="30" class="border p-2 rounded w-full"></label>
+    <label class="block text-xs text-gray-600">Senha (mínimo 8 caracteres)<input name="password" type="password" autocomplete="new-password" class="border p-2 rounded w-full"></label>
+    <p class="text-xs text-gray-500">Ao editar um acesso existente, deixe a senha em branco para mantê-la.</p>
+    <div class="flex gap-2"><button class="flex-1 bg-gray-900 text-white rounded p-2 font-semibold">Salvar acesso</button>
+      <button type="button" id="accdel" class="border border-red-300 text-red-600 rounded p-2">Remover acesso</button>
+      <button type="button" id="acccancel" class="border rounded p-2">Voltar</button></div>
+  </form>
+</dialog>
+<dialog id="paydlg" class="rounded-xl p-0 w-full max-w-md backdrop:bg-gray-900/70">
+  <form id="payform" class="p-5 space-y-3">
+    <h2 id="paytitle" class="font-bold text-lg"></h2>
+    <label class="block text-xs text-gray-600">Forma de pagamento<select name="method" class="border p-2 rounded w-full"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
+    <div class="grid grid-cols-2 gap-2">
+      <label class="block text-xs text-gray-600">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-2 rounded w-full"></label>
+      <label class="block text-xs text-gray-600">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-2 rounded w-full"></label>
+    </div>
+    <p id="paytot" class="text-sm text-gray-700"></p>
+    <div class="flex gap-2"><button class="flex-1 bg-green-600 text-white rounded p-2 font-semibold">Concluir e lançar no caixa</button><button type="button" id="paycancel" class="border rounded p-2">Voltar</button></div>
+  </form>
+</dialog>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = v => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const api = async (u, body) => { const r = await fetch(u, body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {});
+  const j = await r.json(); if (!r.ok) { alert(j.error || 'Erro'); throw 0; } return j; };
+const table = (head, rows) => `<table class="w-full bg-white rounded shadow text-sm"><thead class="bg-gray-200 text-left"><tr>${head.map(h=>`<th class="p-2">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr class="border-t">${r.map(c=>`<td class="p-2">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const today = new Date().toLocaleDateString('en-CA');
+$('#month').value = today.slice(0,7); $('#day').value = today; document.querySelector('[name=day]').value = today;
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('font-bold', x === b));
+  document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== b.dataset.t);
+  ({wa: typeof wa==='function'?wa:()=>{}, lembretes, caixa, agenda:agendaTab, lanc:()=>{}, estoque, prev, cad:cadastros, hor:horarios, bkp:backup, priv:()=>{}, cli:clientes, rel:relatorios, site:siteTab})[b.dataset.t]();
+});
+
+async function caixa() {
+  const d = await api('/api/admin/summary?month=' + $('#month').value);
+  $('#cards').innerHTML = [['Entradas', d.income,'text-green-700'],['Saídas', d.expense,'text-red-600'],['Saldo', d.balance,'']]
+    .map(([t,v,c]) => `<div class="bg-white p-4 rounded shadow"><p class="text-sm text-gray-500">${t}</p><p class="text-2xl font-bold ${c}">${brl(v)}</p></div>`).join('');
+  $('#mmethods').innerHTML = 'Entradas por forma de pagamento: ' + (Object.entries(d.by_method).map(([k, v]) => `${PAYN[k] || k}: <b>${brl(v)}</b>`).join(' · ') || '—') + (d.discounts ? ` · Descontos dados: <b>${brl(d.discounts)}</b>` : '');
+  $('#barbers').innerHTML = table(['Barbeiro','Atendimentos','Bruto (líquido de desconto)','% comissão','A repassar','Gorjetas (repasse integral)'], d.barbers.map(b => [esc(b.name), b.n, brl(b.gross), b.pct+'%', `<b>${brl(b.commission)}</b>`, brl(b.tips)]));
+  fechamento();
+  $('#txs').innerHTML = table(['Data','Tipo','Categoria','Descrição','Pagamento','Valor'], d.transactions.map(t => [t.day, t.kind, esc(t.category), esc(t.description) + (t.discount ? ` <span class="text-gray-500">(desconto ${brl(t.discount)})</span>` : ''), PAYN[t.method] || '—', `<span class="${t.kind==='entrada'?'text-green-700':'text-red-600'}">${brl(t.amount)}</span>`]));
+}
+const PAYN = {dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Cartão de débito', credito: 'Cartão de crédito', outro: 'Outro', sem: 'Sem forma informada'};
+let CLD = null;
+async function fechamento() {
+  const d = CLD = await api('/api/admin/closing?day=' + $('#cday').value), f = $('#clform').elements, cl = d.closing;
+  $('#cl-cards').innerHTML = [['Entradas', brl(d.income), 'text-green-700'], ['Saídas', brl(d.expense), 'text-red-600'], ['Saldo do dia', brl(d.balance), ''], ['Atendimentos', d.services, '']]
+    .map(([t, v, c]) => `<div class="bg-gray-50 p-3 rounded"><p class="text-xs text-gray-500">${t}</p><p class="text-xl font-bold ${c}">${v}</p></div>`).join('');
+  $('#cl-methods').innerHTML = table(['Forma de pagamento', 'Entradas'], Object.entries(d.by_method).map(([k, v]) => [PAYN[k] || k, brl(v)]))
+    + `<p class="text-xs text-gray-500 mt-1">Gorjetas: ${brl(d.tips)} · Descontos dados: ${brl(d.discounts)}</p>`;
+  $('#cl-barbers').innerHTML = d.barbers.length ? table(['Barbeiro', 'Atendimentos', 'Bruto', 'Gorjetas'], d.barbers.map(b => [esc(b.name), b.n, brl(b.gross), brl(b.tips)])) : '';
+  f.opening.value = cl ? cl.opening : d.suggested_opening; f.counted.value = cl ? cl.counted : ''; f.notes.value = cl ? cl.notes : '';
+  hintCx();
+  $('#cl-result').innerHTML = cl ? `<p class="${Math.abs(cl.diff) < 0.005 ? 'text-green-700' : 'text-red-600'} font-semibold">Caixa fechado em ${esc(cl.closed_at)}: esperado ${brl(cl.expected)}, contado ${brl(cl.counted)} → ${Math.abs(cl.diff) < 0.005 ? 'conferido, sem diferença' : (cl.diff > 0 ? 'sobra de ' : 'falta de ') + brl(Math.abs(cl.diff))}.</p>`
+    + (cl.stale ? '<p class="text-amber-700">Atenção: houve lançamentos em dinheiro depois do fechamento. Feche de novo para atualizar.</p>' : '') : '';
+  $('#cl-recent').innerHTML = d.recent.length ? 'Últimos fechamentos: ' + d.recent.map(r => `${r.day.split('-').reverse().join('/')} (${Math.abs(r.diff) < 0.005 ? 'ok' : (r.diff > 0 ? '+' : '−') + brl(Math.abs(r.diff))})`).join(' · ') : '';
+}
+function hintCx() {
+  if (!CLD) return; const exp = (+$('#clform').elements.opening.value || 0) + CLD.cash_in - CLD.cash_out;
+  $('#cl-hint').textContent = `Dinheiro esperado na gaveta: ${brl(exp)} (abertura + entradas em dinheiro ${brl(CLD.cash_in)} − saídas em dinheiro ${brl(CLD.cash_out)}).`;
+}
+$('#clform').elements.opening.oninput = hintCx; $('#cday').onchange = fechamento;
+$('#clform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements;
+  await api('/api/admin/closing', {day: $('#cday').value, opening: f.opening.value, counted: f.counted.value, notes: f.notes.value}); fechamento();
+};
+async function agenda() {
+  const d = await api('/api/admin/appointments?day=' + $('#day').value);
+  $('#appts').innerHTML = d.length ? table(['Hora','Cliente','WhatsApp','Barbeiro','Serviço','Status',''], d.map(a => [a.start_at.slice(11), esc(a.client_name), esc(a.phone) || '—', esc(a.barber), esc(a.service), a.status,
+    a.status==='agendado' ? `<button data-id="${a.id}" data-s="concluido" data-price="${a.price}" data-name="${esc(a.client_name)}" class="text-green-700">Concluir</button> · <button data-id="${a.id}" data-s="faltou">Faltou</button> · <button data-id="${a.id}" data-s="cancelado" class="text-red-600">Cancelar</button> · <button data-copy="${esc(a.token)}" class="text-blue-700" title="Link para o cliente cancelar/remarcar">Copiar link</button>` : ''])) : '<p>Sem agendamentos.</p>';
+}
+async function estoque() {
+  const d = (await api('/api/admin/products')).filter(p => p.active);
+  $('#prods').innerHTML = table(['Item','Tipo','Preço','Estoque'], d.map(p => [esc(p.name), p.for_sale?'Venda':'Material', p.for_sale?brl(p.price):'—', p.stock]));
+  $('#mvprod').innerHTML = d.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+}
+async function prev() {
+  const d = await api('/api/admin/forecast?days=30');
+  $('#fc').innerHTML = table(['Item','Estoque','Consumo/dia','Dias restantes','Comprar (30 dias)'], d.map(r => [esc(r.product), r.stock, r.daily_rate, r.days_left ?? '—', `<b>${r.buy}</b>`]));
+}
+$('#month').onchange = caixa; $('#day').onchange = agenda;
+$('#appts').addEventListener('click', e => {
+  const b = e.target.closest('button[data-copy]'); if (!b) return;
+  const url = location.origin + '/agendamento/' + b.dataset.copy;
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => alert('Link copiado! Envie ao cliente para ele cancelar ou remarcar.'), () => prompt('Copie o link:', url));
+});
+$('#appts').onclick = async e => {
+  const b = e.target.closest('button[data-id]'); if (!b) return;
+  if (b.dataset.s === 'concluido') { openPay(b.dataset); return; }
+  await api(`/api/admin/appointments/${b.dataset.id}/status`, {status: b.dataset.s}); agenda();
+};
+// ---------- Concluir atendimento: forma de pagamento, desconto e gorjeta ----------
+let PAY = null;
+function openPay(d) {
+  PAY = {id: d.id, price: +d.price}; let last = ''; try { last = localStorage.getItem('lastPay') || ''; } catch (e) {}
+  $('#paytitle').textContent = 'Concluir: ' + d.name; $('#payform').reset(); if (last) $('#payform').elements.method.value = last;
+  payTotal(); $('#paydlg').showModal();
+}
+function payTotal() {
+  const f = $('#payform').elements, disc = +f.discount.value || 0, tip = +f.tip.value || 0;
+  $('#paytot').innerHTML = `Valor do serviço ${brl(PAY.price)} − desconto ${brl(disc)} = <b>${brl(PAY.price - disc)}</b>` + (tip ? ` · gorjeta ${brl(tip)} · total recebido <b>${brl(PAY.price - disc + tip)}</b>` : '');
+}
+$('#payform').addEventListener('input', payTotal);
+$('#paycancel').onclick = () => $('#paydlg').close();
+$('#payform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements;
+  try { localStorage.setItem('lastPay', f.method.value); } catch (x) {}
+  try { await api(`/api/admin/appointments/${PAY.id}/status`, {status: 'concluido', method: f.method.value, discount: f.discount.value, tip: f.tip.value}); } catch (x) { return; }
+  $('#paydlg').close(); agenda(); caixa();
+};
+$('#txform').onsubmit = async e => { e.preventDefault(); await api('/api/admin/transactions', Object.fromEntries(new FormData(e.target))); e.target.reset(); alert('Lançado.'); };
+$('#mvform').onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+  if (f.mode === 'venda') await api('/api/admin/sales', {product:f.product, qty:f.qty, method:f.method});
+  else await api('/api/admin/stock', {product:f.product, qty: f.mode==='consumo' ? -f.qty : +f.qty, cost:f.cost});
+  e.target.reset(); estoque(); };
+async function lembretes() {
+  const d = await api('/api/admin/reminders');
+  const bd = $('#badge'); bd.textContent = d.length; bd.classList.toggle('hidden', !d.length);
+  $('#rem').innerHTML = d.length ? table(['Tipo','Cliente','Quando','',''], d.map(r => [({confirmacao:'Confirmação', vespera:'Véspera', lembrete:'1h antes', retorno:'Retorno'})[r.kind], esc(r.name), r.when,
+    `<a href="${esc(r.link)}" target="_blank" rel="noopener" class="text-green-700 font-bold">Enviar</a>`, `<button data-k="${r.kind}" data-id="${r.id}">Feito</button>`])) : '<p>Nenhum lembrete pendente.</p>';
+}
+$('#rem').onclick = async e => { const b = e.target.closest('button[data-id]'); if (b) { await api('/api/admin/reminders/done', {kind:b.dataset.k, id:+b.dataset.id}); lembretes(); } };
+{% if demo %}
+async function wa() {
+  const d = await api('/api/admin/outbox');
+  $('#chat').innerHTML = d.length ? d.map(m => `<div><div class="text-xs text-gray-600">Para +${esc(m.phone)} · ${esc(m.sent_at)}</div>
+    <div class="bg-[#dcf8c6] rounded-lg p-2 text-sm shadow whitespace-pre-wrap">${esc(m.text)}</div></div>`).join('') : '<p class="text-center text-gray-600">Nenhuma mensagem ainda.</p>';
+}
+$('#seed').onclick = async () => { await api('/api/admin/demo/seed', {}); wa(); lembretes(); };
+$('#runrem').onclick = async () => { await api('/api/admin/demo/run', {}); wa(); lembretes(); };
+{% endif %}
+
+// ---------- Acesso dos barbeiros ----------
+let ACC = null;
+$('#acccancel').onclick = () => $('#accdlg').close();
+$('#accform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements;
+  try { await api('/api/admin/barbers/access', {id: ACC, login: f.login.value, password: f.password.value}); } catch (x) { return; }
+  $('#accdlg').close(); cadastros();
+};
+$('#accdel').onclick = async () => { if (!confirm('Remover o acesso deste barbeiro?')) return; await api('/api/admin/barbers/access', {id: ACC, remove: true}); $('#accdlg').close(); cadastros(); };
+
+// ---------- Clientes (histórico) ----------
+let CQT;
+async function clientes() {
+  const d = await api('/api/admin/clients?q=' + encodeURIComponent($('#cq').value));
+  $('#cl-list').innerHTML = d.length ? table(['Cliente', 'WhatsApp', 'Atend.', 'Faltas', 'Última visita', 'Próximo', 'Total gasto', 'Mensagens'], d.map(c => [
+    `<button data-ph="${esc(c.phone)}" class="text-blue-700 underline">${esc(c.name)}</button>`, esc(c.phone), c.visits, c.noshows,
+    c.last_visit ? fmtD(c.last_visit.slice(0, 10)) : '—', c.next_visit ? fmtD(c.next_visit.slice(0, 10)) + ' ' + c.next_visit.slice(11) : '—', brl(c.spent),
+    c.optout ? '<span class="text-red-600">Parou</span>' : 'Sim'])) : '<p class="text-sm text-gray-500">Nenhum cliente encontrado.</p>';
+}
+$('#cq').oninput = () => { clearTimeout(CQT); CQT = setTimeout(clientes, 300); };
+const STP = {agendado: 'Agendado', concluido: 'Concluído', cancelado: 'Cancelado', faltou: 'Faltou'};
+async function perfil(ph) {
+  const d = await api('/api/admin/clients/' + encodeURIComponent(ph)), s = d.stats, dt = v => v ? fmtD(v.slice(0, 10)) + (v.length > 10 ? ' ' + v.slice(11) : '') : '—';
+  const card = (t, v) => `<div class="bg-gray-50 p-3 rounded"><p class="text-xs text-gray-500">${t}</p><p class="font-bold">${v}</p></div>`;
+  $('#cl-detail').innerHTML = `<div class="bg-white rounded shadow p-4 space-y-3">
+    <div class="flex flex-wrap items-center gap-3"><h2 class="text-lg font-bold">${esc(d.name)}</h2><span class="text-sm text-gray-500">${esc(d.phone)}</span>
+      <button data-new="${esc(d.phone)}" data-nm="${esc(d.name)}" class="bg-gray-900 text-white rounded px-3 py-1 text-sm">Agendar para este cliente</button></div>
+    <div class="grid sm:grid-cols-4 gap-2">${card('Atendimentos', s.visits)}${card('Total gasto', brl(s.spent))}${card('Faltas / cancelamentos', s.noshows + ' / ' + s.cancels)}${card('Primeira visita', dt(s.first_visit))}
+      ${card('Última visita', dt(s.last_visit))}${card('Intervalo médio', s.avg_interval_days ? s.avg_interval_days + ' dias' : '—')}${card('Retorno previsto', s.expected_return ? fmtD(s.expected_return) : '—')}${card('Favoritos', esc((s.fav_service || '—') + ' · ' + (s.fav_barber || '—')))}</div>
+    <p class="text-xs text-gray-500">Mensagens automáticas: ${d.optout ? '<b class="text-red-600">cliente pediu para parar</b>' : (d.consent ? 'autorizadas (' + esc(d.consent) + ')' : '<b>sem consentimento registrado</b>')}</p>
+    <label class="block text-xs text-gray-600">Anotações (preferências, estilo do corte etc.)<textarea id="cnote" maxlength="500" rows="3" class="border p-2 rounded w-full">${esc(d.note)}</textarea></label>
+    <button data-note="${esc(d.phone)}" class="bg-blue-600 text-white rounded px-3 py-1 text-sm">Salvar anotação</button>
+    <div class="overflow-x-auto">${table(['Data', 'Serviço', 'Barbeiro', 'Situação', 'Pago'], d.appointments.map(a => [dt(a.start_at), esc(a.service), esc(a.barber), STP[a.status] || a.status, a.paid != null ? brl(a.paid) : '—']))}</div></div>`;
+  $('#cl-detail').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+$('#cl-list').onclick = e => { const b = e.target.closest('button[data-ph]'); if (b) perfil(b.dataset.ph); };
+$('#cl-detail').onclick = async e => {
+  const n = e.target.closest('button[data-note]'), g = e.target.closest('button[data-new]');
+  if (n) { await api('/api/admin/clients/note', {phone: n.dataset.note, note: $('#cnote').value}); alert('Anotação salva.'); }
+  if (g) { document.querySelector('#tabs button[data-t="agenda"]').click(); const f = $('#newappt').elements; f.name.value = g.dataset.nm; f.phone.value = g.dataset.new; f.consent.checked = true; window.scrollTo(0, 0); }
+};
+
+// ---------- Relatórios (CSV) ----------
+const REL = [['comissoes', 'Comissão por barbeiro', 'Atendimentos, bruto, comissão a repassar e gorjetas de cada barbeiro.'], ['lancamentos', 'Lançamentos do caixa', 'Entradas e saídas, com forma de pagamento e desconto.'],
+  ['diario', 'Resumo diário', 'Entradas por forma de pagamento, saídas e saldo, dia a dia.'], ['fechamentos', 'Fechamentos de caixa', 'Dinheiro esperado, contado e diferença.'],
+  ['agendamentos', 'Agendamentos', 'Todos os agendamentos do período, com situação.'], ['clientes', 'Clientes', 'Lista de clientes com atendimentos e total gasto (ignora o período).']];
+function relatorios() {
+  if (!$('#rfrom').value) { const n = new Date(); $('#rfrom').value = new Date(n.getFullYear(), n.getMonth(), 1).toLocaleDateString('en-CA'); $('#rto').value = new Date(n.getFullYear(), n.getMonth() + 1, 0).toLocaleDateString('en-CA'); }
+  const q = `from=${$('#rfrom').value}&to=${$('#rto').value}`;
+  $('#rlinks').innerHTML = REL.map(([k, t, d]) => `<a href="/api/admin/export/${k}?${q}" download class="block bg-white rounded shadow p-4 hover:ring-2 hover:ring-gray-900"><b>${t}</b> <span class="text-xs text-gray-400">.csv</span><p class="text-xs text-gray-500 mt-1">${d}</p></a>`).join('');
+}
+['#rfrom', '#rto'].forEach(s => $(s).onchange = relatorios);
+
+// ---------- Site: dados e galeria ----------
+async function siteTab() {
+  const [s, g] = await Promise.all([api('/api/admin/site'), api('/api/admin/gallery')]), f = $('#siteform').elements;
+  for (const k in s.values) { f[k].value = s.values[k]; f[k].placeholder = s.defaults[k] || f[k].placeholder; }
+  $('#gal-list').innerHTML = g.length ? g.map((p, i) => `<div class="bg-white rounded shadow overflow-hidden">
+    <img src="/media/gallery/${esc(p.filename)}" alt="" class="w-full aspect-square object-cover">
+    <div class="p-2 space-y-1"><input data-cap="${p.id}" value="${esc(p.caption || '')}" maxlength="120" placeholder="Legenda" class="border rounded p-1 w-full text-xs">
+      <div class="flex justify-between text-xs"><span><button data-mv="up" data-id="${p.id}" ${i ? '' : 'disabled'} class="px-2 disabled:text-gray-300">◀</button><button data-mv="down" data-id="${p.id}" ${i < g.length - 1 ? '' : 'disabled'} class="px-2 disabled:text-gray-300">▶</button></span>
+      <button data-gdel="${p.id}" class="text-red-600">Apagar</button></div></div></div>`).join('') : '<p class="text-sm text-gray-500 col-span-full">Nenhuma foto ainda. A seção Galeria só aparece no site quando houver fotos.</p>';
+}
+$('#siteform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements, d = {}; for (const k of ['name', 'short_name', 'brand', 'address', 'whatsapp', 'instagram', 'tagline']) d[k] = f[k].value;
+  await api('/api/admin/site', d); alert('Dados salvos. O site já usa as novas informações.'); siteTab();
+};
+$('#galform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements; let fails = 0;
+  for (const file of f.file.files) {
+    const fd = new FormData(); fd.append('file', file); fd.append('caption', f.caption.value);
+    const r = await fetch('/api/admin/gallery', {method: 'POST', body: fd}); if (!r.ok) { fails++; alert(file.name + ': ' + ((await r.json().catch(() => ({}))).error || 'erro ao enviar')); }
+  }
+  e.target.reset(); siteTab();
+};
+$('#gal-list').addEventListener('change', async e => { const i = e.target.closest('input[data-cap]'); if (i) await api('/api/admin/gallery/caption', {id: +i.dataset.cap, caption: i.value}); });
+$('#gal-list').addEventListener('click', async e => {
+  const d = e.target.closest('button[data-gdel]'), m = e.target.closest('button[data-mv]');
+  if (d && confirm('Apagar esta foto do site?')) { await api('/api/admin/gallery/delete', {id: +d.dataset.gdel}); siteTab(); }
+  if (m) { await api('/api/admin/gallery/move', {id: +m.dataset.id, dir: m.dataset.mv}); siteTab(); }
+});
+
+// ---------- Novo agendamento (painel) ----------
+let PUB = null;
+async function agendaTab() {
+  if (!PUB) {
+    PUB = await api('/api/public');
+    $('#nb').innerHTML = PUB.barbers.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+    $('#ns').innerHTML = PUB.services.map(s => `<option value="${s.id}">${esc(s.name)} (${s.minutes} min)</option>`).join('');
+    $('#nd').value = today;
+  }
+  slotsNovo(); agenda();
+}
+async function slotsNovo() {
+  if (!$('#nb').value || !$('#ns').value || !$('#nd').value) return;
+  const l = await api(`/api/slots?barber=${$('#nb').value}&service=${$('#ns').value}&date=${$('#nd').value}`);
+  $('#nt').innerHTML = l.length ? l.map(t => `<option>${t}</option>`).join('') : '<option value="">Sem horário livre (use "outro horário")</option>';
+}
+['#nb', '#ns', '#nd'].forEach(s => $(s).onchange = slotsNovo);
+$('#newappt').elements.concluido.onchange = e => $('#npayrow').classList.toggle('hidden', !e.target.checked);
+$('#newappt').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements, time = $('#nto').value || $('#nt').value;
+  if (!time) { alert('Escolha um horário.'); return; }
+  const data = {name: f.name.value, phone: f.phone.value, barber: +f.barber.value, service: +f.service.value, date: f.date.value, time, concluido: f.concluido.checked, consent: f.consent.checked,
+    method: f.method.value, discount: f.discount.value, tip: f.tip.value};
+  const send = async b => { const x = await fetch('/api/admin/appointments', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}); return {ok:x.ok, status:x.status, j:await x.json()}; };
+  let r = await send(data);
+  if (r.status === 409 && r.j.can_force) {
+    if (!confirm(r.j.error + '\n\nAgendar mesmo assim?')) return;
+    r = await send({...data, force: true});
+  }
+  if (!r.ok) { alert(r.j.error || 'Erro'); return; }
+  f.name.value = ''; f.phone.value = ''; f.concluido.checked = false; f.consent.checked = false; f.discount.value = ''; f.tip.value = ''; $('#npayrow').classList.add('hidden'); $('#nto').value = '';
+  $('#day').value = f.date.value; slotsNovo(); agenda();
+};
+
+// ---------- Horários, folgas e feriados ----------
+const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], fmtD = d => d.split('-').reverse().join('/');
+let HB = [];
+async function horarios() {
+  if (!HB.length) {
+    HB = (await api('/api/admin/barbers')).filter(b => b.active);
+    $('#hb').innerHTML = HB.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+    $('#tb').innerHTML = '<option value="">Todos os barbeiros (feriado da loja)</option>' + HB.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+    $('#hy').value = new Date().getFullYear();
+  }
+  await carregaHoras(); await folgas();
+}
+async function carregaHoras() {
+  if (!$('#hb').value) return;
+  const d = await api('/api/admin/hours?barber=' + $('#hb').value), t = 'border p-1 rounded';
+  $('#hgrid').innerHTML = `<table class="w-full bg-white rounded shadow text-sm"><thead class="bg-gray-200 text-left"><tr><th class="p-2">Dia</th><th class="p-2">Atende</th><th class="p-2">Entrada</th><th class="p-2">Saída</th><th class="p-2">Almoço de</th><th class="p-2">Almoço até</th></tr></thead><tbody>`
+    + d.map(r => `<tr data-wd="${r.weekday}" class="border-t"><td class="p-2 font-medium">${DIAS[r.weekday]}</td>
+      <td class="p-2"><input type="checkbox" data-f="open" ${r.open ? 'checked' : ''}></td>
+      <td class="p-2"><input type="time" data-f="t_start" value="${r.t_start}" class="${t}"></td>
+      <td class="p-2"><input type="time" data-f="t_end" value="${r.t_end}" class="${t}"></td>
+      <td class="p-2"><input type="time" data-f="lunch_start" value="${r.lunch_start || ''}" class="${t}"></td>
+      <td class="p-2"><input type="time" data-f="lunch_end" value="${r.lunch_end || ''}" class="${t}"></td></tr>`).join('') + '</tbody></table>';
+}
+$('#hb').onchange = carregaHoras;
+$('#hsave').onclick = async () => {
+  const days = [...document.querySelectorAll('#hgrid tr[data-wd]')].map(tr => { const g = f => tr.querySelector(`[data-f="${f}"]`);
+    return {weekday: +tr.dataset.wd, open: g('open').checked, t_start: g('t_start').value, t_end: g('t_end').value, lunch_start: g('lunch_start').value, lunch_end: g('lunch_end').value}; });
+  const r = await api('/api/admin/hours', {barber: +$('#hb').value, days});
+  alert('Horários salvos.' + (r.conflicts ? ` Atenção: ${r.conflicts} agendamento(s) futuro(s) ficaram fora do novo expediente. Avise os clientes.` : ''));
+  carregaHoras();
+};
+async function folgas() {
+  const d = await api('/api/admin/timeoff');
+  $('#to-list').innerHTML = d.length ? table(['Período', 'Horário', 'Quem', 'Motivo', ''], d.map(r => [r.day_from === r.day_to ? fmtD(r.day_from) : `${fmtD(r.day_from)} a ${fmtD(r.day_to)}`,
+    r.t_from ? `${r.t_from}–${r.t_to}` : 'Dia todo', esc(r.barber), esc(r.reason || ''), `<button data-del="${r.id}" class="text-red-600">Remover</button>`])) : '<p class="text-sm">Nenhuma folga cadastrada.</p>';
+}
+$('#to-list').onclick = async e => { const b = e.target.closest('button[data-del]'); if (b && confirm('Remover esta folga?')) { await api('/api/admin/timeoff/delete', {id: +b.dataset.del}); folgas(); } };
+$('#toform').onsubmit = async e => {
+  e.preventDefault(); const f = e.target.elements;
+  const r = await api('/api/admin/timeoff', {barber: f.barber.value, from: f.from.value, to: f.to.value, t_from: f.t_from.value, t_to: f.t_to.value, reason: f.reason.value});
+  if (r.conflicts) alert(`Atenção: já existe(m) ${r.conflicts} agendamento(s) nesse período. Avise os clientes ou cancele/remarque.`);
+  e.target.reset(); folgas();
+};
+$('#hol').onclick = async () => {
+  const r = await api('/api/admin/holidays', {year: +$('#hy').value});
+  alert(r.added ? `${r.added} feriado(s) cadastrado(s). Carnaval e Corpus Christi são pontos facultativos: remova se a barbearia abrir.` : 'Esses feriados já estavam cadastrados.'); folgas();
+};
+
+// ---------- Backup ----------
+async function backup() {
+  const [d, h] = await Promise.all([api('/api/admin/backup/status'), api('/api/admin/health')]), when = v => v ? esc(v) : '—';
+  $('#bkp-info').innerHTML = `
+    <p><b>Backup local:</b> automático todo dia às 03:30 · ${d.local_count} cópia(s) guardada(s) (${d.keep_days} dias) · último: ${when(d.last_local)}</p>
+    <p><b>Backup na nuvem:</b> ${d.remote ? `destino <code>${esc(d.remote)}</code> · último envio: ${when(d.last_offsite)}`
+      : '<span class="text-red-600">não configurado</span> — veja o guia (seção "Backup na nuvem") para ligar o Google Drive.'}</p>
+    ${d.remote && !d.rclone ? '<p class="text-red-600">O rclone não está instalado no servidor.</p>' : ''}
+    ${d.offsite_error ? `<p class="text-red-600">Último erro de envio: ${esc(d.offsite_error)}</p>` : ''}
+    <hr class="my-2">
+    <p><b>WhatsApp automático:</b> ${h.whatsapp ? `<span class="${h.whatsapp === 'conectado' ? 'text-green-700' : 'text-red-600'}">${esc(h.whatsapp)}</span>` : 'não configurado (lembretes manuais)'} · <b>Mensagens pendentes:</b> ${h.pending_messages}</p>
+    <p><b>Agendador:</b> ${h.scheduler_on ? 'ativo · último batimento ' + when(h.heartbeat) : 'desligado'} · <b>Disco livre:</b> ${h.disk_free_pct}% · <b>Banco:</b> ${h.db_mb} MB</p>
+    <p><b>Segurança:</b> senhas erradas diferentes nas últimas 24h: ${h.failed_logins_24h}</p>
+    <p><b>Avisos no celular:</b> ${h.alert_channel ? 'ativados (ntfy)' : 'desativados — veja o guia (ALERT_NTFY_URL)'}</p>`;
+}
+$('#bkp-up').onclick = async () => { await api('/api/admin/backup/upload', {}); alert('Backup enviado para a nuvem.'); backup(); };
+
+// ---------- Cadastros ----------
+const ENT = {
+  barbers:  {t:'Barbeiros', url:'/api/admin/barbers', f:[['name','Nome','text',1],['role','Cargo','text'],['commission_pct','Comissão %','number',1,{min:0,max:100,step:'0.01',value:50}],['calendar_id','ID da Google Agenda','text']]},
+  services: {t:'Serviços',  url:'/api/admin/services', f:[['name','Nome','text',1],['description','Descrição','text'],['price','Preço (R$)','number',1,{min:0.01,step:'0.01'}],['minutes','Minutos','number',1,{min:5,max:480,step:'5'}]]},
+  products: {t:'Produtos e materiais', url:'/api/admin/products', f:[['name','Nome','text',1],['price','Preço de venda (R$)','number',1,{min:0,step:'0.01',value:0}],['stock','Estoque inicial','number',0,{min:0,step:'1',value:0}],['for_sale','Tipo','select',1,{opts:[[1,'Venda (aparece no site)'],[0,'Material interno']]}]]}
+};
+let CAD = {};
+const inp = 'border p-2 rounded w-full';
+function field([n, label, type, req, o = {}]) {
+  const attrs = Object.entries(o).filter(([k]) => k !== 'opts').map(([k, v]) => `${k}="${esc(v)}"`).join(' ');
+  const el = type === 'select'
+    ? `<select name="${n}" class="${inp}">${o.opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select>`
+    : `<input name="${n}" type="${type}" ${req ? 'required' : ''} ${attrs} class="${inp}">`;
+  return `<label class="text-xs text-gray-600">${label}${el}</label>`;
+}
+function entHtml(k) {
+  const E = ENT[k], rows = CAD[k];
+  const cell = (r, [n,,type,,o]) => n === 'for_sale' ? (r.for_sale ? 'Venda' : 'Material') : (type === 'number' && /price/.test(n) ? brl(r[n]) : esc(r[n] ?? ''));
+  const head = [...E.f.map(f => f[1]), k === 'products' ? 'Estoque atual' : null, 'Situação', ''].filter(Boolean);
+  const body = rows.map(r => [...E.f.filter(f => f[0] !== 'stock').map(f => cell(r, f)), ...(k === 'products' ? [r.stock] : []),
+    r.active ? '<span class="text-green-700">Ativo</span>' : '<span class="text-gray-500">Inativo</span>',
+    `<button data-act="edit" data-k="${k}" data-id="${r.id}" class="text-blue-700">Editar</button> · <button data-act="toggle" data-k="${k}" data-id="${r.id}" class="${r.active ? 'text-red-600' : 'text-green-700'}">${r.active ? 'Desativar' : 'Reativar'}</button>`
+      + (k === 'barbers' && r.calendar_id ? ` · <button data-act="gtest" data-id="${r.id}" class="text-purple-700">Testar agenda</button>` : '')
+      + (k === 'barbers' ? ` · <button data-act="access" data-id="${r.id}" class="text-indigo-700">${r.login ? 'Acesso: ' + esc(r.login) : 'Dar acesso'}</button>` : '')]);
+  const heads = E.f.filter(f => f[0] !== 'stock').map(f => f[1]);
+  const tbl = table([...heads, ...(k === 'products' ? ['Estoque atual'] : []), 'Situação', ''], body);
+  return `<h2 class="font-bold mb-2">${E.t}</h2><div class="overflow-x-auto">${tbl}</div>
+    <form data-k="${k}" class="bg-white p-4 rounded shadow grid sm:grid-cols-5 gap-2 mt-2 items-end">
+      <input type="hidden" name="id">${E.f.map(field).join('')}
+      <div class="flex gap-2"><button class="bg-gray-900 text-white rounded p-2 flex-1" data-save>Adicionar</button><button type="button" data-act="cancel" class="border rounded p-2 hidden">Cancelar</button></div>
+    </form>`;
+}
+async function cadastros() {
+  const [b, s, p, g] = await Promise.all([api('/api/admin/barbers'), api('/api/admin/services'), api('/api/admin/products'), api('/api/admin/gcal')]);
+  CAD = {barbers: b, services: s, products: p};
+  $('#gcal-info').innerHTML = g.ok
+    ? `<b>Google Agenda:</b> conta de serviço conectada (<code>${esc(g.email)}</code>). Compartilhe a agenda de cada barbeiro com este e-mail (permissão <i>Fazer alterações</i>), cole o <b>ID da agenda</b> no cadastro do barbeiro e use <b>Testar agenda</b>.`
+    : g.configured ? `<b>Google Agenda:</b> há uma credencial configurada, mas não foi possível lê-la (${esc(g.error || 'verifique GOOGLE_SA_FILE')}).`
+    : `<b>Google Agenda:</b> não configurado no servidor (defina <code>GOOGLE_SA_FILE</code>). Enquanto isso, o cliente ainda recebe o botão "Adicionar ao Google Agenda".`;
+  for (const k in ENT) $('#ent-' + k).innerHTML = entHtml(k);
+}
+$('#cad').addEventListener('submit', async e => {
+  e.preventDefault(); const f = e.target, k = f.dataset.k, d = Object.fromEntries(new FormData(f));
+  if (!d.id) delete d.id; else d.id = +d.id;
+  await api(ENT[k].url, d); cadastros();
+});
+$('#cad').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const k = b.dataset.k, id = +b.dataset.id, a = b.dataset.act;
+  if (a === 'toggle') { const r = CAD[k].find(x => x.id === id); await api(ENT[k].url, {id, active: r.active ? 0 : 1}); cadastros(); }
+  else if (a === 'access') {
+    const r = CAD.barbers.find(x => x.id === id), f = $('#accform').elements; ACC = id;
+    $('#acctitle').textContent = 'Acesso de ' + r.name; $('#accurl').textContent = location.origin + '/barbeiro';
+    f.login.value = r.login || ''; f.password.value = ''; f.password.required = !r.login; $('#accdel').classList.toggle('hidden', !r.login); $('#accdlg').showModal();
+  }
+  else if (a === 'gtest') { await api('/api/admin/gcal/test', {barber: id}); alert('Conectado! Um evento de teste foi criado e apagado na agenda.'); }
+  else if (a === 'edit') {
+    const f = $(`form[data-k="${k}"]`), r = CAD[k].find(x => x.id === id);
+    f.elements.id.value = id; ENT[k].f.forEach(([n]) => { if (f.elements[n]) f.elements[n].value = r[n] ?? ''; });
+    if (f.elements.stock) f.elements.stock.disabled = true;  // o estoque só muda pela aba Estoque
+    f.querySelector('[data-save]').textContent = 'Salvar alterações'; f.querySelector('[data-act="cancel"]').classList.remove('hidden'); f.scrollIntoView({block:'center'});
+  } else if (a === 'cancel') cadastros();
+});
+$('#gsync').onclick = async () => { const r = await api('/api/admin/gcal/sync', {}); alert(`${r.synced} agendamento(s) enviado(s) ao Google Agenda.` + (r.pending ? ` ${r.pending} não foi possível enviar (barbeiro sem ID de agenda ou erro; veja os logs).` : '')); };
+
+$('#privform').onsubmit = async e => {
+  e.preventDefault(); const d = await api('/api/admin/privacy/export?phone=' + encodeURIComponent(e.target.elements.phone.value)), o = $('#privout');
+  o.textContent = JSON.stringify(d, null, 2); o.classList.remove('hidden');
+};
+$('#privdel').onclick = async () => {
+  const ph = $('#privform').elements.phone.value; if (!ph) return;
+  if (!confirm('Anonimizar TODOS os registros deste cliente? Isso não pode ser desfeito.')) return;
+  const r = await api('/api/admin/privacy/erase', {phone: ph}); alert(`Pronto: ${r.anonymized} registro(s) anonimizado(s).`); $('#privout').classList.add('hidden');
+};
+async function alertas() {
+  try { const r = await fetch('/api/admin/health'); if (!r.ok) return; const d = await r.json(), b = $('#alertbar');
+    b.innerHTML = d.alerts.map(a => '⚠ ' + esc(a.msg)).join('<br>'); b.classList.toggle('hidden', !d.alerts.length);
+    $('#privret').textContent = d.retention_months ? `Retenção automática: clientes sem atendimento há mais de ${d.retention_months} meses são anonimizados todo dia às 03:40.` : 'Retenção automática desligada (RETENTION_MONTHS=0).'; } catch (e) {}
+}
+$('#cday').value = today; alertas(); setInterval(alertas, 120000);
+setInterval(lembretes, 60000); lembretes(); caixa();
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Meu agendamento – {{ shop.name }}</title>
+{% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+<header class="bg-gray-900 text-white px-4 py-4 text-center">
+  <a href="/" class="font-bold tracking-wide">{{ shop.name }}</a>
+</header>
+
+<main class="max-w-md mx-auto p-4 space-y-4">
+  <h1 class="text-xl font-bold text-gray-900 pt-2">Meu agendamento</h1>
+  <div id="state" class="bg-white rounded-2xl shadow p-5 text-gray-500">Carregando…</div>
+</main>
+
+<script>
+const T = {{ token|tojson }};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WD = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const when = s => { const [d, t] = s.split(' '); const x = new Date(d + 'T12:00:00'); return `${WD[x.getDay()]}, ${d.split('-').reverse().slice(0, 2).join('/')} às ${t}`; };
+const ymd = d => d.toLocaleDateString('en-CA');
+const show = html => { $('#state').className = 'bg-white rounded-2xl shadow p-5 space-y-4'; $('#state').innerHTML = html; };
+async function call(path, body) {
+  const r = await fetch('/api/manage/' + T + path, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  return {ok: r.ok, status: r.status, j: await r.json().catch(() => ({}))};
+}
+
+let info = null, chosen = null;
+async function load() {
+  const r = await call('');
+  if (!r.ok) { show(`<p class="text-red-600 font-medium">${esc(r.j.error || 'Não foi possível abrir este agendamento.')}</p><a href="/" class="block text-center text-blue-700 underline">Ir para o site</a>`); return; }
+  info = r.j; render();
+}
+function render(msg) {
+  const i = info, active = i.status === 'agendado';
+  let h = msg ? `<p class="bg-green-50 border border-green-200 text-green-800 rounded-xl p-3 text-sm font-medium">${esc(msg)}</p>` : '';
+  h += `<div class="space-y-1">
+      <p class="text-sm text-gray-500">Olá, ${esc(i.client)}</p>
+      <p class="text-lg font-bold text-gray-900">${esc(i.service)} com ${esc(i.barber)}</p>
+      <p class="${active ? 'text-gray-900' : 'text-gray-400 line-through'} font-medium">${esc(when(i.start_at))}</p>
+      <p class="text-sm text-gray-500">${esc(i.address)}</p>
+      ${i.status === 'cancelado' ? '<p class="inline-block bg-red-100 text-red-700 text-xs font-bold rounded-full px-3 py-1">Cancelado</p>' : ''}
+    </div>`;
+  if (i.can_change) {
+    h += `<div class="space-y-3 pt-2 border-t border-gray-100">
+        <button id="bres" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition-colors">Remarcar horário</button>
+        <button id="bcan" class="w-full bg-white border border-red-300 text-red-600 hover:bg-red-50 font-bold py-3 rounded-xl transition-colors">Cancelar agendamento</button>
+        <p class="text-xs text-gray-500 text-center">Alterações são possíveis até ${i.deadline_hours}h antes do horário. Você ainda pode remarcar ${i.reschedules_left} vez(es).</p>
+      </div>
+      <div id="resched" class="hidden space-y-3 pt-2 border-t border-gray-100">
+        <label class="block text-sm font-semibold text-gray-700">Nova data
+          <input id="nd" type="date" class="mt-1 w-full border border-gray-300 rounded-xl p-3"></label>
+        <div id="slots" class="grid grid-cols-4 gap-2"></div>
+        <p id="smsg" class="text-sm text-gray-500"></p>
+        <button id="bok" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors">Confirmar novo horário</button>
+      </div>`;
+  } else {
+    h += `<p class="bg-amber-50 border border-amber-200 text-amber-900 text-sm rounded-xl p-3">${esc(i.reason)}</p>`;
+  }
+  if (i.has_phone) h += i.optout ? '<p class="text-xs text-gray-500 text-center">Você não recebe mais mensagens automáticas da barbearia.</p>'
+    : '<button id="bopt" class="block mx-auto text-xs text-gray-500 underline">Parar de receber mensagens automáticas</button>';
+  h += '<a href="/" class="block text-center text-blue-700 underline text-sm pt-2">Voltar ao site</a> <a href="/privacidade" class="block text-center text-gray-500 underline text-xs">Política de Privacidade</a>';
+  show(h);
+  if (i.can_change) wire();
+  const bo = $('#bopt');
+  if (bo) bo.onclick = async () => {
+    if (!confirm('Você deixará de receber confirmações e lembretes por WhatsApp. Continuar?')) return;
+    const r = await call('/optout', {});
+    if (!r.ok) { alert(r.j.error || 'Não foi possível concluir.'); return; }
+    info.optout = true; render('Pronto! Você não receberá mais mensagens automáticas.');
+  };
+}
+function wire() {
+  const nd = $('#nd'), today = new Date(), max = new Date(Date.now() + info.max_days * 864e5);
+  nd.min = ymd(today); nd.max = ymd(max);
+  $('#bres').onclick = () => { $('#resched').classList.toggle('hidden'); };
+  $('#bcan').onclick = async () => {
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+    const r = await call('/cancel', {});
+    if (!r.ok) { alert(r.j.error || 'Não foi possível cancelar.'); load(); return; }
+    info.status = 'cancelado'; info.can_change = false; info.reason = 'Seu agendamento foi cancelado. Quando quiser, agende um novo horário pelo nosso site.';
+    render('Agendamento cancelado.');
+  };
+  nd.onchange = async () => {
+    chosen = null; $('#bok').disabled = true; $('#slots').innerHTML = ''; $('#smsg').textContent = 'Buscando horários…';
+    const r = await call('/slots?date=' + nd.value);
+    if (!r.ok) { $('#smsg').textContent = r.j.error || 'Erro ao buscar horários.'; return; }
+    $('#smsg').textContent = r.j.length ? 'Escolha um horário:' : 'Sem horários livres nesse dia. Tente outra data.';
+    $('#slots').innerHTML = r.j.map(t => `<button type="button" data-t="${t}" class="border border-gray-300 bg-white hover:border-gray-900 rounded-lg py-2 text-sm font-semibold">${t}</button>`).join('');
+  };
+  $('#slots').onclick = e => {
+    const b = e.target.closest('button[data-t]'); if (!b) return;
+    chosen = b.dataset.t; $('#bok').disabled = false;
+    document.querySelectorAll('#slots button').forEach(x => { const on = x === b; x.classList.toggle('bg-gray-900', on); x.classList.toggle('text-white', on); x.classList.toggle('bg-white', !on); });
+  };
+  $('#bok').onclick = async () => {
+    if (!chosen) return; $('#bok').disabled = true;
+    const r = await call('/reschedule', {date: nd.value, time: chosen});
+    if (!r.ok) { alert(r.j.error || 'Não foi possível remarcar.'); nd.onchange(); return; }
+    await load(); render('Horário remarcado! Você receberá uma nova confirmação no WhatsApp.');
+  };
+}
+load();
+</script>
+</body>
+</html>
