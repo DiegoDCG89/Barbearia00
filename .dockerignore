@@ -1,0 +1,9 @@
+.git
+.env
+venv/
+__pycache__/
+*.json.key
+credenciais-google.json
+google-sa.json
+wa-gateway/
+deploy/
