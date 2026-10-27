@@ -1,45 +1,49 @@
-# Usando o Google Sheets como banco de dados
+# Planilhas + Google Agenda como "banco de dados"
 
-A planilha É o banco e também o painel: você edita serviços, horários, folgas e vê os agendamentos direto nela.
+| O quê | Onde fica |
+|---|---|
+| **Agendamentos** | Google Agenda (um evento por atendimento) |
+| **Financeiro** | Planilha 1 (abas `Lancamentos`, `Resumo`) |
+| **Estoque** | Planilha 2 (abas `Produtos`, `Movimentacoes`) |
+| **Cadastro** (Config, Barbeiros, Servicos, Horarios, Folgas) | Planilha 1 (ou uma 3ª, com `SHEET_CADASTRO_ID`) |
 
-## 1. Criar a conta de serviço (uma vez)
-1. Acesse console.cloud.google.com e crie um projeto (ex.: "barbearia").
-2. Menu **APIs e serviços → Biblioteca** → ative a **Google Sheets API**.
-3. **APIs e serviços → Credenciais → Criar credenciais → Conta de serviço**. Dê um nome e conclua.
-4. Abra a conta criada → aba **Chaves → Adicionar chave → Criar nova chave → JSON**. O arquivo baixado são as suas credenciais: **não suba para o GitHub**.
-5. Copie o e-mail da conta (algo como `barbearia@projeto.iam.gserviceaccount.com`).
+## 1. Conta de serviço (uma vez)
+1. console.cloud.google.com → crie um projeto → **APIs e serviços → Biblioteca** → ative **Google Sheets API** e **Google Calendar API**.
+2. **Credenciais → Criar credenciais → Conta de serviço** → aba **Chaves → Adicionar chave → JSON**. Não suba esse arquivo para o GitHub.
+3. Copie o e-mail da conta (`algo@projeto.iam.gserviceaccount.com`).
 
-## 2. Criar e compartilhar a planilha
-1. Crie uma planilha vazia em sheets.google.com.
-2. Clique em **Compartilhar**, cole o e-mail da conta de serviço e dê permissão de **Editor**.
-3. Copie o ID da planilha: na URL `docs.google.com/spreadsheets/d/ESTE_TRECHO/edit`.
+## 2. Compartilhar
+- **Duas planilhas vazias** (financeiro e estoque): Compartilhar → e-mail da conta como **Editor**. Copie o ID de cada uma (trecho entre `/d/` e `/edit`).
+- **Google Agenda**: Configurações da agenda → *Compartilhar com pessoas* → e-mail da conta com **Fazer alterações em eventos**. Em *Integrar agenda*, copie o **ID da agenda**. Recomendo uma agenda só para a barbearia (não a pessoal).
 
-## 3. Preparar as abas automaticamente
+## 3. Preparar
 ```bash
 pip install -r requirements.txt
-export SHEET_ID=cole-o-id
-export GOOGLE_SA_FILE=credenciais-google.json
-python sheets.py
-```
-Isso cria as abas **Config, Barbeiros, Servicos, Produtos, Horarios, Folgas, Agendamentos** com dados de exemplo. Pode rodar de novo sem apagar nada.
-
-## 4. Testar localmente
-```bash
-python app.py        # abre em http://localhost:8080
+export SHEET_FINANCEIRO_ID=... SHEET_ESTOQUE_ID=... CALENDAR_ID=... GOOGLE_SA_FILE=credenciais-google.json
+python sheets.py     # cria as abas com dados de exemplo (pode rodar de novo sem apagar nada)
+python agenda.py     # testa o acesso à agenda
+python app.py        # http://localhost:8080
 ```
 
-## Como editar pela planilha
-| Aba | O que fazer |
-|---|---|
-| **Config** | Nome, endereço, WhatsApp (só números com DDD), Instagram, descrição, `intervalo_min` (passo dos horários). |
-| **Barbeiros** | `id` único (b1, b2...), nome, função. `ativo` = `nao` esconde do site. |
-| **Servicos** | `minutos` define quanto tempo o barbeiro fica ocupado. `preco` em número (45 ou 45,50). |
-| **Produtos** | Aparecem no site se houver ao menos um ativo. |
-| **Horarios** | `barbeiro` = `*` vale para todos, ou o id para um barbeiro específico. `dia` = seg, ter, qua, qui, sex, sab, dom. Dia sem linha = fechado. Almoço é opcional. |
-| **Folgas** | `*` ou id do barbeiro + `data` (AAAA-MM-DD). Sem `inicio`/`fim` bloqueia o dia todo (feriados, férias). |
-| **Agendamentos** | Criada pelo site. Mude a coluna `status` para `concluido`, `faltou` ou `cancelado` (os dois últimos liberam o horário). **Não apague o cabeçalho.** |
+## Como funciona o dia a dia
+**Agenda**
+- O site cria o evento (título "Serviço – Cliente", telefone e link de gerenciar na descrição). Cancelar/remarcar pelo link do cliente apaga/move o evento.
+- Evento criado por você na agenda (almoço, compromisso) **bloqueia o horário** no site. Evento de **dia inteiro** bloqueia o dia (folga). Evento marcado como "Disponível" não bloqueia.
+- Vários barbeiros: preencha a coluna `calendario` da aba `Barbeiros` com o ID da agenda de cada um (vazio = usa `CALENDAR_ID`). Se dois barbeiros dividem a mesma agenda, só os eventos do site são separados por barbeiro; eventos manuais bloqueiam todos.
+- **Cliente faltou?** Apague o evento (ou marque "Disponível") antes do app lançar o atendimento no financeiro.
+
+**Financeiro** (planilha 1)
+- A cada ~10 min (`SYNC_MINUTES`), todo atendimento cujo horário já passou vira uma linha `receita` / `servico` em `Lancamentos` (valor = preço do serviço) e o evento fica verde (`concluido`). Não duplica.
+- Preencha `forma_pgto` (dinheiro, pix, debito, credito) e corrija `valor` se houve desconto. Despesas, venda de produtos e outras receitas: digite uma linha (`tipo` = `receita` ou `despesa`; `data` no formato AAAA-MM-DD).
+- A aba **Resumo** mostra receitas, despesas, saldo e total por forma de pagamento do mês digitado em `B1` (AAAA-MM).
+
+**Estoque** (planilha 2)
+- Não edite a quantidade: registre **movimentações** em `Movimentacoes` (`tipo` = `entrada`, `saida` ou `ajuste`; ajuste aceita número negativo). O estoque atual = entradas − saídas + ajustes; aparece na coluna `estoque` de `Produtos` e no site.
+- Produto novo: adicione a linha em `Produtos` e copie a fórmula da coluna `estoque` da linha de cima.
+
+**Atalhos do app:** `/admin` abre a planilha financeira, `/estoque` a de estoque, `/agenda` o Google Agenda.
 
 ## Limites a conhecer
-- A API do Google permite ~60 leituras/min. O app usa cache de 15–60 s, então uma mudança na planilha pode levar até 1 min para aparecer no site.
-- Use **1 worker** do gunicorn (já configurado). Com vários processos o bloqueio de duplo agendamento deixa de valer.
-- A planilha aguenta bem milhares de linhas, mas fica lenta acima de algumas dezenas de milhares. Se chegar lá, arquive meses antigos em outra aba/planilha.
+- A API do Google permite ~60 leituras/min por planilha; o app usa cache de 15–60 s (mudanças na planilha levam até 1 min para aparecer no site).
+- Use **1 worker** do gunicorn (já configurado): o bloqueio de duplo agendamento e a rotina de lançamento dependem de um único processo.
+- Conta de serviço não convida clientes por e-mail; por isso o cliente recebe o botão "Adicionar ao Google Agenda" na tela de confirmação.
