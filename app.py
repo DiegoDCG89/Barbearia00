@@ -1,4 +1,4 @@
-"""Barbearia – site de agendamento usando o Google Sheets como banco de dados."""
+"""Barbearia – site de agendamento: Google Agenda (horários), planilha de financeiro e planilha de estoque."""
 import json
 import logging
 import os
@@ -15,7 +15,8 @@ from zoneinfo import ZoneInfo
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from sheets import SCHEMA, SheetsBackend
+import agenda
+from sheets import SCHEMA, Sheets
 
 log = logging.getLogger("barbearia")
 app = Flask(__name__)
@@ -30,9 +31,12 @@ MAX_RESCHEDULES = int(os.environ.get("MAX_RESCHEDULES", "3"))
 MIN_FILL_MS = 3000
 PRIVACY_VERSION = "1.0"
 TTL_CATALOG = 60   # segundos (Config, serviços, horários...)
-TTL_APPTS = 15     # segundos (agendamentos; é invalidado a cada gravação nossa)
+TTL_APPTS = 15     # segundos (eventos do dia na agenda; é invalidado a cada gravação nossa)
+SYNC_MINUTES = int(os.environ.get("SYNC_MINUTES", "10"))          # de quanto em quanto tempo lança atendimentos feitos
+SYNC_LOOKBACK_DAYS = int(os.environ.get("SYNC_LOOKBACK_DAYS", "14"))  # até quantos dias atrás procura atendimentos
 
-backend = None  # criado sob demanda (os testes injetam um backend falso)
+backend = None  # planilhas; criado sob demanda (os testes injetam um backend falso)
+calendar_backend = None  # Google Agenda; idem
 _cache = {}
 _cache_lock = threading.RLock()
 _book_lock = threading.Lock()
@@ -42,8 +46,15 @@ _hits = defaultdict(deque)
 def get_backend():
     global backend
     if backend is None:
-        backend = SheetsBackend()
+        backend = Sheets()
     return backend
+
+
+def get_calendar():
+    global calendar_backend
+    if calendar_backend is None:
+        calendar_backend = agenda.CalendarBackend()
+    return calendar_backend
 
 
 # ------------------------------------------------------------------ leitura em cache
@@ -70,6 +81,12 @@ def table(tab, ttl=TTL_CATALOG):
 def invalidate(tab):
     with _cache_lock:
         _cache.pop(tab, None)
+
+
+def invalidate_cal():
+    with _cache_lock:
+        for k in [k for k in _cache if isinstance(k, tuple)]:
+            del _cache[k]
 
 
 # ------------------------------------------------------------------ utilidades
@@ -191,6 +208,72 @@ def occupying(a):
     return a.get("status", "").lower() not in ("cancelado", "faltou")
 
 
+# ------------------------------------------------------------------ Google Agenda
+def default_calendar():
+    return os.environ.get("CALENDAR_ID", "")
+
+
+def cal_for(barber_id):
+    """Agenda do barbeiro: coluna `calendario` da aba Barbeiros, senão CALENDAR_ID."""
+    b = next((r for r in table("Barbeiros") if r.get("id") == barber_id), None)
+    cid = (b or {}).get("calendario") or default_calendar()
+    if not cid:
+        raise RuntimeError("Defina CALENDAR_ID no .env (ou a coluna `calendario` do barbeiro).")
+    return cid
+
+
+def all_calendars():
+    ids = {r.get("calendario") for r in table("Barbeiros") if is_active(r)} | {default_calendar()}
+    return sorted(i for i in ids if i)
+
+
+def day_events(cal_id, d, ttl=TTL_APPTS):
+    """Eventos da agenda que tocam o dia `d` (com cache curto)."""
+    key = ("cal", cal_id, d.isoformat())
+    with _cache_lock:
+        hit = _cache.get(key)
+        if hit and time.time() - hit[0] < ttl:
+            return hit[1]
+    start = datetime(d.year, d.month, d.day, tzinfo=TZ)
+    evs = get_calendar().list_events(cal_id, start, start + timedelta(days=1))
+    with _cache_lock:
+        _cache[key] = (time.time(), evs)
+    return evs
+
+
+def blocks_barber(ev, barber_id, ignore_code=None):
+    """O evento ocupa a agenda deste barbeiro? (evento manual, sem barbeiro_id, bloqueia quem usa aquela agenda)"""
+    if ev["free"]:  # marcado como "disponível" na agenda
+        return False
+    p = ev["private"]
+    if ignore_code and p.get("codigo") == ignore_code:
+        return False
+    if p.get("codigo") and not occupying({"status": p.get("status", "")}):
+        return False
+    return p.get("barbeiro_id", barber_id) == barber_id
+
+
+def find_appt(code):
+    """Procura o agendamento pelo código em todas as agendas."""
+    for cid in all_calendars():
+        for ev in get_calendar().list_events(cid, private={"codigo": code}):
+            a = agenda.appt_from_event(ev)
+            if a:
+                return a
+    return None
+
+
+def open_count_for_phone(phone):
+    n = now()
+    total = 0
+    for cid in all_calendars():
+        for ev in get_calendar().list_events(cid, n, private={"telefone": phone}):
+            a = agenda.appt_from_event(ev)
+            if a and a["status"] == "agendado":
+                total += 1
+    return total
+
+
 def free_slots(barber_id, minutes, d, ignore_code=None):
     n = now()
     if d < n.date() or d > n.date() + timedelta(days=MAX_DAYS_AHEAD):
@@ -208,12 +291,14 @@ def free_slots(barber_id, minutes, d, ignore_code=None):
             if i is None or j is None:
                 return []  # folga/feriado o dia todo
             blocked.append((i, j))
-    for a in table("Agendamentos", TTL_APPTS):
-        if (a.get("barbeiro_id") == barber_id and parse_date(a.get("data")) == d
-                and occupying(a) and a.get("codigo") != ignore_code):
-            s = parse_time(a.get("hora"))
-            if s is not None:
-                blocked.append((s, s + int(num(a.get("minutos"), 30))))
+    day0 = datetime(d.year, d.month, d.day, tzinfo=TZ)
+    for ev in day_events(cal_for(barber_id), d):
+        if blocks_barber(ev, barber_id, ignore_code):
+            # minutos desde 00:00 do dia (evento de dia inteiro ocupa 0..1440 e bloqueia tudo)
+            bs = max(0, int((ev["start"] - day0).total_seconds() // 60))
+            be = min(1440, int((ev["end"] - day0).total_seconds() // 60))
+            if be > bs:
+                blocked.append((bs, be))
     now_min = n.hour * 60 + n.minute if d == n.date() else -1
     out, s, step = [], ab, step_minutes()
     while s + minutes <= fe:
@@ -224,14 +309,30 @@ def free_slots(barber_id, minutes, d, ignore_code=None):
 
 
 def find(tab, field, value, ttl=TTL_CATALOG):
-    return next((r for r in table(tab, ttl) if r.get(field) == value and (tab == "Agendamentos" or is_active(r))), None)
+    return next((r for r in table(tab, ttl) if r.get(field) == value and is_active(r)), None)
 
 
 # ------------------------------------------------------------------ escrita
-def write_appt(a):
-    header = _cache_header("Agendamentos")
-    get_backend().update_row("Agendamentos", a["_row"], [a.get(h, "") for h in header])
-    invalidate("Agendamentos")
+def patch_appt(a, **fields):
+    """Atualiza campos do agendamento (e, se mudou data/hora, o horário do evento) na agenda."""
+    a.update(fields)
+    body = {"extendedProperties": {"private": {k: str(a.get(k, "")) for k in agenda.PRIVATE_KEYS}}}
+    st = appt_start(a)
+    if st:
+        end = st + timedelta(minutes=int(num(a.get("minutos"), 30)))
+        body["start"] = {"dateTime": st.isoformat(), "timeZone": "America/Sao_Paulo"}
+        body["end"] = {"dateTime": end.isoformat(), "timeZone": "America/Sao_Paulo"}
+    if a.get("status") == "concluido":
+        body["colorId"] = "10"  # verde
+    get_calendar().patch(a["_cal"], a["_event"], body)
+    invalidate_cal()
+
+
+def append_row(tab, row):
+    """Grava uma linha na aba respeitando a ordem das colunas que está na planilha."""
+    header = _cache_header(tab)
+    get_backend().append(tab, [row.get(h, "") for h in header])
+    invalidate(tab)
 
 
 def _cache_header(tab):
@@ -320,10 +421,20 @@ def manage_page(token):
 
 
 @app.route("/admin")
-@app.route("/barbeiro")
 def admin_redirect():
-    """Sem painel próprio: a planilha é o painel."""
-    return redirect(f"https://docs.google.com/spreadsheets/d/{get_backend().sheet_id}/edit")
+    """Sem painel próprio: a planilha financeira é o painel do dono."""
+    return redirect(get_backend().url("financeiro"))
+
+
+@app.route("/estoque")
+def estoque_redirect():
+    return redirect(get_backend().url("estoque"))
+
+
+@app.route("/agenda")
+@app.route("/barbeiro")
+def agenda_redirect():
+    return redirect("https://calendar.google.com/calendar/u/0/r")
 
 
 @app.route("/robots.txt")
@@ -350,6 +461,16 @@ def healthz():
         return jsonify(ok=False), 503
 
 
+# ------------------------------------------------------------------ estoque
+def stock_levels():
+    """{produto_id: quantidade atual} = entradas − saídas + ajustes (aba Movimentacoes)."""
+    lv = defaultdict(float)
+    for m in table("Movimentacoes"):
+        q, t = num(m.get("quantidade")), m.get("tipo", "").strip().lower()
+        lv[m.get("produto_id", "")] += q if t in ("entrada", "ajuste") else -q if t == "saida" else 0
+    return lv
+
+
 # ------------------------------------------------------------------ API pública
 @app.route("/api/public")
 def api_public():
@@ -359,7 +480,7 @@ def api_public():
                   for r in table("Servicos") if is_active(r) and r.get("id") and r.get("nome")],
         barbers=[{"id": r["id"], "name": r["nome"], "role": r.get("funcao", "")}
                  for r in table("Barbeiros") if is_active(r) and r.get("id") and r.get("nome")],
-        products=[{"name": r["nome"], "price": num(r.get("preco")), "stock": int(num(r.get("estoque")))}
+        products=[{"name": r["nome"], "price": num(r.get("preco")), "stock": max(0, int(stock_levels().get(r.get("id", ""), 0)))}
                   for r in table("Produtos") if is_active(r) and r.get("nome")])
 
 
@@ -395,7 +516,7 @@ def api_book():
         return jsonify(error="Informe um WhatsApp válido com DDD."), 400
     try:
         with _book_lock:
-            invalidate("Agendamentos")
+            invalidate_cal()
             b, s = find("Barbeiros", "id", j.get("barber", "")), find("Servicos", "id", j.get("service", ""))
             if not (b and s and d and t is not None):
                 return jsonify(error="Dados inválidos."), 400
@@ -403,10 +524,7 @@ def api_book():
             if fmt_time(t) not in free_slots(b["id"], minutes, d):
                 return jsonify(error="Esse horário acabou de ser ocupado. Escolha outro."), 409
             n = now()
-            open_n = sum(1 for a in table("Agendamentos", TTL_APPTS)
-                         if a.get("telefone") == phone and a.get("status") == "agendado"
-                         and (appt_start(a) or n) >= n)
-            if open_n >= MAX_OPEN_PER_PHONE:
+            if open_count_for_phone(phone) >= MAX_OPEN_PER_PHONE:
                 return jsonify(error="Você já tem horários marcados. Cancele ou remarque pelo link."), 429
             code = secrets.token_urlsafe(9)
             row = {"codigo": code, "data": d.isoformat(), "hora": fmt_time(t), "barbeiro_id": b["id"],
@@ -414,10 +532,15 @@ def api_book():
                    "preco": s.get("preco", ""), "cliente": name, "telefone": phone, "status": "agendado",
                    "remarcacoes": "0", "consentimento": f"sim v{PRIVACY_VERSION} {n.isoformat(timespec='seconds')}",
                    "optout": "", "criado_em": n.isoformat(timespec="seconds")}
-            header = _cache_header("Agendamentos")
-            get_backend().append("Agendamentos", [row.get(h, "") for h in header])
-            invalidate("Agendamentos")
-        return jsonify(ok=True, google_link=gcal_link(row), manage_url=f"{base_url()}/agendamento/{code}"), 201
+            start = appt_start(row)
+            manage_url = f"{base_url()}/agendamento/{code}"
+            get_calendar().insert(cal_for(b["id"]), agenda.event_body(
+                row, f"{s['nome']} – {name}",
+                f"Cliente: {name}\nWhatsApp: {phone}\nServiço: {s['nome']} ({minutes} min)\n"
+                f"Barbeiro: {b['nome']}\nGerenciar: {manage_url}\n(agendado pelo site)",
+                shop()["address"], start, start + timedelta(minutes=minutes)))
+            invalidate_cal()
+        return jsonify(ok=True, google_link=gcal_link(row), manage_url=manage_url), 201
     except Exception:
         log.exception("agendar")
         return jsonify(error="Não foi possível agendar agora. Tente novamente em instantes."), 503
@@ -425,7 +548,7 @@ def api_book():
 
 # ------------------------------------------------------------------ cliente: ver / cancelar / remarcar
 def get_appt(token):
-    return find("Agendamentos", "codigo", token, TTL_APPTS) if token else None
+    return find_appt(token) if token else None
 
 
 def change_state(a):
@@ -447,10 +570,9 @@ def change_state(a):
 @app.route("/api/manage/<token>")
 def api_manage(token):
     try:
-        invalidate("Agendamentos")
         a = get_appt(token)
         if not a:
-            return jsonify(error="Agendamento não encontrado."), 404
+            return jsonify(error="Agendamento não encontrado ou já cancelado."), 404
         ok, reason = change_state(a)
         left = max(0, MAX_RESCHEDULES - int(num(a.get("remarcacoes"))))
         return jsonify(client=a["cliente"], service=a["servico"], barber=a["barbeiro"],
@@ -479,15 +601,15 @@ def api_manage_slots(token):
 def api_manage_cancel(token):
     try:
         with _book_lock:
-            invalidate("Agendamentos")
+            invalidate_cal()
             a = get_appt(token)
             if not a:
                 return jsonify(error="Agendamento não encontrado."), 404
             ok, reason = change_state(a)
             if not ok:
                 return jsonify(error=reason), 403
-            a["status"] = "cancelado"
-            write_appt(a)
+            get_calendar().delete(a["_cal"], a["_event"])  # some da agenda e libera o horário
+            invalidate_cal()
         return jsonify(ok=True)
     except Exception:
         log.exception("cancel")
@@ -500,7 +622,7 @@ def api_manage_reschedule(token):
     d, t = parse_date(j.get("date")), parse_time(j.get("time"))
     try:
         with _book_lock:
-            invalidate("Agendamentos")
+            invalidate_cal()
             a = get_appt(token)
             if not a:
                 return jsonify(error="Agendamento não encontrado."), 404
@@ -512,9 +634,8 @@ def api_manage_reschedule(token):
             if not d or t is None or fmt_time(t) not in free_slots(
                     a["barbeiro_id"], int(num(a.get("minutos"), 30)), d, ignore_code=token):
                 return jsonify(error="Esse horário não está mais livre. Escolha outro."), 409
-            a["data"], a["hora"] = d.isoformat(), fmt_time(t)
-            a["remarcacoes"] = str(int(num(a.get("remarcacoes"))) + 1)
-            write_appt(a)
+            patch_appt(a, data=d.isoformat(), hora=fmt_time(t),
+                       remarcacoes=str(int(num(a.get("remarcacoes"))) + 1))
         return jsonify(ok=True)
     except Exception:
         log.exception("reschedule")
@@ -525,17 +646,71 @@ def api_manage_reschedule(token):
 def api_manage_optout(token):
     try:
         with _book_lock:
-            invalidate("Agendamentos")
+            invalidate_cal()
             a = get_appt(token)
             if not a:
                 return jsonify(error="Agendamento não encontrado."), 404
-            a["optout"] = "sim"
-            write_appt(a)
+            patch_appt(a, optout="sim")
         return jsonify(ok=True)
     except Exception:
         log.exception("optout")
         return jsonify(error="Não foi possível concluir."), 503
 
+
+# ------------------------------------------------------------------ atendimentos -> financeiro
+_sync_lock = threading.Lock()
+
+
+def sync_receitas():
+    """Atendimento cujo horário já passou vira uma receita na aba Lancamentos e o evento fica `concluido`.
+
+    Cliente que faltou: apague o evento na agenda (ou marque como "disponível") antes disso, e nada é lançado.
+    Idempotente: o código do atendimento é gravado em `origem`, então rodar de novo não duplica.
+    """
+    if not _sync_lock.acquire(blocking=False):
+        return 0
+    done = 0
+    try:
+        n = now()
+        lancados = {r.get("origem") for r in table("Lancamentos", 0)}
+        for cid in all_calendars():
+            for ev in get_calendar().list_events(cid, n - timedelta(days=SYNC_LOOKBACK_DAYS), n):
+                a = agenda.appt_from_event(ev)
+                if not a or ev["free"] or a["status"] != "agendado" or ev["end"] > n:
+                    continue
+                try:
+                    if a["codigo"] not in lancados:
+                        append_row("Lancamentos", {
+                            "id": a["codigo"], "data": a["data"], "tipo": "receita", "categoria": "servico",
+                            "descricao": f"{a['servico']} – {a['cliente']}", "valor": num(a.get("preco")),
+                            "forma_pgto": "", "barbeiro": a["barbeiro"], "origem": a["codigo"],
+                            "criado_em": n.isoformat(timespec="seconds")})
+                        lancados.add(a["codigo"])
+                    patch_appt(a, status="concluido")
+                    done += 1
+                except Exception:
+                    log.exception("sync %s", a.get("codigo"))
+    except Exception:
+        log.exception("sync")
+    finally:
+        _sync_lock.release()
+    return done
+
+
+def start_sync():
+    if os.environ.get("SYNC_ENABLED", "1") != "1":
+        return
+
+    def loop():
+        time.sleep(30)
+        while True:
+            sync_receitas()
+            time.sleep(SYNC_MINUTES * 60)
+
+    threading.Thread(target=loop, daemon=True, name="sync-receitas").start()
+
+
+start_sync()
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
