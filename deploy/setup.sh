@@ -65,8 +65,10 @@ ADMIN_USER=admin
 ADMIN_PASS=$NEW_PASS
 DB_PATH=$APP_DIR/data/barbearia.db
 BACKUP_DIR=$APP_DIR/backups
-# Google Sheets: envie o JSON da conta de serviço para $APP_DIR/secrets/google-sa.json e preencha o SHEET_ID
-SHEET_ID=COLE_AQUI_O_ID_DA_PLANILHA
+# Google: envie o JSON da conta de serviço para $APP_DIR/secrets/google-sa.json e preencha os IDs abaixo
+SHEET_FINANCEIRO_ID=COLE_AQUI_O_ID_DA_PLANILHA_FINANCEIRA
+SHEET_ESTOQUE_ID=COLE_AQUI_O_ID_DA_PLANILHA_DE_ESTOQUE
+CALENDAR_ID=COLE_AQUI_O_ID_DA_AGENDA
 GOOGLE_SA_FILE=$APP_DIR/secrets/google-sa.json
 # Avisos no celular (veja "Monitoramento" no guia): ALERT_NTFY_URL=https://ntfy.sh/<nome-secreto>
 # Contato exibido na Política de Privacidade: PRIVACY_CONTACT=seuemail@exemplo.com
