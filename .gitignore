@@ -11,3 +11,4 @@ credenciais-google.json
 google-sa.json
 *.json.key
 .tools/
+*credenciais
