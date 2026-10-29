@@ -106,36 +106,29 @@ def num(v, default=0.0):
 
 # ------------------------------------------------------------------ ROTAS DE ADMINISTRAÇÃO
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        senha = request.form.get('senha')
-        # Pode alterar a palavra-passe abaixo
-        if senha == 'admin123': 
-            session['admin_logado'] = True
-            return redirect('/admin')
-        return "Senha incorreta. <a href='/login'>Tentar novamente</a>"
-
-    return '''
-        <div style="font-family: sans-serif; max-width: 300px; margin: 100px auto; text-align: center;">
-            <h2>Acesso Restrito</h2>
-            <form method="POST" style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="password" name="senha" placeholder="Senha" required style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-                <button type="submit" style="padding: 10px; background: #111; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Entrar</button>
-            </form>
-        </div>
-    '''
-
-@app.route('/logout')
-def logout():
-    session.pop('admin_logado', None)
-    return redirect('/login')
-
-
 @app.route('/admin', methods=['GET'])
 def admin_panel():
     if not session.get('admin_logado'):
         return redirect('/login')
+    
+    # O admin.html original precisa destas variáveis para ser renderizado sem dar Erro 500
+    try:
+        lancamentos = table("Lancamentos", ttl=0)
+    except Exception as e:
+        log.error(f"Erro ao ler Lancamentos: {e}")
+        lancamentos = []
+    
+    dados = []
+    for l in lancamentos:
+        dados.append({
+            'nome': l.get('descricao', ''),
+            'servico': l.get('categoria', ''),
+            'data': l.get('data', ''),
+            'status': l.get('tipo', '')
+        })
+        
+    # Adicionamos shop=shop() e css_url=css_url() para satisfazer o template HTML
+    return render_template('admin.html', dados=dados, shop=shop(), css_url=css_url(), demo=False)
     
     # Lê a aba "Lancamentos" da folha de cálculo usando a função nativa do projeto
     try:
