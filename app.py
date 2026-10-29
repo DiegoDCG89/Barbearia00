@@ -757,31 +757,25 @@ def api_manage_cancel(token):
         log.exception("cancel")
         return jsonify(error="Não foi possível cancelar agora. Tente novamente."), 503
 
+# ------------------------------------------------------------------ atendimentos -> financeiro
+# (Mantenha a função sync_receitas() original e apenas substitua o bloco start_sync abaixo)
 
-@app.route("/api/manage/<token>/reschedule", methods=["POST"])
-def api_manage_reschedule(token):
-    j = request.get_json(silent=True) or {}
-    d, t = parse_date(j.get("date")), parse_time(j.get("time"))
+# Rota para a Vercel (Serverless) - Substitui o start_sync() com Thread
+@app.route("/api/cron/sync")
+def api_cron_sync():
+    # Segurança básica: exige uma chave na URL para não ser executado por curiosos
+    chave = request.args.get("key")
+    if chave != os.environ.get("CRON_SECRET", "chave_cron_barbearia"):
+        return jsonify(error="Não autorizado"), 401
+    
     try:
-        with _book_lock:
-            invalidate_cal()
-            a = get_appt(token)
-            if not a:
-                return jsonify(error="Agendamento não encontrado."), 404
-            ok, reason = change_state(a)
-            if not ok:
-                return jsonify(error=reason), 403
-            if int(num(a.get("remarcacoes"))) >= MAX_RESCHEDULES:
-                return jsonify(error="Limite de remarcações atingido. Fale com a barbearia."), 403
-            if not d or t is None or fmt_time(t) not in free_slots(
-                    a["barbeiro_id"], int(num(a.get("minutos"), 30)), d, ignore_code=token):
-                return jsonify(error="Esse horário não está mais livre. Escolha outro."), 409
-            patch_appt(a, data=d.isoformat(), hora=fmt_time(t),
-                       remarcacoes=str(int(num(a.get("remarcacoes"))) + 1))
-        return jsonify(ok=True)
-    except Exception:
-        log.exception("reschedule")
-        return jsonify(error="Não foi possível remarcar agora. Tente novamente."), 503
+        feitos = sync_receitas()
+        return jsonify(ok=True, sincronizados=feitos)
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+if __name__ == "__main__":
+    app.run(debug=True, port=8080)
 
 
 @app.route("/api/manage/<token>/optout", methods=["POST"])
