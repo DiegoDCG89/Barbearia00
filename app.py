@@ -14,13 +14,42 @@ from zoneinfo import ZoneInfo
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
-
+from flask import Flask, render_template, request, redirect, session
+import sheets  # Importa suas funções
 import agenda
 from sheets import SCHEMA, Sheets
 
 log = logging.getLogger("barbearia")
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=int(os.environ.get("PROXY_HOPS", "1")))
+
+app = Flask(__name__)
+
+# Rota para renderizar o painel com os dados
+@app.route('/admin', methods=['GET'])
+def admin_panel():
+    if not session.get('admin_logado'):
+        return redirect('/login')
+    
+    dados = sheets.consultar_dados()
+    return render_template('admin.html', dados=dados)
+
+# Rota para receber alterações feitas no painel
+@app.route('/admin/salvar', methods=['POST'])
+def salvar_dados():
+    if not session.get('admin_logado'):
+        return redirect('/login')
+    
+    novo_dado = {
+        'nome': request.form['nome'],
+        'servico': request.form['servico'],
+        'data': request.form['data'],
+        'status': request.form['status']
+    }
+    
+    sheets.adicionar_registro(novo_dado)
+    return redirect('/admin')
+
 
 TZ = ZoneInfo("America/Sao_Paulo")
 MAX_DAYS_AHEAD = int(os.environ.get("MAX_DAYS_AHEAD", "30"))
