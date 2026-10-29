@@ -12,9 +12,9 @@ from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
 from zoneinfo import ZoneInfo
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for, session
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask import Flask, render_template, request, redirect, session
+
 import sheets  # Importa suas funções
 import agenda
 from sheets import SCHEMA, Sheets
@@ -23,9 +23,57 @@ log = logging.getLogger("barbearia")
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=int(os.environ.get("PROXY_HOPS", "1")))
 
-app = Flask(__name__)
+# Chave secreta obrigatória para o uso de 'session' no Flask
+app.secret_key = os.environ.get("SECRET_KEY", "chave_super_secreta_barbearia")
 
-# Rota para renderizar o painel com os dados
+TZ = ZoneInfo("America/Sao_Paulo")
+MAX_DAYS_AHEAD = int(os.environ.get("MAX_DAYS_AHEAD", "30"))
+MAX_OPEN_PER_PHONE = int(os.environ.get("MAX_OPEN_PER_PHONE", "2"))
+BOOK_PER_IP_HOUR = int(os.environ.get("BOOK_PER_IP_HOUR", "10"))
+CHANGE_DEADLINE_HOURS = int(os.environ.get("CHANGE_DEADLINE_HOURS", "2"))
+MAX_RESCHEDULES = int(os.environ.get("MAX_RESCHEDULES", "3"))
+MIN_FILL_MS = 3000
+PRIVACY_VERSION = "1.0"
+TTL_CATALOG = 60   # segundos (Config, serviços, horários...)
+TTL_APPTS = 15     # segundos (eventos do dia na agenda; é invalidado a cada gravação nossa)
+SYNC_MINUTES = int(os.environ.get("SYNC_MINUTES", "10"))           # de quanto em quanto tempo lança atendimentos feitos
+SYNC_LOOKBACK_DAYS = int(os.environ.get("SYNC_LOOKBACK_DAYS", "14"))  # até quantos dias atrás procura atendimentos
+
+backend = None  # planilhas; criado sob demanda (os testes injetam um backend falso)
+calendar_backend = None  # Google Agenda; idem
+_cache = {}
+_cache_lock = threading.RLock()
+_book_lock = threading.Lock()
+_hits = defaultdict(deque)
+
+# ------------------------------------------------------------------ ROTAS DE ADMINISTRAÇÃO
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        senha = request.form.get('senha')
+        # Defina a sua senha aqui
+        if senha == 'admin123': 
+            session['admin_logado'] = True
+            return redirect('/admin')
+        return "Senha incorreta. <a href='/login'>Tentar novamente</a>"
+
+    return '''
+        <div style="font-family: sans-serif; max-width: 300px; margin: 100px auto; text-align: center;">
+            <h2>Acesso Restrito</h2>
+            <form method="POST" style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="password" name="senha" placeholder="Senha" required style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <button type="submit" style="padding: 10px; background: #111; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Entrar</button>
+            </form>
+        </div>
+    '''
+
+@app.route('/logout')
+def logout():
+    session.pop('admin_logado', None)
+    return redirect('/login')
+
+
 @app.route('/admin', methods=['GET'])
 def admin_panel():
     if not session.get('admin_logado'):
@@ -34,7 +82,7 @@ def admin_panel():
     dados = sheets.consultar_dados()
     return render_template('admin.html', dados=dados)
 
-# Rota para receber alterações feitas no painel
+
 @app.route('/admin/salvar', methods=['POST'])
 def salvar_dados():
     if not session.get('admin_logado'):
@@ -50,27 +98,7 @@ def salvar_dados():
     sheets.adicionar_registro(novo_dado)
     return redirect('/admin')
 
-
-TZ = ZoneInfo("America/Sao_Paulo")
-MAX_DAYS_AHEAD = int(os.environ.get("MAX_DAYS_AHEAD", "30"))
-MAX_OPEN_PER_PHONE = int(os.environ.get("MAX_OPEN_PER_PHONE", "2"))
-BOOK_PER_IP_HOUR = int(os.environ.get("BOOK_PER_IP_HOUR", "10"))
-CHANGE_DEADLINE_HOURS = int(os.environ.get("CHANGE_DEADLINE_HOURS", "2"))
-MAX_RESCHEDULES = int(os.environ.get("MAX_RESCHEDULES", "3"))
-MIN_FILL_MS = 3000
-PRIVACY_VERSION = "1.0"
-TTL_CATALOG = 60   # segundos (Config, serviços, horários...)
-TTL_APPTS = 15     # segundos (eventos do dia na agenda; é invalidado a cada gravação nossa)
-SYNC_MINUTES = int(os.environ.get("SYNC_MINUTES", "10"))          # de quanto em quanto tempo lança atendimentos feitos
-SYNC_LOOKBACK_DAYS = int(os.environ.get("SYNC_LOOKBACK_DAYS", "14"))  # até quantos dias atrás procura atendimentos
-
-backend = None  # planilhas; criado sob demanda (os testes injetam um backend falso)
-calendar_backend = None  # Google Agenda; idem
-_cache = {}
-_cache_lock = threading.RLock()
-_book_lock = threading.Lock()
-_hits = defaultdict(deque)
-
+# ------------------------------------------------------------------ FIM ROTAS ADMIN
 
 def get_backend():
     global backend
@@ -447,12 +475,6 @@ def privacy():
 @app.route("/agendamento/<token>")
 def manage_page(token):
     return render_template("manage.html", shop=shop(), css_url=css_url(), token=token)
-
-
-@app.route("/admin")
-def admin_redirect():
-    """Sem painel próprio: a planilha financeira é o painel do dono."""
-    return redirect(get_backend().url("financeiro"))
 
 
 @app.route("/estoque")
