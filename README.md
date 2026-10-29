@@ -1,4 +1,4 @@
-# D.Lourenço Barbearia – site + ERP
+# 00 Barbearia – site + ERP
     pip install -r requirements.txt
     cp .env.example .env   # preencha e exporte as variáveis (ex.: `set -a; . ./.env; set +a`)
     gunicorn -w 1 app:app  # 1 worker: o agendador de lembretes roda dentro do processo
