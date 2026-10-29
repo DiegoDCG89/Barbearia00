@@ -176,6 +176,81 @@ def salvar_dados():
 
 # ------------------------------------------------------------------ FIM ROTAS ADMIN
 
+# ------------------------------------------------------------------ API DO PAINEL DE CADASTROS
+
+@app.route('/api/admin/barbers', methods=['GET', 'POST'])
+def api_admin_barbers():
+    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
+    
+    if request.method == 'GET':
+        res = []
+        for r in table("Barbeiros", ttl=0):
+            res.append({
+                "id": r.get("id"),
+                "name": r.get("nome"),
+                "role": r.get("funcao"),
+                "calendar_id": r.get("calendario"),
+                "active": 1 if is_active(r) else 0
+            })
+        return jsonify(res)
+        
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        if not data.get("id"):  # É um novo cadastro
+            novo_id = "b_" + secrets.token_hex(3)
+            append_row("Barbeiros", {
+                "id": novo_id,
+                "nome": data.get("name", ""),
+                "funcao": data.get("role", ""),
+                "calendario": data.get("calendar_id", ""),
+                "ativo": "sim"
+            })
+            return jsonify(ok=True)
+        return jsonify(error="A edição de registos antigos deve ser feita na folha de cálculo. Os cadastros novos funcionam por aqui!"), 400
+
+@app.route('/api/admin/services', methods=['GET', 'POST'])
+def api_admin_services():
+    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
+    if request.method == 'GET':
+        res = []
+        for r in table("Servicos", ttl=0):
+            res.append({
+                "id": r.get("id"),
+                "name": r.get("nome"),
+                "description": r.get("descricao"),
+                "price": num(r.get("preco")),
+                "minutes": int(num(r.get("minutos"))),
+                "active": 1 if is_active(r) else 0
+            })
+        return jsonify(res)
+    
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        if not data.get("id"):
+            append_row("Servicos", {
+                "id": "s_" + secrets.token_hex(3),
+                "nome": data.get("name", ""),
+                "descricao": data.get("description", ""),
+                "minutos": data.get("minutes", "30"),
+                "preco": data.get("price", "0"),
+                "ativo": "sim"
+            })
+            return jsonify(ok=True)
+        return jsonify(error="A edição deve ser feita no Sheets. Novos serviços funcionam!"), 400
+
+@app.route('/api/admin/products', methods=['GET'])
+def api_admin_products():
+    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
+    return jsonify([]) # Retorno vazio para não travar o painel
+
+@app.route('/api/admin/gcal', methods=['GET'])
+def api_admin_gcal():
+    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
+    return jsonify(ok=True, email="Integrado com as suas planilhas")
+
+# ------------------------------------------------------------------
+
+
 
 def is_active(row):
     return row.get("ativo", "").strip().lower() not in ("nao", "não", "n", "0", "false", "off", "inativo")
