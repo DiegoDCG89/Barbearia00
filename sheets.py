@@ -8,6 +8,7 @@ Onde cada aba mora:
 Os agendamentos NÃO ficam em planilha: ficam no Google Agenda (veja agenda.py).
 """
 import json
+import gspread
 import os
 import threading
 from datetime import date
@@ -46,6 +47,23 @@ TEXT_RANGES = {
     "Resumo": ["B1"],            # mês (AAAA-MM)
 }
 FORMULA_TABS = {"Resumo", "Produtos"}   # abas com fórmulas (gravadas como USER_ENTERED)
+
+# A autenticação já deve estar configurada aqui com suas credenciais
+gc = gspread.service_account(filename='suas_credenciais.json')
+planilha = gc.open("SuaPlanilhaBaseDeDados").sheet1
+
+def consultar_dados():
+    # Retorna todos os registros para o painel
+    return planilha.get_all_records()
+
+def adicionar_registro(dados):
+    # Adiciona uma nova linha
+    planilha.append_row([dados['nome'], dados['servico'], dados['data'], dados['status']])
+
+def atualizar_registro(linha, dados):
+    # Atualiza uma linha específica com base no índice
+    planilha.update(f'A{linha}:D{linha}', [[dados['nome'], dados['servico'], dados['data'], dados['status']]])
+
 
 
 def _estoque_formula(row):
