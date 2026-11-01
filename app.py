@@ -105,6 +105,31 @@ def num(v, default=0.0):
         return default
 
 # ------------------------------------------------------------------ ROTAS DE ADMINISTRAÇÃO
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Pode alterar a senha 'admin123' para a senha que preferir
+        if request.form.get('senha') == 'admin123': 
+            session['admin_logado'] = True
+            return redirect('/admin')
+        return "Senha incorreta. Volte atrás e tente novamente.", 401
+    
+    # Ecrã simples de login
+    return '''
+    <div style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6;">
+        <form method="post" style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+            <h2 style="margin-bottom: 1.5rem;">Acesso Restrito</h2>
+            <input type="password" name="senha" placeholder="Digite a senha" required style="padding: 0.5rem; width: 100%; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <br>
+            <button type="submit" style="padding: 0.75rem; width: 100%; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Entrar no Painel</button>
+        </form>
+    </div>
+    '''
+
+@app.route('/logout')
+def logout():
+    session.pop('admin_logado', None)
+    return redirect('/login')
 
 @app.route('/admin', methods=['GET'])
 def admin_panel():
