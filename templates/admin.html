@@ -5,296 +5,339 @@
 <title>ERP – Barbearia</title><meta name="robots" content="noindex">
 {% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
 </head>
-<body class="bg-gray-50 flex h-screen overflow-hidden text-gray-800">
+<body class="bg-gray-100 flex h-screen overflow-hidden antialiased">
 
-<!-- Mobile Header -->
-<header class="md:hidden bg-gray-900 text-white p-4 flex justify-between items-center z-20 shadow-md">
-  <strong>ERP · {{ shop.short_name }}</strong>
-  <button id="menu-btn" class="text-white p-2">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-  </button>
-</header>
-
-<!-- Sidebar -->
-<aside id="sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-gray-900 text-gray-400 h-full overflow-y-auto shrink-0 z-10 md:static absolute inset-y-0 left-0 transition-transform">
-  <div class="hidden md:block p-5 text-lg font-bold border-b border-gray-800 text-white">ERP · {{ shop.short_name }}</div>
-  
-  <nav id="tabs" class="flex-1 px-3 py-4 space-y-1">
-    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-2 px-2">Operacional</div>
-    <button data-t="agenda" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Agenda</button>
-    <button data-t="hor" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Horários</button>
-    <button data-t="cli" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Clientes</button>
-    <button data-t="lembretes" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Lembretes <span id="badge" class="bg-red-600 text-white rounded-full px-2 py-0.5 text-[10px] font-bold hidden">0</span></button>
-
-    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-6 px-2">Financeiro</div>
-    <button data-t="caixa" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Caixa</button>
-    <button data-t="lanc" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Gastos / Contas</button>
-
-    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-6 px-2">Gestão</div>
-    <button data-t="cad" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Cadastros</button>
-    <button data-t="estoque" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Estoque</button>
-    <button data-t="prev" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Prev. de compra</button>
-    <button data-t="rel" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Relatórios</button>
-
-    <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 mt-6 px-2">Sistema</div>
-    <button data-t="site" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Site</button>
-    <button data-t="bkp" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Backup</button>
-    <button data-t="priv" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">Privacidade</button>
-    {% if demo %}<button data-t="wa" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-800 text-green-400 mt-2">WhatsApp (demo)</button>{% endif %}
-  </nav>
-
-  <div class="p-4 border-t border-gray-800 text-sm bg-gray-900">
-      <a href="/api/admin/backup" class="block text-gray-500 hover:text-white mb-3" title="Baixa uma cópia do banco de dados">Baixar backup local</a>
-      <a href="/" class="block text-gray-500 hover:text-white">Ver site ao vivo ↗</a>
+<!-- MENU LATERAL (SIDEBAR) -->
+<aside class="w-64 bg-gray-900 text-gray-300 flex flex-col h-full shadow-2xl z-20 flex-shrink-0">
+  <div class="px-6 py-5 bg-black text-white font-bold text-xl tracking-wide flex items-center justify-between border-b border-gray-800">
+    ERP · {{ shop.short_name }}
   </div>
+  
+  <nav id="tabs" class="flex-1 overflow-y-auto py-4 space-y-1 custom-scrollbar">
+    
+    <!-- TEMA: ATENDIMENTO -->
+    <div class="group">
+      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
+        Atendimento <span class="text-gray-600 group-hover:text-gray-300">▾</span>
+      </div>
+      <div class="hidden group-hover:flex flex-col pb-2">
+        <button data-t="agenda" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Agenda</button>
+        <button data-t="cli" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Clientes</button>
+        <button data-t="lembretes" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent relative">Lembretes <span id="badge" class="bg-red-600 text-white rounded-full px-2 py-0.5 text-xs absolute right-4 top-2 hidden">0</span></button>
+        {% if demo %}<button data-t="wa" class="text-left px-8 py-2 text-sm text-green-500 hover:bg-gray-800 hover:text-green-400 transition-all w-full border-l-4 border-transparent">WhatsApp (demo)</button>{% endif %}
+      </div>
+    </div>
+
+    <!-- TEMA: FINANCEIRO -->
+    <div class="group">
+      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
+        Financeiro <span class="text-gray-600 group-hover:text-gray-300">▾</span>
+      </div>
+      <div class="hidden group-hover:flex flex-col pb-2">
+        <button data-t="caixa" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Caixa</button>
+        <button data-t="lanc" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Gastos / Contas</button>
+      </div>
+    </div>
+
+    <!-- TEMA: ESTOQUE -->
+    <div class="group">
+      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
+        Estoque <span class="text-gray-600 group-hover:text-gray-300">▾</span>
+      </div>
+      <div class="hidden group-hover:flex flex-col pb-2">
+        <button data-t="estoque" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Estoque</button>
+        <button data-t="prev" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Previsão de compra</button>
+      </div>
+    </div>
+
+    <!-- TEMA: GESTÃO -->
+    <div class="group">
+      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
+        Gestão <span class="text-gray-600 group-hover:text-gray-300">▾</span>
+      </div>
+      <div class="hidden group-hover:flex flex-col pb-2">
+        <button data-t="cad" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Cadastros</button>
+        <button data-t="hor" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Horários e Folgas</button>
+        <button data-t="rel" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Relatórios</button>
+      </div>
+    </div>
+
+    <!-- TEMA: SISTEMA -->
+    <div class="group">
+      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
+        Sistema <span class="text-gray-600 group-hover:text-gray-300">▾</span>
+      </div>
+      <div class="hidden group-hover:flex flex-col pb-2">
+        <button data-t="site" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Site e Fotos</button>
+        <button data-t="bkp" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Segurança (Backup)</button>
+        <button data-t="priv" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Privacidade (LGPD)</button>
+      </div>
+    </div>
+  </nav>
 </aside>
 
-<!-- Main Content -->
-<div class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
-  <div id="alertbar" class="hidden bg-red-600 text-white text-sm px-4 py-3 font-medium"></div>
+<!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+<div class="flex-1 flex flex-col h-screen overflow-hidden">
   
-  <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-
-<section id="lembretes" hidden><p class="text-sm text-gray-600 mb-2">Clique em <b>Enviar</b> (abre o WhatsApp Business com a mensagem pronta) e depois em <b>Feito</b>. A lista atualiza sozinha a cada minuto.</p><div id="rem"></div></section>
-
-<section id="caixa">
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 mb-6">
-    <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
-      <h2 class="font-bold text-xl">Fechamento do dia</h2>
-      <label class="text-sm font-medium">Dia <input type="date" id="cday" class="border border-gray-300 rounded-md p-1.5 ml-2"></label>
-    </div>
-    <div id="cl-cards" class="grid sm:grid-cols-4 gap-3 mb-5"></div>
-    <div id="cl-methods" class="mb-5"></div>
-    <div id="cl-barbers" class="mb-5"></div>
-    <form id="clform" class="grid sm:grid-cols-4 gap-3 items-end bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <label class="text-xs font-medium text-gray-700">Dinheiro na abertura (troco)<input name="opening" type="number" step="0.01" min="0" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Dinheiro contado na gaveta<input name="counted" type="number" step="0.01" min="0" required class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Observações<input name="notes" maxlength="200" class="border p-2 rounded-md w-full mt-1"></label>
-      <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md p-2 font-medium transition-colors">Fechar caixa</button>
-    </form>
-    <p id="cl-hint" class="text-xs text-gray-500 mt-3"></p><div id="cl-result" class="text-sm mt-3"></div><div id="cl-recent" class="text-xs text-gray-500 mt-2"></div>
-  </div>
+  <header class="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm z-10">
+    <h1 class="text-2xl font-bold text-gray-800" id="page-title">Agenda</h1>
+    <span class="flex items-center gap-4 text-sm font-medium">
+      <a href="/api/admin/backup" class="text-gray-500 hover:text-gray-900 transition-colors" title="Baixa uma cópia do banco de dados">Baixar backup</a>
+      <a href="/" target="_blank" class="bg-gray-900 text-white px-4 py-2 rounded shadow hover:bg-gray-800 transition-colors">Ver site ↗</a>
+    </span>
+  </header>
   
-  <div class="flex items-center gap-3 mb-4">
-    <h2 class="font-bold text-xl">Visão Mensal</h2>
-    <input type="month" id="month" class="border border-gray-300 rounded-md p-1.5 text-sm">
-  </div>
-  <div class="grid sm:grid-cols-3 gap-4 mb-6" id="cards"></div>
-  <div id="mmethods" class="text-sm text-gray-600 mb-6 bg-white p-4 rounded-lg border border-gray-200 shadow-sm"></div>
+  <div id="alertbar" class="hidden bg-red-600 text-white text-sm px-8 py-2 shadow-inner"></div>
   
-  <h2 class="font-bold text-lg mb-3">Repasse por barbeiro</h2><div id="barbers" class="mb-8"></div>
-  <h2 class="font-bold text-lg mb-3">Lançamentos do mês</h2><div id="txs"></div>
-</section>
+  <main class="flex-1 overflow-y-auto p-8">
 
-<section id="agenda" hidden>
-  <form id="newappt" class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200 grid sm:grid-cols-6 gap-3 mb-6 items-end">
-    <h2 class="font-bold text-lg sm:col-span-6 border-b pb-2">Novo agendamento <span class="text-sm font-normal text-gray-500">(telefone ou balcão)</span></h2>
-    <label class="text-xs font-medium text-gray-700 sm:col-span-2">Cliente<input name="name" required maxlength="80" class="border p-2 rounded-md w-full mt-1"></label>
-    <label class="text-xs font-medium text-gray-700 sm:col-span-2">WhatsApp (opcional)<input name="phone" type="tel" placeholder="(12) 99999-9999" class="border p-2 rounded-md w-full mt-1"></label>
-    <label class="text-xs font-medium text-gray-700">Barbeiro<select name="barber" id="nb" required class="border p-2 rounded-md w-full mt-1"></select></label>
-    <label class="text-xs font-medium text-gray-700">Serviço<select name="service" id="ns" required class="border p-2 rounded-md w-full mt-1"></select></label>
-    <label class="text-xs font-medium text-gray-700">Data<input name="date" id="nd" type="date" required class="border p-2 rounded-md w-full mt-1"></label>
-    <label class="text-xs font-medium text-gray-700 sm:col-span-2">Horário livre<select id="nt" class="border p-2 rounded-md w-full mt-1"></select></label>
-    <label class="text-xs font-medium text-gray-700">ou outro horário<input id="nto" type="time" step="300" class="border p-2 rounded-md w-full mt-1"></label>
-    <div class="sm:col-span-3 flex flex-col gap-2 mt-2">
-      <label class="text-sm flex items-center gap-2"><input type="checkbox" name="concluido" class="rounded"> Já atendido (lançar no caixa)</label>
-      <label class="text-sm flex items-center gap-2"><input type="checkbox" name="consent" class="rounded"> Cliente autorizou receber mensagens</label>
-    </div>
-    <div id="npayrow" class="hidden sm:col-span-6 grid sm:grid-cols-3 gap-3 bg-gray-50 p-4 rounded-lg mt-2 border border-gray-200">
-      <label class="text-xs font-medium text-gray-700">Forma de pagamento<select name="method" class="border p-2 rounded-md w-full mt-1"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
-      <label class="text-xs font-medium text-gray-700">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-2 rounded-md w-full mt-1"></label>
-    </div>
-    <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md p-2.5 sm:col-span-6 font-semibold transition-colors mt-2">Agendar Horário</button>
-  </form>
-  
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="font-bold text-lg">Agenda do Dia</h2>
-    <label class="text-sm font-medium">Dia <input type="date" id="day" class="border border-gray-300 rounded-md p-1.5 ml-2"></label>
-  </div>
-  <div id="appts"></div>
-</section>
+    <section id="lembretes" hidden><p class="text-sm text-gray-600 mb-4">Clique em <b>Enviar</b> (abre o WhatsApp Business com a mensagem pronta) e depois em <b>Feito</b>. A lista atualiza sozinha a cada minuto.</p><div id="rem"></div></section>
 
-<section id="lanc" hidden><form id="txform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 grid sm:grid-cols-5 gap-3">
-  <select name="kind" class="border p-2 rounded-md"><option value="saida">Gasto / Conta</option><option value="entrada">Receita avulsa</option></select>
-  <select name="category" class="border p-2 rounded-md"><option>Conta Fixa</option><option>Gasto</option><option>Aluguel</option><option>Energia</option><option>Água</option><option>Internet</option><option>Outros</option></select>
-  <input name="description" placeholder="Descrição" maxlength="120" class="border p-2 rounded-md">
-  <input name="amount" type="number" step="0.01" min="0.01" placeholder="Valor" required class="border p-2 rounded-md">
-  <input name="day" type="date" required class="border p-2 rounded-md">
-  <select name="method" class="border p-2 rounded-md"><option value="">Pagamento (opcional)</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select>
-  <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md p-2 sm:col-span-5 font-semibold transition-colors">Registrar Lançamento</button></form></section>
+    <section id="caixa" hidden>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-6 border-b pb-4">
+          <h2 class="text-xl font-bold text-gray-800">Fechamento do dia</h2>
+          <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Dia <input type="date" id="cday" class="border rounded-lg p-2 bg-gray-50"></label>
+        </div>
+        <div id="cl-cards" class="grid sm:grid-cols-4 gap-4 mb-6"></div>
+        <div class="grid sm:grid-cols-2 gap-6 mb-6">
+          <div id="cl-methods" class="overflow-x-auto"></div>
+          <div id="cl-barbers" class="overflow-x-auto"></div>
+        </div>
+        <form id="clform" class="grid sm:grid-cols-4 gap-3 items-end bg-gray-50 p-4 rounded-lg">
+          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Troco Inicial<input name="opening" type="number" step="0.01" min="0" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
+          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Dinheiro na Gaveta<input name="counted" type="number" step="0.01" min="0" required class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
+          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Observações<input name="notes" maxlength="200" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
+          <button class="bg-gray-900 text-white rounded-lg p-2.5 font-bold hover:bg-gray-800 transition-colors">Fechar caixa</button>
+        </form>
+        <p id="cl-hint" class="text-xs text-gray-500 mt-3"></p><div id="cl-result" class="text-sm mt-3 bg-gray-50 p-3 rounded"></div><div id="cl-recent" class="text-xs text-gray-500 mt-3"></div>
+      </div>
+      
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Resumo Mensal</h2>
+        <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Mês <input type="month" id="month" class="border rounded-lg p-2 bg-white shadow-sm"></label>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-6 my-6" id="cards"></div>
+      <div id="mmethods" class="text-sm font-medium text-gray-700 bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-8"></div>
+      
+      <h2 class="text-lg font-bold mb-3 text-gray-800">Repasse por barbeiro</h2>
+      <div id="barbers" class="overflow-x-auto mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
+      
+      <h2 class="text-lg font-bold mb-3 text-gray-800">Lançamentos do mês</h2>
+      <div id="txs" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
+    </section>
 
-<section id="estoque" hidden><div id="prods" class="mb-6"></div>
-  <form id="mvform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 grid sm:grid-cols-5 gap-3">
-    <h2 class="font-bold text-lg sm:col-span-5 border-b pb-2 mb-2">Movimentar Estoque</h2>
-    <select name="product" id="mvprod" class="border p-2 rounded-md"></select>
-    <select name="mode" class="border p-2 rounded-md"><option value="venda">Venda</option><option value="compra">Compra (entrada)</option><option value="consumo">Consumo interno</option></select>
-    <input name="qty" type="number" min="1" placeholder="Qtd" required class="border p-2 rounded-md">
-    <input name="cost" type="number" step="0.01" min="0" placeholder="Custo total (compra)" class="border p-2 rounded-md">
-    <select name="method" class="border p-2 rounded-md" title="Forma de pagamento (só para vendas)"><option value="">Pagamento da venda</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select>
-    <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md p-2 font-medium transition-colors">Registrar</button></form></section>
+    <section id="agenda">
+      <form id="newappt" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-6 gap-4 mb-8 items-end relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+        <h2 class="font-bold text-lg text-gray-800 sm:col-span-6 flex items-center gap-2">Novo Agendamento <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Manual</span></h2>
+        
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Cliente<input name="name" required maxlength="80" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none transition-all"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">WhatsApp <span class="normal-case font-normal text-gray-400">(opcional)</span><input name="phone" type="tel" placeholder="(12) 99999-9999" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none transition-all"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Barbeiro<select name="barber" id="nb" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></select></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Serviço<select name="service" id="ns" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></select></label>
+        
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Data<input name="date" id="nd" type="date" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Horário Livre<select id="nt" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none font-medium"></select></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Ou personalizar<input id="nto" type="time" step="300" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></label>
+        
+        <label class="text-sm font-medium text-gray-700 flex items-center gap-2 sm:col-span-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors"><input type="checkbox" name="concluido" class="w-4 h-4 text-gray-900 rounded focus:ring-gray-900"> Já atendido (lançar no caixa)</label>
+        <label class="text-sm font-medium text-gray-700 flex items-center gap-2 sm:col-span-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors"><input type="checkbox" name="consent" class="w-4 h-4 text-gray-900 rounded focus:ring-gray-900"> Cliente autorizou mensagens</label>
+        
+        <div id="npayrow" class="hidden sm:col-span-6 grid sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg mt-2 border border-gray-100">
+          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Forma de pagamento<select name="method" class="border p-2.5 rounded-lg w-full mt-1 bg-white"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
+          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
+          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
+        </div>
+        
+        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-6 hover:bg-gray-800 transition-colors shadow hover:shadow-md">Agendar</button>
+      </form>
+      
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Calendário do Dia</h2>
+        <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Dia <input type="date" id="day" class="border rounded-lg p-2 bg-white shadow-sm font-medium"></label>
+      </div>
+      <div id="appts" class="mt-2 overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
+    </section>
 
-<section id="prev" hidden><p class="text-sm text-gray-600 mb-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">Média móvel ponderada das últimas 8 semanas de consumo, horizonte de 30 dias, com 15% de folga.</p><div id="fc"></div></section>
-<section id="hor" hidden>
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-    <div class="flex items-end gap-3 mb-4 border-b pb-4">
-      <label class="text-sm font-medium">Barbeiro <select id="hb" class="border border-gray-300 p-2 rounded-md ml-2"></select></label>
-      <button id="hsave" class="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors">Salvar horários</button>
-    </div>
-    <p class="text-xs text-gray-500 mb-3">Marque os dias em que o barbeiro atende. O almoço é opcional (deixe em branco se não houver).</p>
-    <div id="hgrid" class="mb-2"></div>
-  </div>
-  
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-    <h2 class="font-bold text-lg mb-4">Folgas, férias e feriados</h2>
-    <form id="toform" class="grid sm:grid-cols-6 gap-3 items-end mb-6">
-      <label class="text-xs font-medium text-gray-700 sm:col-span-2">Quem<select name="barber" id="tb" class="border p-2 rounded-md w-full mt-1"></select></label>
-      <label class="text-xs font-medium text-gray-700">De<input name="from" type="date" required class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Até (opcional)<input name="to" type="date" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Das<input name="t_from" type="time" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Às<input name="t_to" type="time" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700 sm:col-span-4">Motivo<input name="reason" maxlength="80" placeholder="Ex.: Férias, Consulta médica" class="border p-2 rounded-md w-full mt-1"></label>
-      <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md p-2 sm:col-span-2 font-medium transition-colors">Adicionar folga</button>
-      <p class="text-xs text-gray-500 sm:col-span-6">Deixe "Das/Às" em branco para bloquear o dia inteiro.</p>
-    </form>
+    <section id="lanc" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Registrar Gastos e Contas</h2>
+      <form id="txform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-5 gap-4">
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Tipo<select name="kind" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="saida">Gasto / Conta</option><option value="entrada">Receita avulsa</option></select></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Categoria<select name="category" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option>Conta Fixa</option><option>Gasto</option><option>Aluguel</option><option>Energia</option><option>Água</option><option>Internet</option><option>Outros</option></select></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Descrição<input name="description" placeholder="Ex: Conta de Luz" maxlength="120" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Valor (R$)<input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Data<input name="day" type="date" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Pagamento <span class="normal-case font-normal text-gray-400">(opcional)</span><select name="method" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="">Selecione...</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
+        <div class="sm:col-span-3 flex items-end">
+          <button class="bg-gray-900 text-white font-bold rounded-lg p-3 w-full hover:bg-gray-800 transition-colors">Lançar no Caixa</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="estoque" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Gestão de Estoque</h2>
+      <div id="prods" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-6"></div>
+      <h3 class="font-bold text-gray-800 mb-2">Registrar Movimentação</h3>
+      <form id="mvform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-5 gap-4">
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Produto<select name="product" id="mvprod" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></select></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Operação<select name="mode" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="venda">Venda</option><option value="compra">Compra (entrada)</option><option value="consumo">Consumo interno</option></select></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Quantidade<input name="qty" type="number" min="1" placeholder="Qtd" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Custo <span class="normal-case font-normal text-gray-400">(se compra)</span><input name="cost" type="number" step="0.01" min="0" placeholder="R$ 0.00" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Pagamento <span class="normal-case font-normal text-gray-400">(se venda)</span><select name="method" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="">Selecione...</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
+        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-5 hover:bg-gray-800 transition-colors">Registrar Movimentação</button>
+      </form>
+    </section>
+
+    <section id="prev" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-2">Previsão de Compra Inteligente</h2>
+      <p class="text-sm text-gray-600 mb-4 bg-blue-50 border border-blue-100 p-3 rounded-lg text-blue-800">Cálculo baseado na média móvel das últimas 8 semanas de consumo, com horizonte de 30 dias e 15% de margem de segurança.</p>
+      <div id="fc" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
+    </section>
+
+    <section id="hor" hidden>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Horários de Expediente</h2>
+        <div class="flex items-center gap-4">
+          <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Barbeiro: <select id="hb" class="border p-2 rounded-lg bg-white shadow-sm"></select></label>
+          <button id="hsave" class="bg-gray-900 text-white font-bold rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors shadow">Salvar Expediente</button>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500 mb-4">Marque os dias de trabalho. O horário de almoço é opcional.</p>
+      <div id="hgrid" class="overflow-x-auto mb-10 bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
+      
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Férias e Feriados (Bloqueios)</h2>
+      <form id="toform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-6 gap-4 items-end mb-6">
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Barbeiro<select name="barber" id="tb" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></select></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">De (Data)<input name="from" type="date" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Até (Data)<input name="to" type="date" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Das (Hora)<input name="t_from" type="time" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Às (Hora)<input name="t_to" type="time" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-4">Motivo / Descrição<input name="reason" maxlength="80" placeholder="Ex: Férias, Consulta..." class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-2 hover:bg-gray-800 transition-colors">Adicionar Bloqueio</button>
+      </form>
+      
+      <div class="flex items-center justify-between mb-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+        <label class="text-sm font-medium text-gray-700 flex items-center gap-2">Importar feriados nacionais do ano: <input id="hy" type="number" min="2000" max="2100" class="border p-2 rounded-lg bg-white w-24"></label>
+        <button id="hol" class="bg-blue-600 text-white font-bold rounded-lg px-4 py-2 hover:bg-blue-700 shadow">Cadastrar Feriados Automáticos</button>
+      </div>
+      <div id="to-list" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
+    </section>
+
+    <section id="cli" hidden>
+      <div class="flex gap-2 mb-6"><input id="cq" placeholder="Buscar por Nome ou WhatsApp..." class="border p-3 rounded-lg flex-1 max-w-md bg-white shadow-sm focus:ring-2 focus:ring-gray-900 outline-none"></div>
+      <div id="cl-list" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
+      <div id="cl-detail" class="mt-8"></div>
+    </section>
+
+    <section id="rel" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-2">Exportar Relatórios</h2>
+      <p class="text-sm text-gray-600 mb-6">Gere ficheiros CSV prontos a abrir no Excel ou Google Planilhas. Defina o período abaixo:</p>
+      
+      <div class="flex flex-wrap items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-fit">
+        <label class="text-sm font-medium text-gray-700 flex items-center gap-2">De <input id="rfrom" type="date" class="border rounded-lg p-2 bg-gray-50"></label>
+        <label class="text-sm font-medium text-gray-700 flex items-center gap-2">Até <input id="rto" type="date" class="border rounded-lg p-2 bg-gray-50"></label>
+      </div>
+      
+      <div id="rlinks" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <p class="text-xs font-semibold text-amber-600 mt-6 bg-amber-50 p-3 rounded border border-amber-200">Aviso: Agendamentos e clientes contêm dados sensíveis (LGPD). Partilhe com cuidado.</p>
+    </section>
+
+    <section id="site" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Informações do Site Público</h2>
+      <form id="siteform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-2 gap-4 mb-8">
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Nome Oficial<input name="name" maxlength="80" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Nome Curto <span class="normal-case font-normal text-gray-400">(Painel)</span><input name="short_name" maxlength="40" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sigla/Marca Logo<input name="brand" maxlength="12" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">WhatsApp <span class="normal-case font-normal text-gray-400">(Botão flutuante)</span><input name="whatsapp" type="tel" placeholder="(12) 99999-9999" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Endereço Completo<input name="address" maxlength="160" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Instagram<input name="instagram" placeholder="@usuario ou link" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Descrição Curta <span class="normal-case font-normal text-gray-400">(SEO Google)</span><input name="tagline" maxlength="200" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-2 hover:bg-gray-800 transition-colors shadow">Atualizar Dados do Site</button>
+      </form>
+      
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Galeria de Imagens</h2>
+      <form id="galform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end mb-6">
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide flex-1">Upload de Fotos <span class="normal-case font-normal text-gray-400">(Até 3MB)</span><input name="file" type="file" multiple accept="image/jpeg,image/png,image/webp" required class="border p-2 rounded-lg bg-gray-50 block w-full mt-1"></label>
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide flex-1">Legenda Opcional<input name="caption" maxlength="120" placeholder="Escreva algo..." class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <button class="bg-gray-900 text-white font-bold rounded-lg px-6 py-2.5 hover:bg-gray-800 transition-colors">Adicionar Foto</button>
+      </form>
+      <div id="gal-list" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
+    </section>
+
+    <section id="priv" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-2">Painel de Privacidade (LGPD)</h2>
+      <p class="text-sm text-gray-600 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">Consulte os dados retidos de um cliente ou anonimize o registo permanentemente. Os valores financeiros mantêm-se no caixa, sem associação ao cliente.</p>
+      <form id="privform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end mb-4">
+        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide flex-1">WhatsApp do Cliente<input name="phone" required placeholder="(12) 99999-9999" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
+        <button class="bg-gray-900 text-white font-bold rounded-lg px-6 py-2.5 shadow hover:bg-gray-800">Ver Ficha Completa</button>
+        <button type="button" id="privdel" class="bg-red-600 text-white font-bold rounded-lg px-6 py-2.5 shadow hover:bg-red-700">Anonimizar Definitivamente</button>
+      </form>
+      <pre id="privout" class="bg-gray-900 text-green-400 rounded-xl shadow p-6 mt-4 text-xs overflow-x-auto hidden"></pre>
+      <p id="privret" class="text-xs font-medium text-gray-500 mt-4"></p>
+    </section>
+
+    <section id="bkp" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Saúde do Sistema e Backup</h2>
+      <div id="bkp-info" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3 text-sm text-gray-700"></div>
+      <div class="flex gap-4 mt-6">
+        <a href="/api/admin/backup" class="bg-gray-900 text-white font-bold rounded-lg px-6 py-3 shadow hover:bg-gray-800 text-sm text-center">Baixar Cópia Local</a>
+        <button id="bkp-up" class="bg-blue-600 text-white font-bold rounded-lg px-6 py-3 shadow hover:bg-blue-700 text-sm">Sincronizar Cloud Agora</button>
+      </div>
+    </section>
+
+    <section id="cad" hidden>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Cadastros Base</h2>
+      <div id="gcal-info" class="bg-blue-50 border border-blue-200 text-blue-900 text-sm rounded-lg p-4 mb-6 shadow-sm"></div>
+      <div class="flex gap-2 mb-8"><button id="gsync" class="bg-blue-600 text-white font-bold rounded-lg px-4 py-2 text-sm shadow hover:bg-blue-700">Sincronizar Futuros c/ Google Agenda</button></div>
+      <div id="ent-barbers" class="mb-10 bg-white p-6 rounded-xl shadow-sm border border-gray-100"></div>
+      <div id="ent-services" class="mb-10 bg-white p-6 rounded-xl shadow-sm border border-gray-100"></div>
+      <div id="ent-products" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100"></div>
+    </section>
     
-    <div class="flex items-end gap-3 mb-4 pt-4 border-t border-gray-100">
-      <label class="text-sm font-medium">Feriados nacionais de <input id="hy" type="number" min="2000" max="2100" class="border border-gray-300 p-2 rounded-md w-24 ml-2"></label>
-      <button id="hol" class="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors">Cadastrar feriados em lote</button>
-    </div>
-    <div id="to-list"></div>
-  </div>
-</section>
+    {% if demo %}
+    <section id="wa" hidden>
+      <div class="flex gap-3 mb-6">
+        <button id="seed" class="bg-gray-900 text-white font-bold rounded-lg px-5 py-2.5 shadow hover:bg-gray-800">1. Injetar Dados de Teste</button>
+        <button id="runrem" class="bg-green-600 text-white font-bold rounded-lg px-5 py-2.5 shadow hover:bg-green-700">2. Disparar Gatilhos (WhatsApp)</button>
+      </div>
+      <p class="text-sm font-medium text-gray-600 mb-4 bg-white p-3 border rounded-lg shadow-sm">Ambiente seguro (Sandbox): Nenhuma mensagem real sai do servidor. Previsão de entrega abaixo.</p>
+      <div id="chat" class="max-w-md bg-[#e5ddd5] rounded-2xl shadow-inner p-4 space-y-3 min-h-[300px] border border-gray-300"></div>
+    </section>
+    {% endif %}
 
-<section id="cli" hidden>
-  <div class="flex gap-2 mb-4"><input id="cq" placeholder="Buscar por nome ou WhatsApp..." class="border border-gray-300 p-2.5 rounded-lg flex-1 max-w-md shadow-sm focus:ring-1 focus:ring-gray-900 outline-none"></div>
-  <div id="cl-list"></div>
-  <div id="cl-detail" class="mt-8"></div>
-</section>
-
-<section id="rel" hidden>
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-    <p class="text-sm text-gray-600 mb-4">Baixe planilhas (CSV) prontas para Excel ou Google Planilhas. Escolha o período abaixo:</p>
-    <div class="flex flex-wrap items-end gap-3 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <label class="text-sm font-medium">De <input id="rfrom" type="date" class="border border-gray-300 rounded-md p-1.5 ml-2"></label>
-      <label class="text-sm font-medium">Até <input id="rto" type="date" class="border border-gray-300 rounded-md p-1.5 ml-2"></label>
-    </div>
-    <div id="rlinks" class="grid sm:grid-cols-2 gap-4"></div>
-    <p class="text-xs text-gray-500 mt-6 pt-4 border-t border-gray-100">Atenção: Agendamentos e clientes contêm dados pessoais (nome e WhatsApp). Guarde e compartilhe com cuidado.</p>
-  </div>
-</section>
-
-<section id="site" hidden>
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-    <h2 class="font-bold text-lg mb-4 border-b pb-2">Dados da barbearia</h2>
-    <form id="siteform" class="grid sm:grid-cols-2 gap-4 items-end">
-      <label class="text-xs font-medium text-gray-700">Nome Público<input name="name" maxlength="80" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Nome Curto (painel interno)<input name="short_name" maxlength="40" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Marca no logo (ex.: 00)<input name="brand" maxlength="12" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700 sm:col-span-2">Endereço Completo<input name="address" maxlength="160" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">WhatsApp (botão flutuante)<input name="whatsapp" type="tel" placeholder="(12) 99999-9999" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700">Instagram<input name="instagram" placeholder="@usuario" class="border p-2 rounded-md w-full mt-1"></label>
-      <label class="text-xs font-medium text-gray-700 sm:col-span-2">Descrição curta (SEO e compartilhamento)<input name="tagline" maxlength="200" class="border p-2 rounded-md w-full mt-1"></label>
-      <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md p-2 sm:col-span-2 font-medium transition-colors mt-2">Salvar dados da página</button>
-    </form>
-    <p class="text-xs text-gray-500 mt-4">Campo em branco restaura o padrão do sistema. Sem WhatsApp, o botão flutuante não aparece.</p>
-  </div>
-  
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-    <h2 class="font-bold text-lg mb-4 border-b pb-2">Galeria de fotos</h2>
-    <form id="galform" class="flex flex-wrap gap-3 items-end mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <label class="text-xs font-medium text-gray-700">Enviar Fotos (JPG/PNG/WEBP, até 3 MB)<input name="file" type="file" multiple accept="image/jpeg,image/png,image/webp" required class="block mt-1 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-gray-800"></label>
-      <label class="text-xs font-medium text-gray-700">Legenda (opcional)<input name="caption" maxlength="120" class="border p-2 rounded-md w-full mt-1"></label>
-      <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2 font-medium transition-colors">Upload</button>
-    </form>
-    <div id="gal-list" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
-  </div>
-</section>
-
-<section id="priv" hidden>
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-    <p class="text-sm text-gray-600 mb-4">Atenda pedidos de clientes (LGPD): veja tudo o que o sistema guarda sobre um WhatsApp ou anonimize o cliente. O valor pago continua no caixa sem identificação.</p>
-    <form id="privform" class="flex flex-wrap gap-3 items-end">
-      <label class="text-xs font-medium text-gray-700">WhatsApp do cliente<input name="phone" required placeholder="(12) 99999-9999" class="border border-gray-300 p-2 rounded-md mt-1"></label>
-      <button class="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2 font-medium transition-colors">Consultar Dados</button>
-      <button type="button" id="privdel" class="border border-red-600 text-red-600 hover:bg-red-50 rounded-md px-4 py-2 font-medium transition-colors">Anonimizar cliente</button>
-    </form>
-    <pre id="privout" class="bg-gray-50 border border-gray-200 rounded-lg shadow-inner p-4 mt-6 text-xs overflow-x-auto hidden"></pre>
-    <p id="privret" class="text-xs text-gray-500 mt-4"></p>
-  </div>
-</section>
-
-<section id="bkp" hidden>
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200">
-    <h2 class="font-bold text-lg mb-4 border-b pb-2">Status do Sistema</h2>
-    <div id="bkp-info" class="space-y-3 text-sm text-gray-700 mb-6"></div>
-    <div class="flex gap-3 pt-4 border-t border-gray-100">
-      <a href="/api/admin/backup" class="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors text-center">Baixar cópia agora</a>
-      <button id="bkp-up" class="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors">Forçar envio para nuvem</button>
-    </div>
-  </div>
-</section>
-
-<section id="cad" hidden>
-  <div id="gcal-info" class="bg-blue-50/50 border border-blue-100 text-blue-800 text-sm rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div id="gcal-text" class="flex items-start gap-3"><span class="text-xl">ℹ️</span> <div></div></div>
-    <button id="gsync" class="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors shadow-sm">Sincronizar Agenda Futura</button>
-  </div>
-  
-  <div id="ent-barbers"></div>
-  <div id="ent-services"></div>
-  <div id="ent-products"></div>
-</section>
-
-{% if demo %}<section id="wa" hidden>
-  <div class="bg-white p-5 sm:p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-    <div class="flex gap-3 mb-4"><button id="seed" class="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2 font-medium transition-colors">1. Criar dados de demonstração</button>
-    <button id="runrem" class="bg-green-600 hover:bg-green-700 text-white rounded-md px-4 py-2 font-medium transition-colors">2. Disparar lembretes agora</button></div>
-    <p class="text-sm text-gray-600 mb-4">Modo demonstração: nenhuma mensagem real é enviada. Abaixo, o simulador da caixa de entrada do cliente.</p>
-    <div id="chat" class="max-w-md bg-[#e5ddd5] rounded-xl p-4 space-y-3 min-h-[300px] shadow-inner border border-gray-300"></div>
-  </div>
-</section>{% endif %}
   </main>
 </div>
 
-<!-- Cadastros Dialog -->
-<dialog id="caddlg" class="rounded-xl p-0 w-full max-w-lg backdrop:bg-gray-900/70 shadow-2xl">
-  <form id="cadform" class="p-6 space-y-4">
-    <h2 id="cadtitle" class="font-bold text-xl text-gray-900 mb-2 border-b pb-2"></h2>
-    <input type="hidden" name="k">
-    <input type="hidden" name="id">
-    <div id="cadfields" class="space-y-4"></div>
-    <div class="flex gap-3 pt-4">
-      <button class="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-lg p-2.5 font-semibold transition-colors">Salvar</button>
-      <button type="button" id="cadcancel" class="border border-gray-300 hover:bg-gray-50 rounded-lg p-2.5 font-medium transition-colors">Cancelar</button>
+<!-- MODALS -->
+<dialog id="accdlg" class="rounded-2xl p-0 w-full max-w-md shadow-2xl backdrop:bg-gray-900/80 border-0">
+  <form id="accform" class="p-6 space-y-4 bg-white">
+    <h2 id="acctitle" class="font-bold text-xl text-gray-800"></h2>
+    <p class="text-xs text-gray-500 bg-gray-50 p-2 rounded">Acesso restrito em <b id="accurl"></b></p>
+    <label class="block text-xs font-bold text-gray-700 uppercase">Usuário<input name="login" required maxlength="30" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
+    <label class="block text-xs font-bold text-gray-700 uppercase">Senha <span class="font-normal normal-case">(Mín 8 char)</span><input name="password" type="password" autocomplete="new-password" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
+    <p class="text-xs text-gray-400 italic">Deixe a senha em branco para mantê-la atual.</p>
+    <div class="flex gap-3 mt-4">
+      <button class="flex-1 bg-gray-900 text-white font-bold rounded-lg p-3 hover:bg-gray-800">Salvar Acesso</button>
+      <button type="button" id="accdel" class="bg-red-50 text-red-600 font-bold rounded-lg p-3 hover:bg-red-100">Revogar</button>
+      <button type="button" id="acccancel" class="bg-gray-100 text-gray-700 font-bold rounded-lg p-3 hover:bg-gray-200">Cancelar</button>
     </div>
   </form>
 </dialog>
 
-<!-- Outros Modals -->
-<dialog id="accdlg" class="rounded-xl p-0 w-full max-w-md backdrop:bg-gray-900/70 shadow-2xl">
-  <form id="accform" class="p-6 space-y-4">
-    <h2 id="acctitle" class="font-bold text-xl text-gray-900 border-b pb-2"></h2>
-    <p class="text-xs text-gray-500">O barbeiro entra em <b id="accurl"></b> e vê só a própria agenda, os próprios ganhos e as próprias folgas.</p>
-    <label class="block text-xs font-medium text-gray-700">Usuário (minúsculas, números, . - _)<input name="login" required maxlength="30" class="border border-gray-300 p-2.5 rounded-md w-full mt-1"></label>
-    <label class="block text-xs font-medium text-gray-700">Senha (mínimo 8 caracteres)<input name="password" type="password" autocomplete="new-password" class="border border-gray-300 p-2.5 rounded-md w-full mt-1"></label>
-    <p class="text-xs text-gray-500">Ao editar um acesso existente, deixe a senha em branco para mantê-la.</p>
-    <div class="flex gap-2 pt-2"><button class="flex-1 bg-gray-900 hover:bg-gray-800 text-white rounded-lg p-2.5 font-semibold transition-colors">Salvar acesso</button>
-      <button type="button" id="accdel" class="border border-red-300 text-red-600 hover:bg-red-50 rounded-lg p-2.5 font-medium transition-colors">Remover</button>
-      <button type="button" id="acccancel" class="border border-gray-300 hover:bg-gray-50 rounded-lg p-2.5 font-medium transition-colors">Voltar</button></div>
-  </form>
-</dialog>
-
-<dialog id="paydlg" class="rounded-xl p-0 w-full max-w-md backdrop:bg-gray-900/70 shadow-2xl">
-  <form id="payform" class="p-6 space-y-4">
-    <h2 id="paytitle" class="font-bold text-xl text-gray-900 border-b pb-2"></h2>
-    <label class="block text-xs font-medium text-gray-700">Forma de pagamento<select name="method" class="border border-gray-300 p-2.5 rounded-md w-full mt-1"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
-    <div class="grid grid-cols-2 gap-3">
-      <label class="block text-xs font-medium text-gray-700">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border border-gray-300 p-2.5 rounded-md w-full mt-1"></label>
-      <label class="block text-xs font-medium text-gray-700">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border border-gray-300 p-2.5 rounded-md w-full mt-1"></label>
+<dialog id="paydlg" class="rounded-2xl p-0 w-full max-w-md shadow-2xl backdrop:bg-gray-900/80 border-0">
+  <form id="payform" class="p-6 space-y-4 bg-white">
+    <h2 id="paytitle" class="font-bold text-xl text-gray-800"></h2>
+    <label class="block text-xs font-bold text-gray-700 uppercase">Pagamento<select name="method" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
+    <div class="grid grid-cols-2 gap-4">
+      <label class="block text-xs font-bold text-gray-700 uppercase">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
+      <label class="block text-xs font-bold text-gray-700 uppercase">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
     </div>
-    <p id="paytot" class="text-sm text-gray-800 font-medium bg-gray-50 p-3 rounded-lg border border-gray-200"></p>
-    <div class="flex gap-3 pt-2"><button class="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg p-2.5 font-semibold transition-colors">Concluir no caixa</button><button type="button" id="paycancel" class="border border-gray-300 hover:bg-gray-50 rounded-lg p-2.5 font-medium transition-colors">Voltar</button></div>
+    <div id="paytot" class="text-sm font-medium text-gray-800 bg-green-50 border border-green-200 p-3 rounded-lg"></div>
+    <div class="flex gap-3 mt-4">
+      <button class="flex-1 bg-green-600 text-white font-bold rounded-lg p-3 hover:bg-green-700">Lançar Pagamento</button>
+      <button type="button" id="paycancel" class="bg-gray-100 text-gray-700 font-bold rounded-lg p-3 hover:bg-gray-200">Cancelar</button>
+    </div>
   </form>
 </dialog>
 
@@ -305,98 +348,111 @@ const brl = v => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'
 const api = async (u, body) => { const r = await fetch(u, body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {});
   const j = await r.json(); if (!r.ok) { alert(j.error || 'Erro'); throw 0; } return j; };
 
-// Tabela Genérica modernizada usando Tailwind
-const table = (head, rows) => `<div class="overflow-hidden rounded-lg border border-gray-200 shadow-sm"><table class="w-full bg-white text-sm text-left"><thead class="bg-gray-50 text-xs uppercase text-gray-500 border-b border-gray-200"><tr>${head.map(h=>`<th class="px-4 py-3 font-semibold">${h}</th>`).join('')}</tr></thead><tbody class="divide-y divide-gray-100">${rows.map(r=>`<tr class="hover:bg-gray-50 transition-colors">${r.map((c,i)=>`<td class="px-4 py-3 ${i===r.length-1 && c.includes('<button') ? 'text-right' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+// Tabela moderna com Tailwind
+const table = (head, rows) => `<table class="w-full text-sm text-left text-gray-600"><thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200"><tr>${head.map(h=>`<th class="px-4 py-3 font-semibold">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">${r.map(c=>`<td class="px-4 py-3">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 
 const today = new Date().toLocaleDateString('en-CA');
 $('#month').value = today.slice(0,7); $('#day').value = today; document.querySelector('[name=day]').value = today;
 
-// Controle da Sidebar e Navegação
-$('#menu-btn').onclick = () => $('#sidebar').classList.toggle('hidden');
-document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('#tabs button').forEach(x => {
-    x.classList.toggle('bg-gray-800', x === b);
-    x.classList.toggle('text-white', x === b);
-    x.classList.toggle('text-gray-400', x !== b);
+// Logica de Tabs / Menu lateral
+document.querySelectorAll('#tabs button[data-t]').forEach(b => b.onclick = () => {
+  // Alterar CSS do menu lateral
+  document.querySelectorAll('#tabs button[data-t]').forEach(x => {
+    const isActive = x === b;
+    x.classList.toggle('bg-gray-800', isActive);
+    x.classList.toggle('text-white', isActive);
+    x.classList.toggle('border-blue-500', isActive);
+    x.classList.toggle('border-transparent', !isActive);
+    x.classList.toggle('text-gray-400', !isActive);
   });
+  
+  // Atualizar Titulo do Header Central
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle) pageTitle.textContent = b.textContent.replace(/[0-9]/g, '').trim();
+
+  // Alternar as sections main
   document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== b.dataset.t);
-  if(window.innerWidth < 768) $('#sidebar').classList.add('hidden'); // auto-close mobile
+  
+  // Chamar função atrelada à aba
   ({wa: typeof wa==='function'?wa:()=>{}, lembretes, caixa, agenda:agendaTab, lanc:()=>{}, estoque, prev, cad:cadastros, hor:horarios, bkp:backup, priv:()=>{}, cli:clientes, rel:relatorios, site:siteTab})[b.dataset.t]();
 });
 
-// Abertura inicial no painel 'agenda'
-setTimeout(() => document.querySelector('#tabs button[data-t="agenda"]').click(), 10);
+// Forçar Agenda a abrir como padrão 
+setTimeout(() => { document.querySelector('button[data-t="agenda"]')?.click(); }, 100);
 
 async function caixa() {
   const d = await api('/api/admin/summary?month=' + $('#month').value);
   $('#cards').innerHTML = [['Entradas', d.income,'text-green-700'],['Saídas', d.expense,'text-red-600'],['Saldo', d.balance,'']]
-    .map(([t,v,c]) => `<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200"><p class="text-sm font-medium text-gray-500">${t}</p><p class="text-2xl font-bold mt-1 ${c}">${brl(v)}</p></div>`).join('');
-  $('#mmethods').innerHTML = 'Entradas por forma de pagamento: ' + (Object.entries(d.by_method).map(([k, v]) => `${PAYN[k] || k}: <b>${brl(v)}</b>`).join(' · ') || '—') + (d.discounts ? ` · Descontos dados: <b class="text-red-600">${brl(d.discounts)}</b>` : '');
-  $('#barbers').innerHTML = table(['Barbeiro','Atendimentos','Bruto (líquido de desconto)','% comissão','A repassar','Gorjetas (integral)'], d.barbers.map(b => [esc(b.name), b.n, brl(b.gross), b.pct+'%', `<b class="text-green-700">${brl(b.commission)}</b>`, brl(b.tips)]));
+    .map(([t,v,c]) => `<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100"><p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">${t}</p><p class="text-3xl font-bold mt-2 ${c}">${brl(v)}</p></div>`).join('');
+  $('#mmethods').innerHTML = 'Entradas por forma de pagamento: ' + (Object.entries(d.by_method).map(([k, v]) => `${PAYN[k] || k}: <b>${brl(v)}</b>`).join(' &nbsp;·&nbsp; ') || '—') + (d.discounts ? ` &nbsp;·&nbsp; Descontos dados: <b class="text-red-600">${brl(d.discounts)}</b>` : '');
+  $('#barbers').innerHTML = table(['Barbeiro','Atendimentos','Bruto (líquido de desconto)','% comissão','A repassar','Gorjetas (repasse integral)'], d.barbers.map(b => [esc(b.name), b.n, brl(b.gross), b.pct+'%', `<b class="text-gray-900">${brl(b.commission)}</b>`, brl(b.tips)]));
   fechamento();
-  $('#txs').innerHTML = table(['Data','Tipo','Categoria','Descrição','Pagamento','Valor'], d.transactions.map(t => [t.day, t.kind, esc(t.category), esc(t.description) + (t.discount ? ` <span class="text-gray-500">(desconto ${brl(t.discount)})</span>` : ''), PAYN[t.method] || '—', `<span class="${t.kind==='entrada'?'text-green-700':'text-red-600'} font-medium">${brl(t.amount)}</span>`]));
+  $('#txs').innerHTML = table(['Data','Tipo','Categoria','Descrição','Pagamento','Valor'], d.transactions.map(t => [t.day, t.kind, esc(t.category), esc(t.description) + (t.discount ? ` <span class="text-gray-400 text-xs ml-1">(desc. ${brl(t.discount)})</span>` : ''), PAYN[t.method] || '—', `<span class="${t.kind==='entrada'?'text-green-600 font-bold':'text-red-600 font-bold'}">${brl(t.amount)}</span>`]));
 }
-const PAYN = {dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Cartão de débito', credito: 'Cartão de crédito', outro: 'Outro', sem: 'Sem forma informada'};
+const PAYN = {dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Cartão de débito', credito: 'Cartão de crédito', outro: 'Outro', sem: 'N/A'};
 let CLD = null;
 async function fechamento() {
   const d = CLD = await api('/api/admin/closing?day=' + $('#cday').value), f = $('#clform').elements, cl = d.closing;
   $('#cl-cards').innerHTML = [['Entradas', brl(d.income), 'text-green-700'], ['Saídas', brl(d.expense), 'text-red-600'], ['Saldo do dia', brl(d.balance), 'text-gray-900'], ['Atendimentos', d.services, 'text-gray-900']]
-    .map(([t, v, c]) => `<div class="bg-gray-50 border border-gray-200 p-4 rounded-lg"><p class="text-xs font-medium text-gray-500">${t}</p><p class="text-xl font-bold mt-1 ${c}">${v}</p></div>`).join('');
-  $('#cl-methods').innerHTML = table(['Forma de pagamento', 'Entradas'], Object.entries(d.by_method).map(([k, v]) => [PAYN[k] || k, brl(v)]))
-    + `<p class="text-xs text-gray-500 mt-2">Gorjetas: ${brl(d.tips)} · Descontos dados: ${brl(d.discounts)}</p>`;
+    .map(([t, v, c]) => `<div class="bg-gray-50 border border-gray-200 p-4 rounded-xl"><p class="text-xs font-semibold text-gray-500 uppercase">${t}</p><p class="text-xl font-bold mt-1 ${c}">${v}</p></div>`).join('');
+  $('#cl-methods').innerHTML = table(['Forma de pagamento', 'Entradas'], Object.entries(d.by_method).map(([k, v]) => [PAYN[k] || k, `<b>${brl(v)}</b>`]))
+    + `<p class="text-xs font-medium text-gray-500 mt-2 bg-gray-50 p-2 rounded">Gorjetas repassadas: ${brl(d.tips)} &nbsp;·&nbsp; Descontos oferecidos: ${brl(d.discounts)}</p>`;
   $('#cl-barbers').innerHTML = d.barbers.length ? table(['Barbeiro', 'Atendimentos', 'Bruto', 'Gorjetas'], d.barbers.map(b => [esc(b.name), b.n, brl(b.gross), brl(b.tips)])) : '';
   f.opening.value = cl ? cl.opening : d.suggested_opening; f.counted.value = cl ? cl.counted : ''; f.notes.value = cl ? cl.notes : '';
   hintCx();
-  $('#cl-result').innerHTML = cl ? `<div class="p-3 rounded-lg border ${Math.abs(cl.diff) < 0.005 ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'} font-medium">Caixa fechado em ${esc(cl.closed_at)}: esperado ${brl(cl.expected)}, contado ${brl(cl.counted)} → ${Math.abs(cl.diff) < 0.005 ? 'conferido, sem diferença' : (cl.diff > 0 ? 'sobra de ' : 'falta de ') + brl(Math.abs(cl.diff))}.</div>`
-    + (cl.stale ? '<p class="text-amber-700 mt-2 font-medium">⚠ Atenção: houve lançamentos em dinheiro depois do fechamento. Feche de novo para atualizar.</p>' : '') : '';
-  $('#cl-recent').innerHTML = d.recent.length ? 'Últimos fechamentos: ' + d.recent.map(r => `${r.day.split('-').reverse().join('/')} (${Math.abs(r.diff) < 0.005 ? 'ok' : (r.diff > 0 ? '+' : '−') + brl(Math.abs(r.diff))})`).join(' · ') : '';
+  $('#cl-result').innerHTML = cl ? `<div class="${Math.abs(cl.diff) < 0.005 ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'} p-3 rounded-lg border font-medium">Caixa fechado às ${esc(cl.closed_at)}: esperado ${brl(cl.expected)}, apurado ${brl(cl.counted)} → ${Math.abs(cl.diff) < 0.005 ? 'Tudo certo!' : (cl.diff > 0 ? 'Sobraram ' : 'Faltaram ') + brl(Math.abs(cl.diff))} no caixa.</div>`
+    + (cl.stale ? '<p class="text-amber-700 font-bold mt-2">⚠ Houve movimento em dinheiro após fechamento. Refaça o caixa.</p>' : '') : '';
+  $('#cl-recent').innerHTML = d.recent.length ? 'Últimos dias: ' + d.recent.map(r => `${r.day.split('-').reverse().join('/')} (${Math.abs(r.diff) < 0.005 ? '<span class="text-green-600">ok</span>' : '<span class="text-red-600">' + (r.diff > 0 ? '+' : '−') + brl(Math.abs(r.diff)) + '</span>'})`).join(' · ') : '';
 }
 function hintCx() {
   if (!CLD) return; const exp = (+$('#clform').elements.opening.value || 0) + CLD.cash_in - CLD.cash_out;
-  $('#cl-hint').innerHTML = `Dinheiro esperado na gaveta: <b>${brl(exp)}</b> (abertura + entradas em dinheiro ${brl(CLD.cash_in)} − saídas em dinheiro ${brl(CLD.cash_out)}).`;
+  $('#cl-hint').innerHTML = `Líquido em Gaveta Previsto: <b>${brl(exp)}</b> <span class="text-gray-400">(Abertura + Entradas Físicas ${brl(CLD.cash_in)} − Saídas Físicas ${brl(CLD.cash_out)})</span>`;
 }
 $('#clform').elements.opening.oninput = hintCx; $('#cday').onchange = fechamento;
 $('#clform').onsubmit = async e => {
   e.preventDefault(); const f = e.target.elements;
   await api('/api/admin/closing', {day: $('#cday').value, opening: f.opening.value, counted: f.counted.value, notes: f.notes.value}); fechamento();
 };
-
 async function agenda() {
   const d = await api('/api/admin/appointments?day=' + $('#day').value);
   $('#appts').innerHTML = d.length ? table(['Hora','Cliente','WhatsApp','Barbeiro','Serviço','Status','Ações'], d.map(a => [
-    `<span class="font-bold">${a.start_at.slice(11)}</span>`, esc(a.client_name), esc(a.phone) || '—', esc(a.barber), esc(a.service), 
-    `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${a.status==='agendado'?'bg-blue-100 text-blue-800 border border-blue-200':a.status==='concluido'?'bg-green-100 text-green-800 border border-green-200':'bg-gray-100 text-gray-600 border border-gray-200'}">${a.status}</span>`,
-    a.status==='agendado' ? `<div class="flex gap-2 justify-end"><button data-id="${a.id}" data-s="concluido" data-price="${a.price}" data-name="${esc(a.client_name)}" class="text-green-700 hover:bg-green-50 px-2 py-1 rounded transition-colors font-medium">Concluir</button><button data-id="${a.id}" data-s="faltou" class="text-gray-500 hover:bg-gray-100 px-2 py-1 rounded transition-colors">Faltou</button><button data-id="${a.id}" data-s="cancelado" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors">Cancelar</button><button data-copy="${esc(a.token)}" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors" title="Link do cliente">🔗 Link</button></div>` : ''])) : '<div class="bg-gray-50 p-6 rounded-lg text-center text-gray-500 border border-gray-200">Sem agendamentos para este dia.</div>';
+    `<span class="font-bold text-gray-900">${a.start_at.slice(11)}</span>`, 
+    `<span class="font-medium">${esc(a.client_name)}</span>`, 
+    esc(a.phone) || '<span class="text-gray-400">—</span>', 
+    esc(a.barber), esc(a.service), 
+    `<span class="px-2 py-1 rounded-full text-xs font-bold ${a.status==='agendado'?'bg-blue-100 text-blue-800':(a.status==='concluido'?'bg-green-100 text-green-800':'bg-red-100 text-red-800')}">${a.status}</span>`,
+    a.status==='agendado' ? `<button data-id="${a.id}" data-s="concluido" data-price="${a.price}" data-name="${esc(a.client_name)}" class="text-green-600 font-bold hover:text-green-800 mr-2 transition-colors">✔ Concluir</button> <button data-id="${a.id}" data-s="faltou" class="text-amber-600 hover:text-amber-800 mr-2 transition-colors">Faltou</button> <button data-id="${a.id}" data-s="cancelado" class="text-red-600 hover:text-red-800 mr-2 transition-colors">Cancelar</button> <button data-copy="${esc(a.token)}" class="text-gray-400 hover:text-gray-800 transition-colors" title="Copiar Link Cliente">🔗</button>` : ''])) : '<div class="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Agenda livre para esta data.</div>';
 }
 async function estoque() {
   const d = (await api('/api/admin/products')).filter(p => p.active);
-  $('#prods').innerHTML = table(['Item','Tipo','Preço','Estoque'], d.map(p => [esc(p.name), p.for_sale?'<span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full">Venda</span>':'<span class="bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded-full">Material</span>', p.for_sale?brl(p.price):'—', `<span class="font-medium ${p.stock < 5 ? 'text-red-600':''}">${p.stock}</span>`]));
+  $('#prods').innerHTML = table(['Produto / Material','Categoria','Preço Site','Em Estoque'], d.map(p => [esc(p.name), p.for_sale?'<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">Venda</span>':'<span class="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs font-bold">Uso Interno</span>', p.for_sale?`<b>${brl(p.price)}</b>`:'—', `<span class="font-bold ${p.stock <= p.min_stock ? 'text-red-600' : 'text-gray-800'}">${p.stock} un</span>`]));
   $('#mvprod').innerHTML = d.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
 }
 async function prev() {
   const d = await api('/api/admin/forecast?days=30');
-  $('#fc').innerHTML = table(['Item','Estoque atual','Consumo/dia','Dias restantes','Comprar (p/ 30 dias)'], d.map(r => [esc(r.product), r.stock, r.daily_rate, r.days_left ?? '—', `<b class="text-indigo-600 text-lg">${r.buy}</b>`]));
+  $('#fc').innerHTML = table(['Produto / Material','Em Estoque','Consumo Médio (dia)','Autonomia','Sugerido Comprar (30 dias)'], d.map(r => [esc(r.product), r.stock, `<span class="text-gray-500">${r.daily_rate} un</span>`, r.days_left ? `${r.days_left} dias` : '—', `<b class="text-blue-700 text-lg">${r.buy} un</b>`]));
 }
 $('#month').onchange = caixa; $('#day').onchange = agenda;
 $('#appts').addEventListener('click', e => {
   const b = e.target.closest('button[data-copy]'); if (!b) return;
   const url = location.origin + '/agendamento/' + b.dataset.copy;
-  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => alert('Link copiado! Envie ao cliente.'), () => prompt('Copie o link:', url));
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => alert('Link de auto-gestão copiado! Envie ao cliente.'), () => prompt('Copie o link:', url));
 });
 $('#appts').onclick = async e => {
   const b = e.target.closest('button[data-id]'); if (!b) return;
   if (b.dataset.s === 'concluido') { openPay(b.dataset); return; }
   await api(`/api/admin/appointments/${b.dataset.id}/status`, {status: b.dataset.s}); agenda();
 };
+// ---------- Concluir atendimento: forma de pagamento, desconto e gorjeta ----------
 let PAY = null;
 function openPay(d) {
   PAY = {id: d.id, price: +d.price}; let last = ''; try { last = localStorage.getItem('lastPay') || ''; } catch (e) {}
-  $('#paytitle').textContent = 'Concluir: ' + d.name; $('#payform').reset(); if (last) $('#payform').elements.method.value = last;
+  $('#paytitle').textContent = 'Faturar: ' + d.name; $('#payform').reset(); if (last) $('#payform').elements.method.value = last;
   payTotal(); $('#paydlg').showModal();
 }
 function payTotal() {
   const f = $('#payform').elements, disc = +f.discount.value || 0, tip = +f.tip.value || 0;
-  $('#paytot').innerHTML = `Serviço ${brl(PAY.price)} − desconto ${brl(disc)} = <b>${brl(PAY.price - disc)}</b>` + (tip ? `<br>+ gorjeta ${brl(tip)} <br>Total recebido <b class="text-green-700 text-lg">${brl(PAY.price - disc + tip)}</b>` : '');
+  $('#paytot').innerHTML = `Valor original: <span class="line-through text-gray-500">${brl(PAY.price)}</span><br>Desconto: <span class="text-red-600">−${brl(disc)}</span><br>Total devido: <b class="text-lg">${brl(PAY.price - disc)}</b>` + (tip ? `<br>+ Gorjeta Barbeiro: <span class="text-green-600">${brl(tip)}</span><br><br>Total na Máquina/Dinheiro: <b class="text-xl">${brl(PAY.price - disc + tip)}</b>` : '');
 }
 $('#payform').addEventListener('input', payTotal);
 $('#paycancel').onclick = () => $('#paydlg').close();
@@ -406,7 +462,7 @@ $('#payform').onsubmit = async e => {
   try { await api(`/api/admin/appointments/${PAY.id}/status`, {status: 'concluido', method: f.method.value, discount: f.discount.value, tip: f.tip.value}); } catch (x) { return; }
   $('#paydlg').close(); agenda(); caixa();
 };
-$('#txform').onsubmit = async e => { e.preventDefault(); await api('/api/admin/transactions', Object.fromEntries(new FormData(e.target))); e.target.reset(); alert('Lançado.'); };
+$('#txform').onsubmit = async e => { e.preventDefault(); await api('/api/admin/transactions', Object.fromEntries(new FormData(e.target))); e.target.reset(); alert('Despesa / Receita Lançada!'); };
 $('#mvform').onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
   if (f.mode === 'venda') await api('/api/admin/sales', {product:f.product, qty:f.qty, method:f.method});
   else await api('/api/admin/stock', {product:f.product, qty: f.mode==='consumo' ? -f.qty : +f.qty, cost:f.cost});
@@ -414,15 +470,15 @@ $('#mvform').onsubmit = async e => { e.preventDefault(); const f = Object.fromEn
 async function lembretes() {
   const d = await api('/api/admin/reminders');
   const bd = $('#badge'); bd.textContent = d.length; bd.classList.toggle('hidden', !d.length);
-  $('#rem').innerHTML = d.length ? table(['Tipo','Cliente','Quando','Ações'], d.map(r => [({confirmacao:'Confirmação', vespera:'Véspera', lembrete:'1h antes', retorno:'Retorno'})[r.kind], esc(r.name), r.when,
-    `<div class="flex gap-2"><a href="${esc(r.link)}" target="_blank" rel="noopener" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded font-medium transition-colors text-xs flex items-center gap-1">Enviar Msg</a><button data-k="${r.kind}" data-id="${r.id}" class="border border-gray-300 hover:bg-gray-100 px-3 py-1 rounded font-medium transition-colors text-xs">Feito</button></div>`])) : '<div class="bg-gray-50 p-6 rounded-lg text-center text-gray-500 border border-gray-200">Nenhum lembrete pendente no momento.</div>';
+  $('#rem').innerHTML = d.length ? table(['Gatilho','Cliente','Quando','Ação Manual','Baixa Sistema'], d.map(r => [({confirmacao:'<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Confirmação</span>', vespera:'<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Véspera</span>', lembrete:'<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs">1h Antes</span>', retorno:'<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Retorno</span>'})[r.kind], `<b>${esc(r.name)}</b>`, r.when,
+    `<a href="${esc(r.link)}" target="_blank" rel="noopener" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow transition-colors inline-block">💬 Enviar WhatsApp</a>`, `<button data-k="${r.kind}" data-id="${r.id}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">✔ Marcar Feito</button>`])) : '<div class="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Caixa de lembretes vazia. Bom trabalho!</div>';
 }
 $('#rem').onclick = async e => { const b = e.target.closest('button[data-id]'); if (b) { await api('/api/admin/reminders/done', {kind:b.dataset.k, id:+b.dataset.id}); lembretes(); } };
 {% if demo %}
 async function wa() {
   const d = await api('/api/admin/outbox');
-  $('#chat').innerHTML = d.length ? d.map(m => `<div><div class="text-xs text-gray-500 mb-1">Para +${esc(m.phone)} · ${esc(m.sent_at)}</div>
-    <div class="bg-[#dcf8c6] rounded-xl rounded-tl-none p-3 text-sm shadow-sm whitespace-pre-wrap text-gray-800">${esc(m.text)}</div></div>`).join('') : '<p class="text-center text-gray-500 pt-8">Nenhuma mensagem enviada.</p>';
+  $('#chat').innerHTML = d.length ? d.map(m => `<div><div class="text-xs text-gray-500 text-center my-2">Para +${esc(m.phone)} · ${esc(m.sent_at)}</div>
+    <div class="bg-[#dcf8c6] rounded-xl rounded-tr-none p-3 text-sm shadow-sm whitespace-pre-wrap ml-auto w-4/5 border border-gray-200">${esc(m.text)}</div></div>`).join('') : '<p class="text-center text-gray-500 italic mt-8">Caixa de saída vazia.</p>';
 }
 $('#seed').onclick = async () => { await api('/api/admin/demo/seed', {}); wa(); lembretes(); };
 $('#runrem').onclick = async () => { await api('/api/admin/demo/run', {}); wa(); lembretes(); };
@@ -436,50 +492,49 @@ $('#accform').onsubmit = async e => {
   try { await api('/api/admin/barbers/access', {id: ACC, login: f.login.value, password: f.password.value}); } catch (x) { return; }
   $('#accdlg').close(); cadastros();
 };
-$('#accdel').onclick = async () => { if (!confirm('Remover o acesso deste barbeiro?')) return; await api('/api/admin/barbers/access', {id: ACC, remove: true}); $('#accdlg').close(); cadastros(); };
+$('#accdel').onclick = async () => { if (!confirm('Remover o login do barbeiro?')) return; await api('/api/admin/barbers/access', {id: ACC, remove: true}); $('#accdlg').close(); cadastros(); };
 
-// ---------- Clientes ----------
+// ---------- Clientes (histórico) ----------
 let CQT;
 async function clientes() {
   const d = await api('/api/admin/clients?q=' + encodeURIComponent($('#cq').value));
-  $('#cl-list').innerHTML = d.length ? table(['Cliente', 'WhatsApp', 'Atend.', 'Faltas', 'Última visita', 'Próximo', 'Total gasto', 'Status'], d.map(c => [
-    `<button data-ph="${esc(c.phone)}" class="text-blue-600 hover:text-blue-800 font-medium">${esc(c.name)}</button>`, esc(c.phone), c.visits, c.noshows,
-    c.last_visit ? fmtD(c.last_visit.slice(0, 10)) : '—', c.next_visit ? fmtD(c.next_visit.slice(0, 10)) + ' ' + c.next_visit.slice(11) : '—', `<span class="font-medium">${brl(c.spent)}</span>`,
-    c.optout ? '<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full border border-red-200">Parou Msg</span>' : '<span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full border border-green-200">Ativo</span>'])) : '<p class="text-sm text-gray-500 mt-2">Nenhum cliente encontrado.</p>';
+  $('#cl-list').innerHTML = d.length ? table(['Cliente', 'WhatsApp', 'Visitas', 'Faltas', 'Última visita', 'Ticket Gasto', 'Mkt'], d.map(c => [
+    `<button data-ph="${esc(c.phone)}" class="text-blue-700 font-bold hover:underline transition-all">${esc(c.name)}</button>`, esc(c.phone), `<span class="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold">${c.visits}</span>`, c.noshows,
+    c.last_visit ? `<span class="text-gray-500 text-xs">${fmtD(c.last_visit.slice(0, 10))}</span>` : '—', `<b>${brl(c.spent)}</b>`,
+    c.optout ? '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">Cancelou</span>' : '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Ativo</span>'])) : '<div class="p-6 text-center text-gray-500">Nenhum cliente encontrado.</div>';
 }
 $('#cq').oninput = () => { clearTimeout(CQT); CQT = setTimeout(clientes, 300); };
 const STP = {agendado: 'Agendado', concluido: 'Concluído', cancelado: 'Cancelado', faltou: 'Faltou'};
 async function perfil(ph) {
   const d = await api('/api/admin/clients/' + encodeURIComponent(ph)), s = d.stats, dt = v => v ? fmtD(v.slice(0, 10)) + (v.length > 10 ? ' ' + v.slice(11) : '') : '—';
-  const card = (t, v) => `<div class="bg-gray-50 border border-gray-200 p-3 rounded-lg"><p class="text-xs font-medium text-gray-500">${t}</p><p class="font-bold text-gray-900 mt-1">${v}</p></div>`;
-  $('#cl-detail').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-4"><div class="flex items-center gap-3"><h2 class="text-xl font-bold">${esc(d.name)}</h2><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">${esc(d.phone)}</span></div>
-      <button data-new="${esc(d.phone)}" data-nm="${esc(d.name)}" class="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors">Agendar Horário</button></div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${card('Atendimentos', s.visits)}${card('Total gasto', brl(s.spent))}${card('Faltas / cancel', s.noshows + ' / ' + s.cancels)}${card('Primeira visita', dt(s.first_visit))}
-      ${card('Última visita', dt(s.last_visit))}${card('Intervalo médio', s.avg_interval_days ? s.avg_interval_days + ' dias' : '—')}${card('Retorno previsto', s.expected_return ? fmtD(s.expected_return) : '—')}${card('Favoritos', esc((s.fav_service || '—') + ' · ' + (s.fav_barber || '—')))}</div>
-    <p class="text-xs text-gray-600 bg-blue-50 border border-blue-100 p-2 rounded-lg">Mensagens: ${d.optout ? '<b class="text-red-600">Cliente pediu para parar (STOP)</b>' : (d.consent ? 'Autorizadas via ' + esc(d.consent) : '<b>Sem consentimento explícito</b>')}</p>
-    <label class="block text-sm font-medium text-gray-700 mt-4">Anotações Internas (preferências, estilo do corte)<textarea id="cnote" maxlength="500" rows="3" class="border border-gray-300 p-2.5 rounded-lg w-full mt-1 outline-none focus:ring-1 focus:ring-gray-900">${esc(d.note)}</textarea></label>
-    <button data-note="${esc(d.phone)}" class="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors">Salvar anotações</button>
-    <div class="mt-4"><h3 class="font-bold text-sm mb-2 text-gray-700">Histórico de Agendamentos</h3>${table(['Data', 'Serviço', 'Barbeiro', 'Situação', 'Pago'], d.appointments.map(a => [dt(a.start_at), esc(a.service), esc(a.barber), STP[a.status] || a.status, a.paid != null ? brl(a.paid) : '—']))}</div></div>`;
+  const card = (t, v) => `<div class="bg-gray-50 border border-gray-100 p-4 rounded-xl shadow-sm"><p class="text-xs font-semibold text-gray-500 uppercase">${t}</p><p class="text-lg font-bold text-gray-800 mt-1">${v}</p></div>`;
+  $('#cl-detail').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b pb-4"><div class="flex flex-col"><h2 class="text-2xl font-bold text-gray-900">${esc(d.name)}</h2><span class="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded w-fit mt-1">${esc(d.phone)}</span></div>
+      <button data-new="${esc(d.phone)}" data-nm="${esc(d.name)}" class="bg-gray-900 text-white font-bold rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors shadow">Nova Reserva</button></div>
+    <div class="grid sm:grid-cols-4 gap-4">${card('Check-ins', s.visits)}${card('Total Investido', brl(s.spent))}${card('No-Shows/Cancel', s.noshows + ' / ' + s.cancels)}${card('Recorrência Média', s.avg_interval_days ? s.avg_interval_days + ' dias' : '—')}
+      ${card('Último Corte', dt(s.last_visit))}${card('Previsão Retorno', s.expected_return ? fmtD(s.expected_return) : '—')}${card('Combo Favorito', esc((s.fav_service || '—') + ' · ' + (s.fav_barber || '—')))}</div>
+    <div class="bg-blue-50 border border-blue-100 p-3 rounded-lg"><p class="text-xs font-semibold text-blue-800">Status Marketing: ${d.optout ? '<b class="text-red-600">Opt-Out Solicitado</b>' : (d.consent ? 'Autorizado ' + esc(d.consent) + '' : 'Sem Consentimento Oficial')}</p></div>
+    <div class="flex gap-4 items-start"><label class="block text-xs font-semibold text-gray-700 uppercase flex-1">Caderno de Notas (Ficha Técnica)<textarea id="cnote" maxlength="500" rows="2" placeholder="Estilo de corte, bebida favorita, observações..." class="border p-3 rounded-lg w-full mt-2 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all">${esc(d.note)}</textarea></label>
+    <button data-note="${esc(d.phone)}" class="bg-blue-600 text-white font-bold rounded-lg px-4 py-3 mt-6 hover:bg-blue-700 shadow">Salvar Ficha</button></div>
+    <h3 class="font-bold text-gray-800 mt-4">Histórico de Sessões</h3>
+    <div class="overflow-x-auto border border-gray-100 rounded-lg">${table(['Data', 'Serviço', 'Profissional', 'Status', 'Faturado'], d.appointments.map(a => [dt(a.start_at), `<b>${esc(a.service)}</b>`, esc(a.barber), `<span class="text-xs font-bold px-2 py-0.5 rounded ${a.status==='concluido'?'bg-green-100 text-green-800':'bg-gray-100 text-gray-800'}">${STP[a.status] || a.status}</span>`, a.paid != null ? brl(a.paid) : '—']))}</div></div>`;
   $('#cl-detail').scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 $('#cl-list').onclick = e => { const b = e.target.closest('button[data-ph]'); if (b) perfil(b.dataset.ph); };
 $('#cl-detail').onclick = async e => {
   const n = e.target.closest('button[data-note]'), g = e.target.closest('button[data-new]');
-  if (n) { await api('/api/admin/clients/note', {phone: n.dataset.note, note: $('#cnote').value}); alert('Anotação salva.'); }
+  if (n) { await api('/api/admin/clients/note', {phone: n.dataset.note, note: $('#cnote').value}); alert('Ficha técnica guardada!'); }
   if (g) { document.querySelector('#tabs button[data-t="agenda"]').click(); const f = $('#newappt').elements; f.name.value = g.dataset.nm; f.phone.value = g.dataset.new; f.consent.checked = true; window.scrollTo(0, 0); }
 };
 
 // ---------- Relatórios (CSV) ----------
-const REL = [['comissoes', 'Comissão por barbeiro', 'Atendimentos, bruto, comissão a repassar e gorjetas de cada barbeiro.'], ['lancamentos', 'Lançamentos do caixa', 'Entradas e saídas, com forma de pagamento e desconto.'],
-  ['diario', 'Resumo diário', 'Entradas por forma de pagamento, saídas e saldo, dia a dia.'], ['fechamentos', 'Fechamentos de caixa', 'Dinheiro esperado, contado e diferença.'],
-  ['agendamentos', 'Agendamentos', 'Todos os agendamentos do período, com situação.'], ['clientes', 'Clientes', 'Lista de clientes com atendimentos e total gasto (ignora o período).']];
+const REL = [['comissoes', 'Fecho de Comissões', 'Tabela completa de barbeiros, produtividade e rateios.'], ['lancamentos', 'Livro de Caixa', 'Despesas e receitas detalhadas, balanço financeiro.'],
+  ['diario', 'Dashboard Diário', 'Performance financeira dividida por dias.'], ['fechamentos', 'Auditoria de Caixa', 'Registo diário de contagens de gaveta e quebras.'],
+  ['agendamentos', 'Histórico de Agenda', 'Log de todos os horários e situações ocorridas.'], ['clientes', 'Base de Clientes', 'CRM Exportável (respeite as normas de proteção de dados).']];
 function relatorios() {
   if (!$('#rfrom').value) { const n = new Date(); $('#rfrom').value = new Date(n.getFullYear(), n.getMonth(), 1).toLocaleDateString('en-CA'); $('#rto').value = new Date(n.getFullYear(), n.getMonth() + 1, 0).toLocaleDateString('en-CA'); }
   const q = `from=${$('#rfrom').value}&to=${$('#rto').value}`;
-  $('#rlinks').innerHTML = REL.map(([k, t, d]) => `<a href="/api/admin/export/${k}?${q}" download class="block bg-gray-50 border border-gray-200 rounded-xl p-5 hover:border-gray-900 hover:bg-white transition-colors group">
-    <div class="flex items-center justify-between"><b class="text-gray-900 group-hover:text-black">${t}</b><span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded font-mono">.CSV</span></div>
-    <p class="text-sm text-gray-500 mt-2">${d}</p></a>`).join('');
+  $('#rlinks').innerHTML = REL.map(([k, t, d]) => `<a href="/api/admin/export/${k}?${q}" download class="block bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:border-gray-400 hover:shadow transition-all group"><b class="text-gray-900 group-hover:text-blue-600 transition-colors">${t}</b> <span class="text-xs bg-gray-100 text-gray-500 px-1 py-0.5 rounded font-bold ml-1">CSV</span><p class="text-xs text-gray-500 mt-2">${d}</p></a>`).join('');
 }
 ['#rfrom', '#rto'].forEach(s => $(s).onchange = relatorios);
 
@@ -487,20 +542,16 @@ function relatorios() {
 async function siteTab() {
   const [s, g] = await Promise.all([api('/api/admin/site'), api('/api/admin/gallery')]), f = $('#siteform').elements;
   for (const k in s.values) { f[k].value = s.values[k]; f[k].placeholder = s.defaults[k] || f[k].placeholder; }
-  $('#gal-list').innerHTML = g.length ? g.map((p, i) => `<div class="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden flex flex-col">
-    <img src="/media/gallery/${esc(p.filename)}" alt="" class="w-full aspect-square object-cover bg-gray-200">
-    <div class="p-3 space-y-2 flex-1 flex flex-col justify-between"><input data-cap="${p.id}" value="${esc(p.caption || '')}" maxlength="120" placeholder="Legenda" class="border border-gray-300 rounded p-1.5 w-full text-xs outline-none">
-      <div class="flex justify-between text-xs pt-1 border-t border-gray-200 mt-2">
-        <span class="flex gap-1">
-          <button data-mv="up" data-id="${p.id}" ${i ? '' : 'disabled'} class="bg-gray-200 hover:bg-gray-300 disabled:opacity-30 rounded px-2 py-1 transition-colors">◀</button>
-          <button data-mv="down" data-id="${p.id}" ${i < g.length - 1 ? '' : 'disabled'} class="bg-gray-200 hover:bg-gray-300 disabled:opacity-30 rounded px-2 py-1 transition-colors">▶</button>
-        </span>
-        <button data-gdel="${p.id}" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors font-medium">Apagar</button>
-      </div></div></div>`).join('') : '<p class="text-sm text-gray-500 col-span-full bg-gray-50 p-4 rounded border border-gray-200 text-center">Nenhuma foto ainda. A seção Galeria só aparece no site quando houver fotos.</p>';
+  $('#gal-list').innerHTML = g.length ? g.map((p, i) => `<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group">
+    <div class="h-40 overflow-hidden bg-gray-50"><img src="/media/gallery/${esc(p.filename)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"></div>
+    <div class="p-3 space-y-2"><input data-cap="${p.id}" value="${esc(p.caption || '')}" maxlength="120" placeholder="Sem legenda..." class="border p-2 rounded-lg w-full text-xs bg-gray-50 focus:bg-white focus:ring-1 outline-none">
+      <div class="flex justify-between items-center text-xs">
+        <span class="flex border rounded-lg overflow-hidden"><button data-mv="up" data-id="${p.id}" ${i ? '' : 'disabled'} class="px-3 py-1.5 bg-gray-50 hover:bg-gray-200 disabled:opacity-30">◀</button><div class="w-px bg-gray-200"></div><button data-mv="down" data-id="${p.id}" ${i < g.length - 1 ? '' : 'disabled'} class="px-3 py-1.5 bg-gray-50 hover:bg-gray-200 disabled:opacity-30">▶</button></span>
+      <button data-gdel="${p.id}" class="text-red-500 font-bold hover:text-red-700 hover:underline">Apagar</button></div></div></div>`).join('') : '<div class="col-span-full p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Sem fotos no portfólio. O bloco "Galeria" não aparece no site.</div>';
 }
 $('#siteform').onsubmit = async e => {
   e.preventDefault(); const f = e.target.elements, d = {}; for (const k of ['name', 'short_name', 'brand', 'address', 'whatsapp', 'instagram', 'tagline']) d[k] = f[k].value;
-  await api('/api/admin/site', d); alert('Dados salvos. O site já usa as novas informações.'); siteTab();
+  await api('/api/admin/site', d); alert('Website reconfigurado online com sucesso!'); siteTab();
 };
 $('#galform').onsubmit = async e => {
   e.preventDefault(); const f = e.target.elements; let fails = 0;
@@ -513,43 +564,9 @@ $('#galform').onsubmit = async e => {
 $('#gal-list').addEventListener('change', async e => { const i = e.target.closest('input[data-cap]'); if (i) await api('/api/admin/gallery/caption', {id: +i.dataset.cap, caption: i.value}); });
 $('#gal-list').addEventListener('click', async e => {
   const d = e.target.closest('button[data-gdel]'), m = e.target.closest('button[data-mv]');
-  if (d && confirm('Apagar esta foto do site?')) { await api('/api/admin/gallery/delete', {id: +d.dataset.gdel}); siteTab(); }
+  if (d && confirm('Confirmar exclusão definitiva da foto?')) { await api('/api/admin/gallery/delete', {id: +d.dataset.gdel}); siteTab(); }
   if (m) { await api('/api/admin/gallery/move', {id: +m.dataset.id, dir: m.dataset.mv}); siteTab(); }
 });
-
-// ---------- Novo agendamento ----------
-let PUB = null;
-async function agendaTab() {
-  if (!PUB) {
-    PUB = await api('/api/public');
-    $('#nb').innerHTML = PUB.barbers.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
-    $('#ns').innerHTML = PUB.services.map(s => `<option value="${s.id}">${esc(s.name)} (${s.minutes} min)</option>`).join('');
-    $('#nd').value = today;
-  }
-  slotsNovo(); agenda();
-}
-async function slotsNovo() {
-  if (!$('#nb').value || !$('#ns').value || !$('#nd').value) return;
-  const l = await api(`/api/slots?barber=${$('#nb').value}&service=${$('#ns').value}&date=${$('#nd').value}`);
-  $('#nt').innerHTML = l.length ? l.map(t => `<option>${t}</option>`).join('') : '<option value="">Sem horário livre (use "outro")</option>';
-}
-['#nb', '#ns', '#nd'].forEach(s => $(s).onchange = slotsNovo);
-$('#newappt').elements.concluido.onchange = e => $('#npayrow').classList.toggle('hidden', !e.target.checked);
-$('#newappt').onsubmit = async e => {
-  e.preventDefault(); const f = e.target.elements, time = $('#nto').value || $('#nt').value;
-  if (!time) { alert('Escolha um horário.'); return; }
-  const data = {name: f.name.value, phone: f.phone.value, barber: +f.barber.value, service: +f.service.value, date: f.date.value, time, concluido: f.concluido.checked, consent: f.consent.checked,
-    method: f.method.value, discount: f.discount.value, tip: f.tip.value};
-  const send = async b => { const x = await fetch('/api/admin/appointments', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}); return {ok:x.ok, status:x.status, j:await x.json()}; };
-  let r = await send(data);
-  if (r.status === 409 && r.j.can_force) {
-    if (!confirm(r.j.error + '\n\nAgendar mesmo assim?')) return;
-    r = await send({...data, force: true});
-  }
-  if (!r.ok) { alert(r.j.error || 'Erro'); return; }
-  f.name.value = ''; f.phone.value = ''; f.concluido.checked = false; f.consent.checked = false; f.discount.value = ''; f.tip.value = ''; $('#npayrow').classList.add('hidden'); $('#nto').value = '';
-  $('#day').value = f.date.value; slotsNovo(); agenda();
-};
 
 // ---------- Horários, folgas e feriados ----------
 const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], fmtD = d => d.split('-').reverse().join('/');
@@ -558,153 +575,127 @@ async function horarios() {
   if (!HB.length) {
     HB = (await api('/api/admin/barbers')).filter(b => b.active);
     $('#hb').innerHTML = HB.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
-    $('#tb').innerHTML = '<option value="">Todos os barbeiros (loja toda)</option>' + HB.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+    $('#tb').innerHTML = '<option value="">Loja Encerrada (Feriado Global)</option>' + HB.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
     $('#hy').value = new Date().getFullYear();
   }
   await carregaHoras(); await folgas();
 }
 async function carregaHoras() {
   if (!$('#hb').value) return;
-  const d = await api('/api/admin/hours?barber=' + $('#hb').value), t = 'border border-gray-300 p-1.5 rounded outline-none focus:border-gray-900 text-sm';
-  $('#hgrid').innerHTML = `<div class="overflow-hidden rounded-lg border border-gray-200 shadow-sm"><table class="w-full bg-white text-sm text-left"><thead class="bg-gray-50 text-xs uppercase text-gray-500 border-b border-gray-200"><tr><th class="px-4 py-3">Dia</th><th class="px-4 py-3">Atende</th><th class="px-4 py-3">Entrada</th><th class="px-4 py-3">Saída</th><th class="px-4 py-3">Almoço de</th><th class="px-4 py-3">Almoço até</th></tr></thead><tbody class="divide-y divide-gray-100">`
-    + d.map(r => `<tr data-wd="${r.weekday}" class="hover:bg-gray-50"><td class="px-4 py-3 font-medium text-gray-900">${DIAS[r.weekday]}</td>
-      <td class="px-4 py-3"><input type="checkbox" data-f="open" class="w-4 h-4 rounded text-gray-900" ${r.open ? 'checked' : ''}></td>
-      <td class="px-4 py-3"><input type="time" data-f="t_start" value="${r.t_start}" class="${t}"></td>
-      <td class="px-4 py-3"><input type="time" data-f="t_end" value="${r.t_end}" class="${t}"></td>
-      <td class="px-4 py-3"><input type="time" data-f="lunch_start" value="${r.lunch_start || ''}" class="${t}"></td>
-      <td class="px-4 py-3"><input type="time" data-f="lunch_end" value="${r.lunch_end || ''}" class="${t}"></td></tr>`).join('') + '</tbody></table></div>';
+  const d = await api('/api/admin/hours?barber=' + $('#hb').value), t = 'border p-2 rounded-lg bg-gray-50 focus:bg-white transition-colors w-full';
+  $('#hgrid').innerHTML = `<table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-100"><tr><th class="p-3 rounded-tl-lg">Dia da Semana</th><th class="p-3 text-center">Laboral</th><th class="p-3">Início</th><th class="p-3">Fim</th><th class="p-3">Almoço (De)</th><th class="p-3 rounded-tr-lg">Almoço (Ate)</th></tr></thead><tbody class="divide-y divide-gray-100">`
+    + d.map(r => `<tr data-wd="${r.weekday}" class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">${DIAS[r.weekday]}</td>
+      <td class="p-3 text-center"><input type="checkbox" data-f="open" class="w-5 h-5 text-gray-900 rounded focus:ring-gray-900" ${r.open ? 'checked' : ''}></td>
+      <td class="p-3"><input type="time" data-f="t_start" value="${r.t_start}" class="${t}"></td>
+      <td class="p-3"><input type="time" data-f="t_end" value="${r.t_end}" class="${t}"></td>
+      <td class="p-3"><input type="time" data-f="lunch_start" value="${r.lunch_start || ''}" class="${t}"></td>
+      <td class="p-3"><input type="time" data-f="lunch_end" value="${r.lunch_end || ''}" class="${t}"></td></tr>`).join('') + '</tbody></table>';
 }
 $('#hb').onchange = carregaHoras;
 $('#hsave').onclick = async () => {
   const days = [...document.querySelectorAll('#hgrid tr[data-wd]')].map(tr => { const g = f => tr.querySelector(`[data-f="${f}"]`);
     return {weekday: +tr.dataset.wd, open: g('open').checked, t_start: g('t_start').value, t_end: g('t_end').value, lunch_start: g('lunch_start').value, lunch_end: g('lunch_end').value}; });
   const r = await api('/api/admin/hours', {barber: +$('#hb').value, days});
-  alert('Horários salvos.' + (r.conflicts ? ` Atenção: ${r.conflicts} agendamento(s) futuro(s) ficaram fora do novo expediente. Avise os clientes.` : ''));
+  alert('Nova escala aprovada.' + (r.conflicts ? `\n\nALERTA: Há ${r.conflicts} agendamento(s) fora da nova cobertura! Por favor, realoque.` : ''));
   carregaHoras();
 };
 async function folgas() {
   const d = await api('/api/admin/timeoff');
-  $('#to-list').innerHTML = d.length ? table(['Período', 'Horário', 'Quem', 'Motivo', ''], d.map(r => [r.day_from === r.day_to ? fmtD(r.day_from) : `${fmtD(r.day_from)} a ${fmtD(r.day_to)}`,
-    r.t_from ? `${r.t_from}–${r.t_to}` : 'Dia todo', esc(r.barber), esc(r.reason || ''), `<button data-del="${r.id}" class="text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors font-medium">Remover</button>`])) : '<div class="bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-500 text-center">Nenhuma folga futura cadastrada.</div>';
+  $('#to-list').innerHTML = d.length ? table(['Período', 'Faixa Horária', 'Profissional', 'Justificativa', 'Gestão'], d.map(r => [`<b>${r.day_from === r.day_to ? fmtD(r.day_from) : `${fmtD(r.day_from)} a ${fmtD(r.day_to)}`}</b>`,
+    r.t_from ? `<span class="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold">${r.t_from}–${r.t_to}</span>` : '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">Dia Inteiro</span>', esc(r.barber), esc(r.reason || '—'), `<button data-del="${r.id}" class="text-red-500 font-bold hover:underline">Apagar</button>`])) : '<div class="p-4 text-center text-gray-500 italic">Folhas de ponto limpas (sem bloqueios).</div>';
 }
-$('#to-list').onclick = async e => { const b = e.target.closest('button[data-del]'); if (b && confirm('Remover esta folga?')) { await api('/api/admin/timeoff/delete', {id: +b.dataset.del}); folgas(); } };
+$('#to-list').onclick = async e => { const b = e.target.closest('button[data-del]'); if (b && confirm('Restaurar este período na agenda pública?')) { await api('/api/admin/timeoff/delete', {id: +b.dataset.del}); folgas(); } };
 $('#toform').onsubmit = async e => {
   e.preventDefault(); const f = e.target.elements;
   const r = await api('/api/admin/timeoff', {barber: f.barber.value, from: f.from.value, to: f.to.value, t_from: f.t_from.value, t_to: f.t_to.value, reason: f.reason.value});
-  if (r.conflicts) alert(`Atenção: já existe(m) ${r.conflicts} agendamento(s) nesse período. Avise os clientes ou cancele/remarque.`);
+  if (r.conflicts) alert(`CUIDADO: Existem ${r.conflicts} bloqueio(s) agendados que colidem com esta folga! Necessário reagendar.`);
   e.target.reset(); folgas();
 };
 $('#hol').onclick = async () => {
   const r = await api('/api/admin/holidays', {year: +$('#hy').value});
-  alert(r.added ? `${r.added} feriado(s) cadastrado(s). Carnaval e Corpus Christi são pontos facultativos: remova se a barbearia abrir.` : 'Esses feriados já estavam cadastrados.'); folgas();
+  alert(r.added ? `Foram injetados ${r.added} feriados na matriz. (Dica: Carnaval e Corpus Christi são facultativos, reveja se desejar operar)` : 'Calendário já se encontrava atualizado.'); folgas();
 };
 
 // ---------- Backup ----------
 async function backup() {
   const [d, h] = await Promise.all([api('/api/admin/backup/status'), api('/api/admin/health')]), when = v => v ? esc(v) : '—';
   $('#bkp-info').innerHTML = `
-    <p><b>Backup local:</b> automático todo dia às 03:30 · ${d.local_count} cópia(s) guardada(s) (${d.keep_days} dias) · último: ${when(d.last_local)}</p>
-    <p><b>Backup na nuvem:</b> ${d.remote ? `destino <code>${esc(d.remote)}</code> · último envio: ${when(d.last_offsite)}`
-      : '<span class="text-red-600 font-medium">não configurado</span> — veja o guia (seção "Backup na nuvem") para ligar o Google Drive.'}</p>
-    ${d.remote && !d.rclone ? '<p class="text-red-600 font-medium">O rclone não está instalado no servidor.</p>' : ''}
-    ${d.offsite_error ? `<p class="text-red-600 font-medium">Último erro de envio: ${esc(d.offsite_error)}</p>` : ''}
-    <hr class="my-4 border-gray-200">
-    <p><b>WhatsApp automático:</b> ${h.whatsapp ? `<span class="${h.whatsapp === 'conectado' ? 'text-green-700 font-bold' : 'text-red-600 font-bold'}">${esc(h.whatsapp)}</span>` : 'não configurado (lembretes manuais)'} · <b>Pendentes:</b> ${h.pending_messages}</p>
-    <p><b>Agendador interno:</b> ${h.scheduler_on ? 'ativo · último pulso ' + when(h.heartbeat) : 'desligado'} · <b>Disco livre:</b> ${h.disk_free_pct}% · <b>Banco de Dados:</b> ${h.db_mb} MB</p>
-    <p><b>Segurança:</b> senhas erradas (IPs diferentes nas últimas 24h): ${h.failed_logins_24h}</p>
-    <p><b>Notificações admin (ntfy):</b> ${h.alert_channel ? 'ativadas' : 'desativadas — veja o guia (ALERT_NTFY_URL)'}</p>`;
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div><p class="font-bold text-gray-900 mb-1">Rotina Local DB</p><p>Instantâneo Diário (03:30)</p><p>Arquivos Saudáveis: ${d.local_count} retenções</p><p>Backup Mais Recente: ${when(d.last_local)}</p></div>
+      <div><p class="font-bold text-gray-900 mb-1">Cofre em Nuvem (Offsite)</p><p>${d.remote ? `Espelho Cloud: <code>${esc(d.remote)}</code>` : '<span class="text-red-600 font-bold">Inativo (Sem Drive Link)</span>'}</p><p>Sincronização: ${when(d.last_offsite)}</p></div>
+    </div>
+    <hr class="my-4 border-gray-100">
+    <div class="grid sm:grid-cols-3 gap-4">
+      <div><p class="font-bold text-gray-900 mb-1">Módulo WhatsApp</p><p>${h.whatsapp ? `<span class="font-bold ${h.whatsapp === 'conectado' ? 'text-green-600' : 'text-red-600'}">${esc(h.whatsapp)}</span>` : 'Módulo Ausente'}</p><p>Fila Restante: ${h.pending_messages}</p></div>
+      <div><p class="font-bold text-gray-900 mb-1">Infraestrutura</p><p>Cron Job: ${h.scheduler_on ? '<span class="text-green-600 font-bold">Operacional</span>' : '<span class="text-red-600">Parado</span>'}</p><p>Storage Disponível: ${h.disk_free_pct}%</p></div>
+      <div><p class="font-bold text-gray-900 mb-1">Auditoria Auth</p><p>Intrusões (24h): ${h.failed_logins_24h}</p><p>Alerta Remoto: ${h.alert_channel ? 'Ativo (ntfy)' : 'Desligado'}</p></div>
+    </div>`;
 }
-$('#bkp-up').onclick = async () => { await api('/api/admin/backup/upload', {}); alert('Backup forçado para a nuvem concluído.'); backup(); };
+$('#bkp-up').onclick = async () => { await api('/api/admin/backup/upload', {}); alert('Pacote de dados espelhado na nuvem com sucesso.'); backup(); };
 
-// ---------- Cadastros (Cards Isolados, Modals, Badges) ----------
+// ---------- Cadastros ----------
 const ENT = {
-  barbers:  {t:'Barbeiros', url:'/api/admin/barbers', f:[['name','Nome','text',1],['role','Cargo','text'],['commission_pct','Comissão %','number',1,{min:0,max:100,step:'0.01',value:50}],['calendar_id','ID da Google Agenda','text']]},
-  services: {t:'Serviços',  url:'/api/admin/services', f:[['name','Nome','text',1],['description','Descrição','text'],['price','Preço (R$)','number',1,{min:0.01,step:'0.01'}],['minutes','Minutos','number',1,{min:5,max:480,step:'5'}]]},
-  products: {t:'Produtos e materiais', url:'/api/admin/products', f:[['name','Nome','text',1],['price','Preço de venda (R$)','number',1,{min:0,step:'0.01',value:0}],['stock','Estoque inicial','number',0,{min:0,step:'1',value:0}],['for_sale','Tipo','select',1,{opts:[[1,'Venda (aparece no site)'],[0,'Material interno']]}]]}
+  barbers:  {t:'Equipe de Profissionais', url:'/api/admin/barbers', f:[['name','Nome (Completo ou Apelido)','text',1],['role','Cargo Especialidade','text'],['commission_pct','Comissão (%)','number',1,{min:0,max:100,step:'0.01',value:50}],['calendar_id','Chave GCalendar Privada','text']]},
+  services: {t:'Catálogo de Serviços',  url:'/api/admin/services', f:[['name','Título do Serviço','text',1],['description','Descritivo de Venda (Site)','text'],['price','Tarifa Base (R$)','number',1,{min:0.01,step:'0.01'}],['minutes','Duração Tempo (Mins)','number',1,{min:5,max:480,step:'5'}]]},
+  products: {t:'Gestão SKU (Produtos)', url:'/api/admin/products', f:[['name','Nomenclatura Item','text',1],['price','Preço Prateleira (R$)','number',1,{min:0,step:'0.01',value:0}],['stock','Aporte Estoque Base','number',0,{min:0,step:'1',value:0}],['for_sale','Classificação Fiscal','select',1,{opts:[[1,'Produto Final (Site)'],[0,'Insumo Interno (Consumo)']}]]}
 };
-let CAD = {};
-const inp = 'border border-gray-300 p-2.5 rounded-lg w-full mt-1 outline-none focus:ring-1 focus:ring-gray-900';
+const inp = 'border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white transition-colors';
 function field([n, label, type, req, o = {}]) {
   const attrs = Object.entries(o).filter(([k]) => k !== 'opts').map(([k, v]) => `${k}="${esc(v)}"`).join(' ');
   const el = type === 'select'
     ? `<select name="${n}" class="${inp}">${o.opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select>`
     : `<input name="${n}" type="${type}" ${req ? 'required' : ''} ${attrs} class="${inp}">`;
-  return `<label class="block text-xs font-medium text-gray-700">${label}${el}</label>`;
+  return `<label class="text-xs font-semibold text-gray-700 uppercase tracking-wide block">${label}${el}</label>`;
 }
 function entHtml(k) {
   const E = ENT[k], rows = CAD[k];
-  const cell = (r, [n,,type,,o]) => n === 'for_sale' ? (r.for_sale ? '<span class="text-indigo-700 font-medium">Venda</span>' : '<span class="text-gray-500">Material</span>') : (type === 'number' && /price/.test(n) ? brl(r[n]) : esc(r[n] ?? ''));
-  
-  const body = rows.map(r => [...E.f.filter(f => f[0] !== 'stock').map(f => cell(r, f)), ...(k === 'products' ? [r.stock] : []),
-    r.active ? '<span class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full border border-green-200">Ativo</span>' : '<span class="bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200">Inativo</span>',
-    `<div class="flex items-center gap-1 justify-end">
-      <button data-act="edit" data-k="${k}" data-id="${r.id}" class="text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md p-1.5 transition-colors" title="Editar">✏️</button>
-      <button data-act="toggle" data-k="${k}" data-id="${r.id}" class="text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md p-1.5 transition-colors" title="${r.active ? 'Desativar' : 'Reativar'}">${r.active ? '🗑️' : '✅'}</button>
-      ${k === 'barbers' && r.calendar_id ? `<button data-act="gtest" data-id="${r.id}" class="text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-md p-1.5 transition-colors" title="Testar agenda">📅</button>` : ''}
-      ${k === 'barbers' ? `<button data-act="access" data-id="${r.id}" class="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md p-1.5 transition-colors text-xs font-medium" title="Acesso">${r.login ? '🔑 '+esc(r.login) : '🔑 Acesso'}</button>` : ''}
-    </div>`
-  ]);
-  
+  const cell = (r, [n,,type,,o]) => n === 'for_sale' ? (r.for_sale ? '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Venda</span>' : '<span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-xs font-bold">Insumo</span>') : (type === 'number' && /price/.test(n) ? `<b>${brl(r[n])}</b>` : esc(r[n] ?? ''));
+  const head = [...E.f.map(f => f[1]), k === 'products' ? 'Saldo Inventário' : null, 'Status', 'Gestão'].filter(Boolean);
+  const body = rows.map(r => [...E.f.filter(f => f[0] !== 'stock').map(f => cell(r, f)), ...(k === 'products' ? [`<span class="font-bold text-gray-800">${r.stock} un</span>`] : []),
+    r.active ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">Disponível</span>' : '<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold">Arquivado</span>',
+    `<button data-act="edit" data-k="${k}" data-id="${r.id}" class="text-blue-600 font-bold hover:underline mr-2">Editar</button> <button data-act="toggle" data-k="${k}" data-id="${r.id}" class="font-bold hover:underline mr-2 ${r.active ? 'text-gray-500' : 'text-green-600'}">${r.active ? 'Desligar' : 'Ligar'}</button>`
+      + (k === 'barbers' && r.calendar_id ? ` <button data-act="gtest" data-id="${r.id}" class="text-purple-600 font-bold hover:underline mr-2" title="Ping na conta Google">Testar Ligação</button>` : '')
+      + (k === 'barbers' ? ` <button data-act="access" data-id="${r.id}" class="text-indigo-600 font-bold hover:underline">${r.login ? 'Credenciais: ' + esc(r.login) : 'Atribuir Portal'}</button>` : '')]);
   const heads = E.f.filter(f => f[0] !== 'stock').map(f => f[1]);
-  const tbl = table([...heads, ...(k === 'products' ? ['Estoque atual'] : []), 'Situação', ''], body);
-  
-  return `
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
-      <div class="p-4 sm:px-6 border-b border-gray-200 flex justify-between items-center bg-gray-50/80">
-        <h2 class="font-bold text-gray-800 text-lg">${E.t}</h2>
-        <button data-act="new" data-k="${k}" class="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition-colors">+ Novo</button>
-      </div>
-      <div class="p-4 sm:px-6 overflow-x-auto">${tbl}</div>
-    </div>`;
+  const tbl = table([...heads, ...(k === 'products' ? ['Inventário'] : []), 'Status', 'Gestão'], body);
+  return `<h2 class="text-lg font-bold text-gray-800 mb-3">${E.t}</h2><div class="overflow-x-auto border border-gray-100 rounded-lg">${tbl}</div>
+    <form data-k="${k}" class="bg-gray-50 p-6 rounded-lg border border-gray-100 grid sm:grid-cols-5 gap-4 mt-4 items-end">
+      <input type="hidden" name="id">${E.f.map(field).join('')}
+      <div class="flex gap-2 sm:col-span-5 md:col-span-1"><button class="bg-gray-900 text-white font-bold rounded-lg px-4 py-2.5 w-full hover:bg-gray-800 transition-colors" data-save>Adicionar</button><button type="button" data-act="cancel" class="border border-gray-300 bg-white rounded-lg px-4 py-2.5 hidden hover:bg-gray-50">Sair</button></div>
+    </form>`;
 }
-
 async function cadastros() {
   const [b, s, p, g] = await Promise.all([api('/api/admin/barbers'), api('/api/admin/services'), api('/api/admin/products'), api('/api/admin/gcal')]);
   CAD = {barbers: b, services: s, products: p};
-  $('#gcal-text').innerHTML = g.ok
-    ? `<div><b>Google Agenda:</b> Conectado (<code>${esc(g.email)}</code>). Compartilhe a agenda de cada barbeiro com este e-mail dando permissão de <i>Fazer alterações</i>, cole o <b>ID da agenda</b> no barbeiro e faça o teste.</div>`
-    : g.configured ? `<div><b>Google Agenda configurado:</b> Erro de leitura (${esc(g.error || 'verifique as chaves JSON')}).</div>`
-    : `<div><b>Google Agenda desativado:</b> Faltam credenciais (<code>GOOGLE_SA_FILE</code>). O cliente ainda pode baixar eventos .ics locais.</div>`;
+  $('#gcal-info').innerHTML = g.ok
+    ? `<b>Motor Google Integrado:</b> SA Proxy <code>${esc(g.email)}</code> ativa. <br>Delegação: Abra as agendas nativas e dê privilégio de 'Edição' para esta proxy. Anexe os Calendar IDs aos barbeiros.`
+    : g.configured ? `<b>Anomalia Motor Google:</b> Credencial no servidor, mas falha de token (${esc(g.error || 'revisar GOOGLE_SA_FILE')}).`
+    : `<b>Motor Google em Espera:</b> Variável <code>GOOGLE_SA_FILE</code> vazia. Sistema interno provisório (clientes vêem botões "Add Calendar" simples).`;
   for (const k in ENT) $('#ent-' + k).innerHTML = entHtml(k);
 }
-
-// Lógica unificada para os Cards de Cadastro e Modal de Inserção/Edição
+$('#cad').addEventListener('submit', async e => {
+  e.preventDefault(); const f = e.target, k = f.dataset.k, d = Object.fromEntries(new FormData(f));
+  if (!d.id) delete d.id; else d.id = +d.id;
+  await api(ENT[k].url, d); cadastros();
+});
 $('#cad').addEventListener('click', async e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
-  const k = b.dataset.k, id = b.dataset.id ? +b.dataset.id : null, a = b.dataset.act;
-  
+  const k = b.dataset.k, id = +b.dataset.id, a = b.dataset.act;
   if (a === 'toggle') { const r = CAD[k].find(x => x.id === id); await api(ENT[k].url, {id, active: r.active ? 0 : 1}); cadastros(); }
   else if (a === 'access') {
     const r = CAD.barbers.find(x => x.id === id), f = $('#accform').elements; ACC = id;
-    $('#acctitle').textContent = 'Acesso de ' + r.name; $('#accurl').textContent = location.origin + '/barbeiro';
+    $('#acctitle').textContent = 'Workspace: ' + r.name; $('#accurl').textContent = location.origin + '/barbeiro';
     f.login.value = r.login || ''; f.password.value = ''; f.password.required = !r.login; $('#accdel').classList.toggle('hidden', !r.login); $('#accdlg').showModal();
   }
-  else if (a === 'gtest') { await api('/api/admin/gcal/test', {barber: id}); alert('Sucesso! Um evento de teste foi criado e apagado da agenda conectada.'); }
-  else if (a === 'edit' || a === 'new') {
-    const f = $('#cadform'), r = id ? CAD[k].find(x => x.id === id) : {};
-    $('#cadtitle').textContent = (id ? 'Editar ' : 'Novo ') + ENT[k].t.replace(/s$/, '').replace(/ies$/, 'y'); // Simplificação para o título
-    f.elements.k.value = k;
-    f.elements.id.value = id || '';
-    $('#cadfields').innerHTML = ENT[k].f.map(field).join('');
-    
-    ENT[k].f.forEach(([n]) => { if (f.elements[n]) f.elements[n].value = r[n] ?? ''; });
-    if (f.elements.stock && id) f.elements.stock.disabled = true; // estoque inicial só entra na criação
-    $('#caddlg').showModal();
-  }
+  else if (a === 'gtest') { await api('/api/admin/gcal/test', {barber: id}); alert('Ping efetuado (200 OK)! Pacote de teste entregue e revogado no servidor GCal do profissional.'); }
+  else if (a === 'edit') {
+    const f = $(`form[data-k="${k}"]`), r = CAD[k].find(x => x.id === id);
+    f.elements.id.value = id; ENT[k].f.forEach(([n]) => { if (f.elements[n]) f.elements[n].value = r[n] ?? ''; });
+    if (f.elements.stock) f.elements.stock.disabled = true;
+    f.querySelector('[data-save]').textContent = 'Aplicar Patch'; f.querySelector('[data-act="cancel"]').classList.remove('hidden'); f.scrollIntoView({block:'center', behavior: 'smooth'});
+  } else if (a === 'cancel') cadastros();
 });
-
-$('#cadcancel').onclick = () => $('#caddlg').close();
-$('#cadform').onsubmit = async e => {
-  e.preventDefault();
-  const f = e.target, k = f.elements.k.value, d = Object.fromEntries(new FormData(f));
-  if (!d.id) delete d.id; else d.id = +d.id;
-  delete d.k;
-  await api(ENT[k].url, d);
-  $('#caddlg').close();
-  cadastros();
-};
-
-$('#gsync').onclick = async () => { const r = await api('/api/admin/gcal/sync', {}); alert(`${r.synced} agendamentos futuros sincronizados.` + (r.pending ? ` ${r.pending} falhas (barbeiro sem ID ou erro externo).` : '')); };
+$('#gsync').onclick = async () => { const r = await api('/api/admin/gcal/sync', {}); alert(`Upload GCal: ${r.synced} nós transportados com sucesso.` + (r.pending ? ` Restaram ${r.pending} órfaos (revisar Calendar IDs nos Profissionais).` : '')); };
 
 $('#privform').onsubmit = async e => {
   e.preventDefault(); const d = await api('/api/admin/privacy/export?phone=' + encodeURIComponent(e.target.elements.phone.value)), o = $('#privout');
@@ -712,14 +703,13 @@ $('#privform').onsubmit = async e => {
 };
 $('#privdel').onclick = async () => {
   const ph = $('#privform').elements.phone.value; if (!ph) return;
-  if (!confirm('Anonimizar TODOS os registros (Agenda e LGPD) deste cliente? Esta ação apagará nome e telefone e é irreversível.')) return;
-  const r = await api('/api/admin/privacy/erase', {phone: ph}); alert(`Anonimização concluída: ${r.anonymized} registros processados.`); $('#privout').classList.add('hidden');
+  if (!confirm('Procedimento Crítico: A máscara de anonimização será aplicada no banco de dados e irreversível.\n\nAutoriza a continuação?')) return;
+  const r = await api('/api/admin/privacy/erase', {phone: ph}); alert(`Compliance LGPD: ${r.anonymized} traços de identificação pulverizados.`); $('#privout').classList.add('hidden');
 };
-
 async function alertas() {
   try { const r = await fetch('/api/admin/health'); if (!r.ok) return; const d = await r.json(), b = $('#alertbar');
     b.innerHTML = d.alerts.map(a => '⚠ ' + esc(a.msg)).join('<br>'); b.classList.toggle('hidden', !d.alerts.length);
-    $('#privret').textContent = d.retention_months ? `Retenção LGPD automática ligada: registros sem visitas há mais de ${d.retention_months} meses são anonimizados via script cron (03:40).` : 'Retenção LGPD automática desligada (RETENTION_MONTHS=0).'; } catch (e) {}
+    $('#privret').textContent = d.retention_months ? `Ciclo de Expurgo (LGPD): Cadastros dormentes > ${d.retention_months} meses destruídos às 03:40 diariamente.` : 'Lifecycle Management Suspenso (RETENTION_MONTHS=0).'; } catch (e) {}
 }
 $('#cday').value = today; alertas(); setInterval(alertas, 120000);
 setInterval(lembretes, 60000); lembretes(); caixa();
