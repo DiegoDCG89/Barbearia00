@@ -1,4 +1,5 @@
 """Barbearia – site de agendamento: Google Agenda (horários), planilha de financeiro e planilha de estoque."""
+import hmac
 import json
 import logging
 import os
@@ -23,8 +24,18 @@ log = logging.getLogger("barbearia")
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=int(os.environ.get("PROXY_HOPS", "1")))
 
-# Chave secreta obrigatória para o uso de 'session' no Flask
-app.secret_key = os.environ.get("SECRET_KEY", "chave_super_secreta_barbearia")
+# Segredos: só por variável de ambiente (Vercel > Settings > Environment Variables). Sem valor padrão.
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)  # sem SECRET_KEY o login não persiste entre instâncias
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
+                  SESSION_COOKIE_SECURE=bool(os.environ.get("VERCEL")),
+                  PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+CRON_SECRET = os.environ.get("CRON_SECRET", "")
+_login_fail = defaultdict(deque)
+
+
+def _same(a, b):
+    return bool(a) and bool(b) and hmac.compare_digest(a.encode(), b.encode())
 
 TZ = ZoneInfo("America/Sao_Paulo")
 MAX_DAYS_AHEAD = int(os.environ.get("MAX_DAYS_AHEAD", "30"))
@@ -108,13 +119,19 @@ def num(v, default=0.0):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Pode alterar a senha 'admin123' para a senha que preferir
-        if request.form.get('senha') == 'admin123': 
+        ip, t = request.remote_addr or "?", time.time()
+        q = _login_fail[ip]
+        while q and t - q[0] > 900:
+            q.popleft()
+        if len(q) >= 5:
+            return "Muitas tentativas. Aguarde 15 minutos.", 429
+        if _same(request.form.get('senha', ''), ADMIN_PASSWORD):
+            session.clear()
+            session.permanent = True
             session['admin_logado'] = True
             return redirect('/admin')
+        q.append(t)
         return "Senha incorreta. Volte atrás e tente novamente.", 401
-    
-    # Ecrã simples de login
     return '''
     <div style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6;">
         <form method="post" style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
@@ -130,152 +147,6 @@ def login():
 def logout():
     session.pop('admin_logado', None)
     return redirect('/login')
-
-@app.route('/admin', methods=['GET'])
-def admin_panel():
-    if not session.get('admin_logado'):
-        return redirect('/login')
-    
-    # O admin.html original precisa destas variáveis para ser renderizado sem dar Erro 500
-    try:
-        lancamentos = table("Lancamentos", ttl=0)
-    except Exception as e:
-        log.error(f"Erro ao ler Lancamentos: {e}")
-        lancamentos = []
-    
-    dados = []
-    for l in lancamentos:
-        dados.append({
-            'nome': l.get('descricao', ''),
-            'servico': l.get('categoria', ''),
-            'data': l.get('data', ''),
-            'status': l.get('tipo', '')
-        })
-        
-    # Adicionamos shop=shop() e css_url=css_url() para satisfazer o template HTML
-    return render_template('admin.html', dados=dados, shop=shop(), css_url=css_url(), demo=False)
-    
-    # Lê a aba "Lancamentos" da folha de cálculo usando a função nativa do projeto
-    try:
-        lancamentos = table("Lancamentos", ttl=0) # ttl=0 para obter sempre os dados mais recentes
-    except Exception as e:
-        log.error(f"Erro ao ler Lancamentos: {e}")
-        lancamentos = []
-    
-    # Adapta os dados reais da folha de cálculo para o formato que o admin.html espera
-    dados = []
-    for l in lancamentos:
-        dados.append({
-            'nome': l.get('descricao', ''),
-            'servico': l.get('categoria', ''),
-            'data': l.get('data', ''),
-            'status': l.get('tipo', '')
-        })
-        
-    return render_template('admin.html', dados=dados)
-
-
-@app.route('/admin/salvar', methods=['POST'])
-def salvar_dados():
-    if not session.get('admin_logado'):
-        return redirect('/login')
-    
-    # Prepara a nova linha no formato exato que o seu sheets.py (SCHEMA) exige
-    novo_registro = {
-        "id": secrets.token_urlsafe(6),
-        "data": request.form.get('data', '')[:10], # Garante o formato AAAA-MM-DD
-        "tipo": request.form.get('status', ''),
-        "categoria": request.form.get('servico', ''),
-        "descricao": request.form.get('nome', ''),
-        "valor": "0", # Adicione um campo de valor no formulário HTML mais tarde, se desejar
-        "forma_pgto": "",
-        "barbeiro": "",
-        "origem": "painel_admin",
-        "criado_em": now().isoformat(timespec="seconds")
-    }
-    
-    # Grava a linha na aba "Lancamentos"
-    append_row("Lancamentos", novo_registro)
-    
-    return redirect('/admin')
-
-# ------------------------------------------------------------------ FIM ROTAS ADMIN
-
-# ------------------------------------------------------------------ API DO PAINEL DE CADASTROS
-
-@app.route('/api/admin/barbers', methods=['GET', 'POST'])
-def api_admin_barbers():
-    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
-    
-    if request.method == 'GET':
-        res = []
-        for r in table("Barbeiros", ttl=0):
-            res.append({
-                "id": r.get("id"),
-                "name": r.get("nome"),
-                "role": r.get("funcao"),
-                "calendar_id": r.get("calendario"),
-                "active": 1 if is_active(r) else 0
-            })
-        return jsonify(res)
-        
-    if request.method == 'POST':
-        data = request.get_json() or {}
-        if not data.get("id"):  # É um novo cadastro
-            novo_id = "b_" + secrets.token_hex(3)
-            append_row("Barbeiros", {
-                "id": novo_id,
-                "nome": data.get("name", ""),
-                "funcao": data.get("role", ""),
-                "calendario": data.get("calendar_id", ""),
-                "ativo": "sim"
-            })
-            return jsonify(ok=True)
-        return jsonify(error="A edição de registos antigos deve ser feita na folha de cálculo. Os cadastros novos funcionam por aqui!"), 400
-
-@app.route('/api/admin/services', methods=['GET', 'POST'])
-def api_admin_services():
-    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
-    if request.method == 'GET':
-        res = []
-        for r in table("Servicos", ttl=0):
-            res.append({
-                "id": r.get("id"),
-                "name": r.get("nome"),
-                "description": r.get("descricao"),
-                "price": num(r.get("preco")),
-                "minutes": int(num(r.get("minutos"))),
-                "active": 1 if is_active(r) else 0
-            })
-        return jsonify(res)
-    
-    if request.method == 'POST':
-        data = request.get_json() or {}
-        if not data.get("id"):
-            append_row("Servicos", {
-                "id": "s_" + secrets.token_hex(3),
-                "nome": data.get("name", ""),
-                "descricao": data.get("description", ""),
-                "minutos": data.get("minutes", "30"),
-                "preco": data.get("price", "0"),
-                "ativo": "sim"
-            })
-            return jsonify(ok=True)
-        return jsonify(error="A edição deve ser feita no Sheets. Novos serviços funcionam!"), 400
-
-@app.route('/api/admin/products', methods=['GET'])
-def api_admin_products():
-    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
-    return jsonify([]) # Retorno vazio para não travar o painel
-
-@app.route('/api/admin/gcal', methods=['GET'])
-def api_admin_gcal():
-    if not session.get('admin_logado'): return jsonify(error="Não autorizado"), 401
-    return jsonify(ok=True, email="Integrado com as suas planilhas")
-
-# ------------------------------------------------------------------
-
-
 
 def is_active(row):
     return row.get("ativo", "").strip().lower() not in ("nao", "não", "n", "0", "false", "off", "inativo")
@@ -502,10 +373,10 @@ def patch_appt(a, **fields):
     invalidate_cal()
 
 
-def append_row(tab, row):
-    """Grava uma linha na aba respeitando a ordem das colunas."""
+def append_row(tab, row, formulas=False):
+    """Grava uma linha na aba respeitando a ordem das colunas (formulas=True: células "=..." viram fórmula)."""
     header = _cache_header(tab)
-    get_backend().append(tab, [row.get(h, "") for h in header])
+    get_backend().append(tab, [row.get(h, "") for h in header], formulas=formulas)
     invalidate(tab)
 
 
@@ -642,7 +513,7 @@ def stock_levels():
 # ------------------------------------------------------------------ API pública
 @app.route("/api/public")
 def api_public():
-    return jsonify(
+    resp = jsonify(
         services=[{"id": r["id"], "name": r["nome"], "description": r.get("descricao", ""),
                    "minutes": int(num(r.get("minutos"), 30)), "price": num(r.get("preco"))}
                   for r in table("Servicos") if is_active(r) and r.get("id") and r.get("nome")],
@@ -650,6 +521,8 @@ def api_public():
                  for r in table("Barbeiros") if is_active(r) and r.get("id") and r.get("nome")],
         products=[{"name": r["nome"], "price": num(r.get("preco")), "stock": max(0, int(stock_levels().get(r.get("id", ""), 0)))}
                   for r in table("Produtos") if is_active(r) and r.get("nome")])
+    resp.headers["Cache-Control"] = "public, s-maxage=60, stale-while-revalidate=300"
+    return resp
 
 
 @app.route("/api/slots")
@@ -702,12 +575,22 @@ def api_book():
                    "optout": "", "criado_em": n.isoformat(timespec="seconds")}
             start = appt_start(row)
             manage_url = f"{base_url()}/agendamento/{code}"
-            get_calendar().insert(cal_for(b["id"]), agenda.event_body(
+            created = get_calendar().insert(cal_for(b["id"]), agenda.event_body(
                 row, f"{s['nome']} – {name}",
                 f"Cliente: {name}\nWhatsApp: {phone}\nServiço: {s['nome']} ({minutes} min)\n"
                 f"Barbeiro: {b['nome']}\nGerenciar: {manage_url}\n(agendado pelo site)",
                 shop()["address"], start, start + timedelta(minutes=minutes)))
             invalidate_cal()
+            # Duas instâncias podem ter passado pela checagem ao mesmo tempo: confere de novo e,
+            # se outro evento ocupa o mesmo horário e foi criado antes, desfaz o nosso.
+            rivals = [e for e in get_calendar().list_events(cal_for(b["id"]), start, start + timedelta(minutes=minutes))
+                      if e["id"] != created.get("id") and blocks_barber(e, b["id"])]
+            mine = (row["criado_em"], code)  # desempate estável: o mais antigo fica; em empate, o menor código
+            if any(not e["private"].get("codigo") or (e["private"].get("criado_em", ""), e["private"]["codigo"]) < mine
+                   for e in rivals):
+                get_calendar().delete(cal_for(b["id"]), created["id"])
+                invalidate_cal()
+                return jsonify(error="Esse horário acabou de ser ocupado. Escolha outro."), 409
         return jsonify(ok=True, google_link=gcal_link(row), manage_url=manage_url), 201
     except Exception:
         log.exception("agendar")
@@ -785,22 +668,16 @@ def api_manage_cancel(token):
 # ------------------------------------------------------------------ atendimentos -> financeiro
 # (Mantenha a função sync_receitas() original e apenas substitua o bloco start_sync abaixo)
 
-# Rota para a Vercel (Serverless) - Substitui o start_sync() com Thread
+# Rota chamada pelo Vercel Cron (vercel.json). A Vercel envia "Authorization: Bearer <CRON_SECRET>" sozinha.
 @app.route("/api/cron/sync")
 def api_cron_sync():
-    # Segurança básica: exige uma chave na URL para não ser executado por curiosos
-    chave = request.args.get("key")
-    if chave != os.environ.get("CRON_SECRET", "chave_cron_barbearia"):
+    if not _same(request.headers.get("Authorization", ""), f"Bearer {CRON_SECRET}" if CRON_SECRET else ""):
         return jsonify(error="Não autorizado"), 401
-    
     try:
-        feitos = sync_receitas()
-        return jsonify(ok=True, sincronizados=feitos)
-    except Exception as e:
-        return jsonify(error=str(e)), 500
-
-if __name__ == "__main__":
-    app.run(debug=True, port=8080)
+        return jsonify(ok=True, sincronizados=sync_receitas())
+    except Exception:
+        log.exception("cron sync")
+        return jsonify(error="Falha na sincronização"), 500
 
 
 @app.route("/api/manage/<token>/optout", methods=["POST"])
@@ -854,8 +731,8 @@ def sync_receitas():
 
 
 def start_sync():
-    if os.environ.get("SYNC_ENABLED", "1") != "1":
-        return
+    if os.environ.get("VERCEL") or os.environ.get("SYNC_ENABLED", "1") != "1":
+        return  # na Vercel (serverless) quem sincroniza é o cron, não uma thread
 
     def loop():
         time.sleep(30)
@@ -867,6 +744,11 @@ def start_sync():
 
 
 start_sync()
+
+import sys  # noqa: E402
+import admin_panel  # noqa: E402
+
+admin_panel.register(app, sys.modules[__name__])  # painel /admin (ver admin_panel.py)
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
