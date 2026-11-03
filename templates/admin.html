@@ -74,6 +74,8 @@ dialog h3{margin:0 0 12px}
   <div class="top">
     <div class="brand">{{ shop.name }} <small>· painel</small></div>
     <div class="sp"></div>
+    <span class="muted" style="font-size:13px">{{ eu.nome }}</span>
+    <a class="lnk" href="/minha-conta">Minha conta</a>
     <a class="lnk" href="/" target="_blank" rel="noopener">Ver site</a>
     <a class="lnk" id="l-fin" href="#" target="_blank" rel="noopener" hidden>Planilha financeira</a>
     <a class="lnk" id="l-est" href="#" target="_blank" rel="noopener" hidden>Planilha de estoque</a>
@@ -87,6 +89,7 @@ dialog h3{margin:0 0 12px}
     <button data-tab="estoque">Estoque</button>
     <button data-tab="cad">Cadastros</button>
     <button data-tab="horarios">Horários</button>
+    <button data-tab="usuarios">Usuários</button>
     <button data-tab="site">Site</button>
   </nav>
 </header>
@@ -114,7 +117,7 @@ function toast(msg, err) {
 }
 async function api(url, body) {
   const r = await fetch(url, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
-  if (r.status === 401) { location.href = '/login'; throw new Error('Sessão expirada'); }
+  if (r.status === 401) { location.href = '/entrar?next=/admin'; throw new Error('Sessão expirada'); }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error || 'Erro inesperado.');
   return d;
@@ -321,7 +324,27 @@ async function loadSite() {
     <p class="muted" style="font-size:13px">As mudanças aparecem no site em até 1 minuto.</p>`;
 }
 
-const LOAD = {agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
+// ------------------------------------------------------------ USUÁRIOS
+async function loadUsuarios() {
+  S.users = await api('/api/admin/users');
+  view.innerHTML = `<div class="bar"><input type="search" id="qusers" placeholder="Buscar por nome, e-mail ou telefone" style="flex:1;min-width:200px" aria-label="Buscar usuário"></div>
+    <div id="ulist"></div>
+    <p class="muted" style="font-size:13px"><b>Cliente</b> vê só a própria agenda e histórico. <b>Barbeiro</b> acessa este painel inteiro, inclusive o financeiro e esta tela. Dê esse acesso só a quem é da equipe. Quem se cadastra no site entra como cliente.</p>`;
+  renderUsuarios();
+}
+function renderUsuarios() {
+  const q = ($('#qusers') ? $('#qusers').value : '').trim().toLowerCase(), digitos = q.replace(/\D/g, '');
+  const l = S.users.filter(u => !q || (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (digitos && (u.telefone || '').includes(digitos)));
+  $('#ulist').innerHTML = l.map(u => `<div class="card appt" style="${u.ativo ? '' : 'opacity:.6'}">
+      <div class="i"><b>${esc(u.nome)}</b> ${u.papel === 'barbeiro' ? '<span class="pill warn">barbeiro</span>' : '<span class="pill">cliente</span>'}${u.ativo ? '' : ' <span class="pill bad">desativado</span>'}${u.voce ? ' <span class="pill ok">você</span>' : ''}<br>
+        <span class="muted">${esc(u.telefone)}${u.email ? ' · ' + esc(u.email) : ''}${u.criado_em ? ' · desde ' + esc(u.criado_em.split('-').reverse().join('/')) : ''}</span></div>
+      ${u.voce ? '' : `<div class="row">
+        <button class="btn sm ghost" data-act="u-papel" data-id="${esc(u.id)}" data-p="${u.papel === 'barbeiro' ? 'cliente' : 'barbeiro'}">${u.papel === 'barbeiro' ? 'Tornar cliente' : 'Tornar barbeiro'}</button>
+        <button class="btn sm ghost" data-act="u-senha" data-id="${esc(u.id)}">Nova senha</button>
+        <button class="btn sm ${u.ativo ? 'red' : ''}" data-act="u-ativo" data-id="${esc(u.id)}" data-v="${u.ativo ? '0' : '1'}">${u.ativo ? 'Desativar' : 'Reativar'}</button></div>`}</div>`).join('') || '<p class="muted">Nenhum usuário encontrado.</p>';
+}
+
+const LOAD = {usuarios: loadUsuarios, agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
 
 // ------------------------------------------------------------ eventos
 view.addEventListener('click', async e => {
@@ -339,6 +362,15 @@ view.addEventListener('click', async e => {
   if (act === 'miss' && confirm('Marcar que o cliente faltou? O horário volta a ficar livre.')) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'faltou'}), 'Marcado como faltou');
   if (act === 'cancel' && confirm('Cancelar este agendamento? O evento será apagado da agenda.')) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'cancelado'}), 'Agendamento cancelado');
   if (act === 'semforma') { S.noForma = true; return show('lanc'); }
+  if (act === 'u-papel' && confirm(d.p === 'barbeiro' ? 'Dar acesso de BARBEIRO a este usuário? Ele poderá ver o painel inteiro, inclusive o financeiro.' : 'Voltar este usuário para cliente? Ele perde o acesso ao painel.'))
+    return run(() => api('/api/admin/users/' + encodeURIComponent(d.id), {papel: d.p}), 'Nível de acesso atualizado');
+  if (act === 'u-ativo' && confirm(d.v === '1' ? 'Reativar esta conta?' : 'Desativar esta conta? A pessoa sai do site na hora e não consegue entrar nem agendar.'))
+    return run(() => api('/api/admin/users/' + encodeURIComponent(d.id), {ativo: d.v === '1'}), d.v === '1' ? 'Conta reativada' : 'Conta desativada');
+  if (act === 'u-senha' && confirm('Gerar uma senha temporária? A senha atual deixa de funcionar e a pessoa sai dos aparelhos conectados.')) {
+    try { const r = await api('/api/admin/users/' + encodeURIComponent(d.id) + '/senha', {}); prompt('Senha temporária (copie e envie à pessoa; ela pode trocar em "Minha conta"):', r.senha); }
+    catch (err) { toast(err.message, true); }
+    return;
+  }
   if (act === 'newtx') return newTx();
   if (act === 'edittx') return editTx(d.id);
   if (act === 'newprod') { const v = await ask({title: 'Novo produto', fields: prodFields, values: {ativo: true, estoque_minimo: 3}}); if (v) run(() => api('/api/admin/products', v), 'Produto criado'); }
@@ -379,11 +411,13 @@ view.addEventListener('click', async e => {
 });
 view.addEventListener('change', e => {
   const t = e.target;
+  if (t.id === 'qusers') return;
   if (t.id === 'dayin' && t.value) { S.day = t.value; show('agenda'); }
   if (t.id === 'monthin' && t.value) { S.month = t.value; show(S.tab); }
   if (t.id === 'nofi') { S.noForma = t.checked; show('lanc'); }
   if (t.id === 'hb') { S.hb = t.value; show('horarios'); }
 });
+view.addEventListener('input', e => { if (e.target.id === 'qusers') renderUsuarios(); });
 view.addEventListener('submit', e => {
   if (e.target.id !== 'siteform') return;
   e.preventDefault();
