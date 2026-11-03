@@ -43,6 +43,14 @@ python app.py        # http://localhost:8080
 
 **Painel (`/admin`)** — faz pelo celular tudo o que antes exigia abrir a planilha: concluir/cancelar atendimentos (com forma de pagamento, desconto e gorjeta), ver o resumo do mês, lançar receitas e despesas, vender produtos e dar entrada/saída no estoque, cadastrar serviços e barbeiros, ajustar horários e folgas e editar os dados do site. Os atalhos do topo abrem as planilhas e o Google Agenda.
 
+## Contas de usuário (login para agendar)
+Para agendar, o cliente cria uma conta em `/entrar` (nome, WhatsApp, e-mail opcional e senha) e depois entra com **e-mail ou telefone + senha**. As contas ficam na aba `Usuarios` (colunas `id, nome, email, telefone, senha_hash, papel, ativo, consentimento, criado_em`). Nunca edite `senha_hash` à mão.
+
+- **Planilha privada (recomendado):** crie uma 4ª planilha só para isso, compartilhe só com a conta de serviço (e com você) e coloque o ID em `SHEET_USUARIOS_ID`. Assim o contador ou sócios que veem o financeiro não veem os cadastros dos clientes. Depois rode `python sheets.py` para criar a aba.
+- **Primeiro barbeiro:** crie sua conta pelo site e, na aba `Usuarios`, troque `papel` de `cliente` para `barbeiro` na sua linha. Os demais você promove no painel (aba **Usuários**).
+- **Níveis:** `cliente` só vê a própria agenda e histórico; `barbeiro` acessa o painel inteiro (inclusive financeiro e usuários), então só promova quem é da equipe.
+- Agendamentos feitos **antes** das contas não aparecem em "Minha conta" (não têm vínculo com usuário), mas continuam na Agenda e funcionam pelo link.
+
 ## Limites a conhecer
 - A API do Google permite ~60 leituras/min por planilha; o app usa cache de 15–60 s (mudanças na planilha levam até 1 min para aparecer no site).
 - Na Vercel há várias instâncias: o bloqueio de duplo agendamento é feito conferindo a Agenda depois de criar o evento (o horário mais novo é desfeito), não por trava em memória.
