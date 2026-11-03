@@ -5,6 +5,8 @@ Onde cada aba mora:
   estoque    -> Produtos, Movimentacoes        (SHEET_ESTOQUE_ID)
   cadastro   -> Config, Barbeiros, Servicos,   (SHEET_CADASTRO_ID; se vazio, usa a planilha financeira)
                 Horarios, Folgas
+  usuarios   -> Usuarios (contas + senhas em hash)  (SHEET_USUARIOS_ID; se vazio, usa a de cadastro).
+                Recomendado: uma planilha PRIVADA só para isso, sem compartilhar com contador/sócios.
 Os agendamentos NÃO ficam em planilha: ficam no Google Agenda (veja agenda.py).
 """
 import json
@@ -24,6 +26,8 @@ SCHEMA = {
     "Servicos": ["id", "nome", "descricao", "minutos", "preco", "ativo"],
     "Horarios": ["barbeiro", "dia", "abre", "fecha", "almoco_ini", "almoco_fim"],
     "Folgas": ["barbeiro", "data", "inicio", "fim", "motivo"],
+    # usuarios
+    "Usuarios": ["id", "nome", "email", "telefone", "senha_hash", "papel", "ativo", "consentimento", "criado_em"],
     # financeiro
     "Lancamentos": ["id", "data", "tipo", "categoria", "descricao", "valor", "forma_pgto",
                     "barbeiro", "origem", "criado_em"],
@@ -34,13 +38,13 @@ SCHEMA = {
 }
 TAB_BOOK = {
     "Config": "cadastro", "Barbeiros": "cadastro", "Servicos": "cadastro",
-    "Horarios": "cadastro", "Folgas": "cadastro",
+    "Horarios": "cadastro", "Folgas": "cadastro", "Usuarios": "usuarios",
     "Lancamentos": "financeiro", "Resumo": "financeiro",
     "Produtos": "estoque", "Movimentacoes": "estoque",
 }
 # intervalos em que tudo deve ser texto (evita o Sheets converter "09:00" ou "2026-12-25" sozinho)
 TEXT_RANGES = {
-    "Config": ["A:Z"], "Barbeiros": ["A:Z"], "Horarios": ["A:Z"], "Folgas": ["A:Z"],
+    "Config": ["A:Z"], "Barbeiros": ["A:Z"], "Horarios": ["A:Z"], "Folgas": ["A:Z"], "Usuarios": ["A:Z"],
     "Lancamentos": ["A:B"],      # id e data (AAAA-MM-DD); o valor continua numérico
     "Movimentacoes": ["A:A"],    # data (AAAA-MM-DD); a quantidade continua numérica
     "Resumo": ["B1"],            # mês (AAAA-MM)
@@ -174,10 +178,12 @@ class Sheets:
 
     def __init__(self):
         fin = os.environ.get("SHEET_FINANCEIRO_ID") or os.environ.get("SHEET_ID", "")  # SHEET_ID: legado
+        cad = os.environ.get("SHEET_CADASTRO_ID") or fin
         self.ids = {
             "financeiro": fin,
             "estoque": os.environ.get("SHEET_ESTOQUE_ID", ""),
-            "cadastro": os.environ.get("SHEET_CADASTRO_ID") or fin,
+            "cadastro": cad,
+            "usuarios": os.environ.get("SHEET_USUARIOS_ID") or cad,
         }
         self._books = {}
 
