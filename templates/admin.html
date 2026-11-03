@@ -1,718 +1,405 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ERP – Barbearia</title><meta name="robots" content="noindex">
-{% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel · {{ shop.name }}</title>
+<style>
+:root{--bg:#f5f4f1;--card:#fff;--ink:#1c1b19;--mute:#6b675f;--line:#e4e1da;--gold:#b08650;--gold-d:#8f6a3a;--ok:#1f7a4d;--okbg:#e3f3ea;--bad:#b3261e;--badbg:#fbe7e5;--warn:#8a5a00;--warnbg:#fdf0d5;--r:12px}
+@media (prefers-color-scheme:dark){:root{--bg:#121110;--card:#1b1a18;--ink:#efece6;--mute:#a09b90;--line:#2e2c28;--gold:#c9a06a;--gold-d:#d8b17c;--ok:#5fd29a;--okbg:#14301f;--bad:#ff8a80;--badbg:#3a1815;--warn:#f2c66d;--warnbg:#3a2d10}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{max-width:1000px;margin:auto;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.02em}
+.brand small{color:var(--mute);font-weight:500}
+.sp{flex:1}
+.lnk{font-size:13px;color:var(--mute);text-decoration:none;padding:4px 6px;border-radius:6px}
+.lnk:hover{color:var(--ink);background:var(--bg)}
+nav{max-width:1000px;margin:auto;display:flex;gap:4px;overflow-x:auto;padding:0 10px 8px;scrollbar-width:none}
+nav button{border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--ink);color:var(--bg)}
+main{max-width:1000px;margin:auto;padding:16px 14px 60px}
+h2{font-size:18px;margin:22px 0 10px}
+h2:first-child{margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi .v{font-size:22px;font-weight:700}
+.kpi .l{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.end{justify-content:flex-end}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:inherit;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}
+.btn.red{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:wait}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:100%}
+input:focus,select:focus,textarea:focus,.btn:focus-visible,nav button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:10px}
+label input,label select,label textarea{display:block;width:100%;margin-top:3px;color:var(--ink)}
+label.chk{display:flex;gap:8px;align-items:center}
+label.chk input{width:auto;margin:0}
+.muted{color:var(--mute)}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--mute)}
+.pill.ok{background:var(--okbg);color:var(--ok)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.warn{background:var(--warnbg);color:var(--warn)}
+.appt{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.appt .t{font-weight:700;font-size:17px;min-width:92px}
+.appt .i{flex:1;min-width:180px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;white-space:nowrap}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:8px}
+.bars div{flex:1;background:var(--gold);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.bars div:hover{opacity:1}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
+.alert{background:var(--warnbg);color:var(--warn);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:18px;width:min(440px,calc(100vw - 24px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 12px}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
+#toast.show{opacity:1}#toast.err{background:var(--bad);color:#fff}
+.hrs input[type=time]{width:100%;min-width:92px}
+@media (max-width:560px){.top{gap:6px}.kpi .v{font-size:19px}}
+</style>
 </head>
-<body class="bg-gray-100 flex h-screen overflow-hidden antialiased">
-
-<!-- MENU LATERAL (SIDEBAR) -->
-<aside class="w-64 bg-gray-900 text-gray-300 flex flex-col h-full shadow-2xl z-20 flex-shrink-0">
-  <div class="px-6 py-5 bg-black text-white font-bold text-xl tracking-wide flex items-center justify-between border-b border-gray-800">
-    ERP · {{ shop.short_name }}
+<body>
+<header>
+  <div class="top">
+    <div class="brand">{{ shop.name }} <small>· painel</small></div>
+    <div class="sp"></div>
+    <a class="lnk" href="/" target="_blank" rel="noopener">Ver site</a>
+    <a class="lnk" id="l-fin" href="#" target="_blank" rel="noopener" hidden>Planilha financeira</a>
+    <a class="lnk" id="l-est" href="#" target="_blank" rel="noopener" hidden>Planilha de estoque</a>
+    <a class="lnk" id="l-age" href="#" target="_blank" rel="noopener" hidden>Google Agenda</a>
+    <a class="lnk" href="/logout">Sair</a>
   </div>
-  
-  <nav id="tabs" class="flex-1 overflow-y-auto py-4 space-y-1 custom-scrollbar">
-    
-    <!-- TEMA: ATENDIMENTO -->
-    <div class="group">
-      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
-        Atendimento <span class="text-gray-600 group-hover:text-gray-300">▾</span>
-      </div>
-      <div class="hidden group-hover:flex flex-col pb-2">
-        <button data-t="agenda" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Agenda</button>
-        <button data-t="cli" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Clientes</button>
-        <button data-t="lembretes" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent relative">Lembretes <span id="badge" class="bg-red-600 text-white rounded-full px-2 py-0.5 text-xs absolute right-4 top-2 hidden">0</span></button>
-        {% if demo %}<button data-t="wa" class="text-left px-8 py-2 text-sm text-green-500 hover:bg-gray-800 hover:text-green-400 transition-all w-full border-l-4 border-transparent">WhatsApp (demo)</button>{% endif %}
-      </div>
-    </div>
-
-    <!-- TEMA: FINANCEIRO -->
-    <div class="group">
-      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
-        Financeiro <span class="text-gray-600 group-hover:text-gray-300">▾</span>
-      </div>
-      <div class="hidden group-hover:flex flex-col pb-2">
-        <button data-t="caixa" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Caixa</button>
-        <button data-t="lanc" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Gastos / Contas</button>
-      </div>
-    </div>
-
-    <!-- TEMA: ESTOQUE -->
-    <div class="group">
-      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
-        Estoque <span class="text-gray-600 group-hover:text-gray-300">▾</span>
-      </div>
-      <div class="hidden group-hover:flex flex-col pb-2">
-        <button data-t="estoque" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Estoque</button>
-        <button data-t="prev" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Previsão de compra</button>
-      </div>
-    </div>
-
-    <!-- TEMA: GESTÃO -->
-    <div class="group">
-      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
-        Gestão <span class="text-gray-600 group-hover:text-gray-300">▾</span>
-      </div>
-      <div class="hidden group-hover:flex flex-col pb-2">
-        <button data-t="cad" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Cadastros</button>
-        <button data-t="hor" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Horários e Folgas</button>
-        <button data-t="rel" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Relatórios</button>
-      </div>
-    </div>
-
-    <!-- TEMA: SISTEMA -->
-    <div class="group">
-      <div class="px-6 py-3 uppercase tracking-widest text-xs font-bold text-gray-500 group-hover:text-white cursor-pointer flex justify-between items-center transition-colors">
-        Sistema <span class="text-gray-600 group-hover:text-gray-300">▾</span>
-      </div>
-      <div class="hidden group-hover:flex flex-col pb-2">
-        <button data-t="site" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Site e Fotos</button>
-        <button data-t="bkp" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Segurança (Backup)</button>
-        <button data-t="priv" class="text-left px-8 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full border-l-4 border-transparent">Privacidade (LGPD)</button>
-      </div>
-    </div>
+  <nav id="nav" aria-label="Seções">
+    <button data-tab="agenda">Agenda</button>
+    <button data-tab="resumo">Resumo</button>
+    <button data-tab="lanc">Lançamentos</button>
+    <button data-tab="estoque">Estoque</button>
+    <button data-tab="cad">Cadastros</button>
+    <button data-tab="horarios">Horários</button>
+    <button data-tab="site">Site</button>
   </nav>
-</aside>
+</header>
+<main id="view" aria-live="polite"></main>
+<dialog id="dlg"><h3 id="dlgtitle"></h3><form id="dlgform" method="dialog"></form></dialog>
+<div id="toast" role="status"></div>
 
-<!-- ÁREA DE CONTEÚDO PRINCIPAL -->
-<div class="flex-1 flex flex-col h-screen overflow-hidden">
-  
-  <header class="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm z-10">
-    <h1 class="text-2xl font-bold text-gray-800" id="page-title">Agenda</h1>
-    <span class="flex items-center gap-4 text-sm font-medium">
-      <a href="/api/admin/backup" class="text-gray-500 hover:text-gray-900 transition-colors" title="Baixa uma cópia do banco de dados">Baixar backup</a>
-      <a href="/" target="_blank" class="bg-gray-900 text-white px-4 py-2 rounded shadow hover:bg-gray-800 transition-colors">Ver site ↗</a>
-    </span>
-  </header>
-  
-  <div id="alertbar" class="hidden bg-red-600 text-white text-sm px-8 py-2 shadow-inner"></div>
-  
-  <main class="flex-1 overflow-y-auto p-8">
-
-    <section id="lembretes" hidden><p class="text-sm text-gray-600 mb-4">Clique em <b>Enviar</b> (abre o WhatsApp Business com a mensagem pronta) e depois em <b>Feito</b>. A lista atualiza sozinha a cada minuto.</p><div id="rem"></div></section>
-
-    <section id="caixa" hidden>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <div class="flex flex-wrap items-end justify-between gap-3 mb-6 border-b pb-4">
-          <h2 class="text-xl font-bold text-gray-800">Fechamento do dia</h2>
-          <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Dia <input type="date" id="cday" class="border rounded-lg p-2 bg-gray-50"></label>
-        </div>
-        <div id="cl-cards" class="grid sm:grid-cols-4 gap-4 mb-6"></div>
-        <div class="grid sm:grid-cols-2 gap-6 mb-6">
-          <div id="cl-methods" class="overflow-x-auto"></div>
-          <div id="cl-barbers" class="overflow-x-auto"></div>
-        </div>
-        <form id="clform" class="grid sm:grid-cols-4 gap-3 items-end bg-gray-50 p-4 rounded-lg">
-          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Troco Inicial<input name="opening" type="number" step="0.01" min="0" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
-          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Dinheiro na Gaveta<input name="counted" type="number" step="0.01" min="0" required class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
-          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Observações<input name="notes" maxlength="200" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
-          <button class="bg-gray-900 text-white rounded-lg p-2.5 font-bold hover:bg-gray-800 transition-colors">Fechar caixa</button>
-        </form>
-        <p id="cl-hint" class="text-xs text-gray-500 mt-3"></p><div id="cl-result" class="text-sm mt-3 bg-gray-50 p-3 rounded"></div><div id="cl-recent" class="text-xs text-gray-500 mt-3"></div>
-      </div>
-      
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-800">Resumo Mensal</h2>
-        <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Mês <input type="month" id="month" class="border rounded-lg p-2 bg-white shadow-sm"></label>
-      </div>
-      <div class="grid sm:grid-cols-3 gap-6 my-6" id="cards"></div>
-      <div id="mmethods" class="text-sm font-medium text-gray-700 bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-8"></div>
-      
-      <h2 class="text-lg font-bold mb-3 text-gray-800">Repasse por barbeiro</h2>
-      <div id="barbers" class="overflow-x-auto mb-8 bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
-      
-      <h2 class="text-lg font-bold mb-3 text-gray-800">Lançamentos do mês</h2>
-      <div id="txs" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
-    </section>
-
-    <section id="agenda">
-      <form id="newappt" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-6 gap-4 mb-8 items-end relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
-        <h2 class="font-bold text-lg text-gray-800 sm:col-span-6 flex items-center gap-2">Novo Agendamento <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Manual</span></h2>
-        
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Cliente<input name="name" required maxlength="80" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none transition-all"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">WhatsApp <span class="normal-case font-normal text-gray-400">(opcional)</span><input name="phone" type="tel" placeholder="(12) 99999-9999" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-900 outline-none transition-all"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Barbeiro<select name="barber" id="nb" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></select></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Serviço<select name="service" id="ns" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></select></label>
-        
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Data<input name="date" id="nd" type="date" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Horário Livre<select id="nt" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none font-medium"></select></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Ou personalizar<input id="nto" type="time" step="300" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white outline-none"></label>
-        
-        <label class="text-sm font-medium text-gray-700 flex items-center gap-2 sm:col-span-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors"><input type="checkbox" name="concluido" class="w-4 h-4 text-gray-900 rounded focus:ring-gray-900"> Já atendido (lançar no caixa)</label>
-        <label class="text-sm font-medium text-gray-700 flex items-center gap-2 sm:col-span-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors"><input type="checkbox" name="consent" class="w-4 h-4 text-gray-900 rounded focus:ring-gray-900"> Cliente autorizou mensagens</label>
-        
-        <div id="npayrow" class="hidden sm:col-span-6 grid sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg mt-2 border border-gray-100">
-          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Forma de pagamento<select name="method" class="border p-2.5 rounded-lg w-full mt-1 bg-white"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
-          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
-          <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-2.5 rounded-lg w-full mt-1 bg-white"></label>
-        </div>
-        
-        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-6 hover:bg-gray-800 transition-colors shadow hover:shadow-md">Agendar</button>
-      </form>
-      
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-800">Calendário do Dia</h2>
-        <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Dia <input type="date" id="day" class="border rounded-lg p-2 bg-white shadow-sm font-medium"></label>
-      </div>
-      <div id="appts" class="mt-2 overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
-    </section>
-
-    <section id="lanc" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Registrar Gastos e Contas</h2>
-      <form id="txform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-5 gap-4">
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Tipo<select name="kind" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="saida">Gasto / Conta</option><option value="entrada">Receita avulsa</option></select></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Categoria<select name="category" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option>Conta Fixa</option><option>Gasto</option><option>Aluguel</option><option>Energia</option><option>Água</option><option>Internet</option><option>Outros</option></select></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Descrição<input name="description" placeholder="Ex: Conta de Luz" maxlength="120" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Valor (R$)<input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Data<input name="day" type="date" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Pagamento <span class="normal-case font-normal text-gray-400">(opcional)</span><select name="method" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="">Selecione...</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
-        <div class="sm:col-span-3 flex items-end">
-          <button class="bg-gray-900 text-white font-bold rounded-lg p-3 w-full hover:bg-gray-800 transition-colors">Lançar no Caixa</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="estoque" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Gestão de Estoque</h2>
-      <div id="prods" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2 mb-6"></div>
-      <h3 class="font-bold text-gray-800 mb-2">Registrar Movimentação</h3>
-      <form id="mvform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-5 gap-4">
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Produto<select name="product" id="mvprod" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></select></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Operação<select name="mode" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="venda">Venda</option><option value="compra">Compra (entrada)</option><option value="consumo">Consumo interno</option></select></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Quantidade<input name="qty" type="number" min="1" placeholder="Qtd" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Custo <span class="normal-case font-normal text-gray-400">(se compra)</span><input name="cost" type="number" step="0.01" min="0" placeholder="R$ 0.00" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Pagamento <span class="normal-case font-normal text-gray-400">(se venda)</span><select name="method" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"><option value="">Selecione...</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
-        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-5 hover:bg-gray-800 transition-colors">Registrar Movimentação</button>
-      </form>
-    </section>
-
-    <section id="prev" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-2">Previsão de Compra Inteligente</h2>
-      <p class="text-sm text-gray-600 mb-4 bg-blue-50 border border-blue-100 p-3 rounded-lg text-blue-800">Cálculo baseado na média móvel das últimas 8 semanas de consumo, com horizonte de 30 dias e 15% de margem de segurança.</p>
-      <div id="fc" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
-    </section>
-
-    <section id="hor" hidden>
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-800">Horários de Expediente</h2>
-        <div class="flex items-center gap-4">
-          <label class="text-sm font-medium text-gray-600 flex items-center gap-2">Barbeiro: <select id="hb" class="border p-2 rounded-lg bg-white shadow-sm"></select></label>
-          <button id="hsave" class="bg-gray-900 text-white font-bold rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors shadow">Salvar Expediente</button>
-        </div>
-      </div>
-      <p class="text-sm text-gray-500 mb-4">Marque os dias de trabalho. O horário de almoço é opcional.</p>
-      <div id="hgrid" class="overflow-x-auto mb-10 bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
-      
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Férias e Feriados (Bloqueios)</h2>
-      <form id="toform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-6 gap-4 items-end mb-6">
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Barbeiro<select name="barber" id="tb" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></select></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">De (Data)<input name="from" type="date" required class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Até (Data)<input name="to" type="date" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Das (Hora)<input name="t_from" type="time" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Às (Hora)<input name="t_to" type="time" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-4">Motivo / Descrição<input name="reason" maxlength="80" placeholder="Ex: Férias, Consulta..." class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-2 hover:bg-gray-800 transition-colors">Adicionar Bloqueio</button>
-      </form>
-      
-      <div class="flex items-center justify-between mb-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-        <label class="text-sm font-medium text-gray-700 flex items-center gap-2">Importar feriados nacionais do ano: <input id="hy" type="number" min="2000" max="2100" class="border p-2 rounded-lg bg-white w-24"></label>
-        <button id="hol" class="bg-blue-600 text-white font-bold rounded-lg px-4 py-2 hover:bg-blue-700 shadow">Cadastrar Feriados Automáticos</button>
-      </div>
-      <div id="to-list" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
-    </section>
-
-    <section id="cli" hidden>
-      <div class="flex gap-2 mb-6"><input id="cq" placeholder="Buscar por Nome ou WhatsApp..." class="border p-3 rounded-lg flex-1 max-w-md bg-white shadow-sm focus:ring-2 focus:ring-gray-900 outline-none"></div>
-      <div id="cl-list" class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2"></div>
-      <div id="cl-detail" class="mt-8"></div>
-    </section>
-
-    <section id="rel" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-2">Exportar Relatórios</h2>
-      <p class="text-sm text-gray-600 mb-6">Gere ficheiros CSV prontos a abrir no Excel ou Google Planilhas. Defina o período abaixo:</p>
-      
-      <div class="flex flex-wrap items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-fit">
-        <label class="text-sm font-medium text-gray-700 flex items-center gap-2">De <input id="rfrom" type="date" class="border rounded-lg p-2 bg-gray-50"></label>
-        <label class="text-sm font-medium text-gray-700 flex items-center gap-2">Até <input id="rto" type="date" class="border rounded-lg p-2 bg-gray-50"></label>
-      </div>
-      
-      <div id="rlinks" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      <p class="text-xs font-semibold text-amber-600 mt-6 bg-amber-50 p-3 rounded border border-amber-200">Aviso: Agendamentos e clientes contêm dados sensíveis (LGPD). Partilhe com cuidado.</p>
-    </section>
-
-    <section id="site" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Informações do Site Público</h2>
-      <form id="siteform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 grid sm:grid-cols-2 gap-4 mb-8">
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Nome Oficial<input name="name" maxlength="80" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Nome Curto <span class="normal-case font-normal text-gray-400">(Painel)</span><input name="short_name" maxlength="40" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sigla/Marca Logo<input name="brand" maxlength="12" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">WhatsApp <span class="normal-case font-normal text-gray-400">(Botão flutuante)</span><input name="whatsapp" type="tel" placeholder="(12) 99999-9999" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide sm:col-span-2">Endereço Completo<input name="address" maxlength="160" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Instagram<input name="instagram" placeholder="@usuario ou link" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Descrição Curta <span class="normal-case font-normal text-gray-400">(SEO Google)</span><input name="tagline" maxlength="200" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <button class="bg-gray-900 text-white font-bold rounded-lg p-3 sm:col-span-2 hover:bg-gray-800 transition-colors shadow">Atualizar Dados do Site</button>
-      </form>
-      
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Galeria de Imagens</h2>
-      <form id="galform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end mb-6">
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide flex-1">Upload de Fotos <span class="normal-case font-normal text-gray-400">(Até 3MB)</span><input name="file" type="file" multiple accept="image/jpeg,image/png,image/webp" required class="border p-2 rounded-lg bg-gray-50 block w-full mt-1"></label>
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide flex-1">Legenda Opcional<input name="caption" maxlength="120" placeholder="Escreva algo..." class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <button class="bg-gray-900 text-white font-bold rounded-lg px-6 py-2.5 hover:bg-gray-800 transition-colors">Adicionar Foto</button>
-      </form>
-      <div id="gal-list" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
-    </section>
-
-    <section id="priv" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-2">Painel de Privacidade (LGPD)</h2>
-      <p class="text-sm text-gray-600 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">Consulte os dados retidos de um cliente ou anonimize o registo permanentemente. Os valores financeiros mantêm-se no caixa, sem associação ao cliente.</p>
-      <form id="privform" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end mb-4">
-        <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide flex-1">WhatsApp do Cliente<input name="phone" required placeholder="(12) 99999-9999" class="border p-2.5 rounded-lg w-full mt-1 bg-gray-50"></label>
-        <button class="bg-gray-900 text-white font-bold rounded-lg px-6 py-2.5 shadow hover:bg-gray-800">Ver Ficha Completa</button>
-        <button type="button" id="privdel" class="bg-red-600 text-white font-bold rounded-lg px-6 py-2.5 shadow hover:bg-red-700">Anonimizar Definitivamente</button>
-      </form>
-      <pre id="privout" class="bg-gray-900 text-green-400 rounded-xl shadow p-6 mt-4 text-xs overflow-x-auto hidden"></pre>
-      <p id="privret" class="text-xs font-medium text-gray-500 mt-4"></p>
-    </section>
-
-    <section id="bkp" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Saúde do Sistema e Backup</h2>
-      <div id="bkp-info" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3 text-sm text-gray-700"></div>
-      <div class="flex gap-4 mt-6">
-        <a href="/api/admin/backup" class="bg-gray-900 text-white font-bold rounded-lg px-6 py-3 shadow hover:bg-gray-800 text-sm text-center">Baixar Cópia Local</a>
-        <button id="bkp-up" class="bg-blue-600 text-white font-bold rounded-lg px-6 py-3 shadow hover:bg-blue-700 text-sm">Sincronizar Cloud Agora</button>
-      </div>
-    </section>
-
-    <section id="cad" hidden>
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Cadastros Base</h2>
-      <div id="gcal-info" class="bg-blue-50 border border-blue-200 text-blue-900 text-sm rounded-lg p-4 mb-6 shadow-sm"></div>
-      <div class="flex gap-2 mb-8"><button id="gsync" class="bg-blue-600 text-white font-bold rounded-lg px-4 py-2 text-sm shadow hover:bg-blue-700">Sincronizar Futuros c/ Google Agenda</button></div>
-      <div id="ent-barbers" class="mb-10 bg-white p-6 rounded-xl shadow-sm border border-gray-100"></div>
-      <div id="ent-services" class="mb-10 bg-white p-6 rounded-xl shadow-sm border border-gray-100"></div>
-      <div id="ent-products" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100"></div>
-    </section>
-    
-    {% if demo %}
-    <section id="wa" hidden>
-      <div class="flex gap-3 mb-6">
-        <button id="seed" class="bg-gray-900 text-white font-bold rounded-lg px-5 py-2.5 shadow hover:bg-gray-800">1. Injetar Dados de Teste</button>
-        <button id="runrem" class="bg-green-600 text-white font-bold rounded-lg px-5 py-2.5 shadow hover:bg-green-700">2. Disparar Gatilhos (WhatsApp)</button>
-      </div>
-      <p class="text-sm font-medium text-gray-600 mb-4 bg-white p-3 border rounded-lg shadow-sm">Ambiente seguro (Sandbox): Nenhuma mensagem real sai do servidor. Previsão de entrega abaixo.</p>
-      <div id="chat" class="max-w-md bg-[#e5ddd5] rounded-2xl shadow-inner p-4 space-y-3 min-h-[300px] border border-gray-300"></div>
-    </section>
-    {% endif %}
-
-  </main>
-</div>
-
-<!-- MODALS -->
-<dialog id="accdlg" class="rounded-2xl p-0 w-full max-w-md shadow-2xl backdrop:bg-gray-900/80 border-0">
-  <form id="accform" class="p-6 space-y-4 bg-white">
-    <h2 id="acctitle" class="font-bold text-xl text-gray-800"></h2>
-    <p class="text-xs text-gray-500 bg-gray-50 p-2 rounded">Acesso restrito em <b id="accurl"></b></p>
-    <label class="block text-xs font-bold text-gray-700 uppercase">Usuário<input name="login" required maxlength="30" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
-    <label class="block text-xs font-bold text-gray-700 uppercase">Senha <span class="font-normal normal-case">(Mín 8 char)</span><input name="password" type="password" autocomplete="new-password" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
-    <p class="text-xs text-gray-400 italic">Deixe a senha em branco para mantê-la atual.</p>
-    <div class="flex gap-3 mt-4">
-      <button class="flex-1 bg-gray-900 text-white font-bold rounded-lg p-3 hover:bg-gray-800">Salvar Acesso</button>
-      <button type="button" id="accdel" class="bg-red-50 text-red-600 font-bold rounded-lg p-3 hover:bg-red-100">Revogar</button>
-      <button type="button" id="acccancel" class="bg-gray-100 text-gray-700 font-bold rounded-lg p-3 hover:bg-gray-200">Cancelar</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="paydlg" class="rounded-2xl p-0 w-full max-w-md shadow-2xl backdrop:bg-gray-900/80 border-0">
-  <form id="payform" class="p-6 space-y-4 bg-white">
-    <h2 id="paytitle" class="font-bold text-xl text-gray-800"></h2>
-    <label class="block text-xs font-bold text-gray-700 uppercase">Pagamento<select name="method" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="debito">Cartão de débito</option><option value="credito">Cartão de crédito</option><option value="outro">Outro</option></select></label>
-    <div class="grid grid-cols-2 gap-4">
-      <label class="block text-xs font-bold text-gray-700 uppercase">Desconto (R$)<input name="discount" type="number" step="0.01" min="0" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
-      <label class="block text-xs font-bold text-gray-700 uppercase">Gorjeta (R$)<input name="tip" type="number" step="0.01" min="0" class="border p-3 rounded-lg w-full mt-1 bg-gray-50"></label>
-    </div>
-    <div id="paytot" class="text-sm font-medium text-gray-800 bg-green-50 border border-green-200 p-3 rounded-lg"></div>
-    <div class="flex gap-3 mt-4">
-      <button class="flex-1 bg-green-600 text-white font-bold rounded-lg p-3 hover:bg-green-700">Lançar Pagamento</button>
-      <button type="button" id="paycancel" class="bg-gray-100 text-gray-700 font-bold rounded-lg p-3 hover:bg-gray-200">Cancelar</button>
-    </div>
-  </form>
-</dialog>
-
+{% raw %}
 <script>
-const $ = s => document.querySelector(s);
+const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const brl = v => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-const api = async (u, body) => { const r = await fetch(u, body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : {});
-  const j = await r.json(); if (!r.ok) { alert(j.error || 'Erro'); throw 0; } return j; };
+const brl = n => Number(n || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+const hoje = () => new Date().toLocaleDateString('en-CA', {timeZone: 'America/Sao_Paulo'});
+const fdata = iso => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+const FORMAS = {dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito'};
+const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+const S = {day: hoje(), month: hoje().slice(0, 7), tab: 'agenda', noForma: false, tx: [], prod: [], barbers: null, links: {}};
+const view = $('#view');
 
-// Tabela moderna com Tailwind
-const table = (head, rows) => `<table class="w-full text-sm text-left text-gray-600"><thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200"><tr>${head.map(h=>`<th class="px-4 py-3 font-semibold">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">${r.map(c=>`<td class="px-4 py-3">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+// ------------------------------------------------------------ utilidades
+let toastT;
+function toast(msg, err) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => t.className = '', err ? 4500 : 2200);
+}
+async function api(url, body) {
+  const r = await fetch(url, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (r.status === 401) { location.href = '/login'; throw new Error('Sessão expirada'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Erro inesperado.');
+  return d;
+}
+// executa uma ação, avisa o resultado e recarrega a aba
+async function run(fn, okMsg) {
+  try { await fn(); if (okMsg) toast(okMsg); await show(S.tab, true); }
+  catch (e) { toast(e.message, true); }
+}
+const options = (pairs, sel) => pairs.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(sel) ? ' selected' : ''}>${esc(l)}</option>`).join('');
+const formaOpts = (sel, vazio) => options((vazio ? [['', vazio]] : []).concat(Object.entries(FORMAS)), sel);
+async function barbers() { return S.barbers || (S.barbers = await api('/api/admin/barbers')); }
 
-const today = new Date().toLocaleDateString('en-CA');
-$('#month').value = today.slice(0,7); $('#day').value = today; document.querySelector('[name=day]').value = today;
-
-// Logica de Tabs / Menu lateral
-document.querySelectorAll('#tabs button[data-t]').forEach(b => b.onclick = () => {
-  // Alterar CSS do menu lateral
-  document.querySelectorAll('#tabs button[data-t]').forEach(x => {
-    const isActive = x === b;
-    x.classList.toggle('bg-gray-800', isActive);
-    x.classList.toggle('text-white', isActive);
-    x.classList.toggle('border-blue-500', isActive);
-    x.classList.toggle('border-transparent', !isActive);
-    x.classList.toggle('text-gray-400', !isActive);
+// diálogo de formulário genérico: devolve os valores ou null (cancelou)
+function ask({title, fields, values = {}, ok = 'Salvar'}) {
+  return new Promise(resolve => {
+    const dlg = $('#dlg'), f = $('#dlgform'); let done = false;
+    $('#dlgtitle').textContent = title;
+    f.innerHTML = fields.map(fd => {
+      const v = values[fd.k] ?? fd.def ?? '', req = fd.req ? ' required' : '';
+      if (fd.type === 'select') return `<label>${esc(fd.label)}<select name="${fd.k}"${req}>${options(fd.opts, v)}</select></label>`;
+      if (fd.type === 'check') return `<label class="chk"><input type="checkbox" name="${fd.k}"${v === true || v === 'sim' ? ' checked' : ''}> ${esc(fd.label)}</label>`;
+      const ex = fd.type === 'number' ? ` inputmode="decimal" step="${fd.step || '0.01'}"${fd.min !== undefined ? ` min="${fd.min}"` : ''}` : ` maxlength="${fd.max || 120}"`;
+      return `<label>${esc(fd.label)}<input type="${fd.type === 'number' ? 'number' : fd.type || 'text'}" name="${fd.k}" value="${esc(v)}"${req}${ex}></label>`;
+    }).join('') + `<div class="row end"><button type="button" class="btn ghost" id="dlgx">Cancelar</button><button class="btn">${esc(ok)}</button></div>`;
+    const finish = val => { if (!done) { done = true; resolve(val); } };
+    f.onsubmit = e => {
+      e.preventDefault();
+      const out = {};
+      fields.forEach(fd => { const el = f.elements[fd.k]; out[fd.k] = fd.type === 'check' ? el.checked : el.value; });
+      finish(out); dlg.close();
+    };
+    $('#dlgx').onclick = () => dlg.close();
+    dlg.onclose = () => finish(null);
+    dlg.showModal();
+    const first = f.querySelector('input,select'); if (first) first.focus();
   });
-  
-  // Atualizar Titulo do Header Central
-  const pageTitle = document.getElementById('page-title');
-  if (pageTitle) pageTitle.textContent = b.textContent.replace(/[0-9]/g, '').trim();
+}
 
-  // Alternar as sections main
-  document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== b.dataset.t);
-  
-  // Chamar função atrelada à aba
-  ({wa: typeof wa==='function'?wa:()=>{}, lembretes, caixa, agenda:agendaTab, lanc:()=>{}, estoque, prev, cad:cadastros, hor:horarios, bkp:backup, priv:()=>{}, cli:clientes, rel:relatorios, site:siteTab})[b.dataset.t]();
-});
+// ------------------------------------------------------------ navegação
+async function show(tab, quiet) {
+  S.tab = tab; history.replaceState(null, '', '#' + tab);
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  if (!quiet) view.innerHTML = '<p class="muted">Carregando…</p>';
+  try { await LOAD[tab](); }
+  catch (e) { view.innerHTML = `<div class="card"><b>Não foi possível carregar.</b><p class="muted">${esc(e.message)}</p><button class="btn" data-act="retry">Tentar de novo</button></div>`; }
+}
+$('#nav').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) show(b.dataset.tab); };
 
-// Forçar Agenda a abrir como padrão 
-setTimeout(() => { document.querySelector('button[data-t="agenda"]')?.click(); }, 100);
+// ------------------------------------------------------------ AGENDA
+const STATUS = {agendado: ['Agendado', ''], concluido: ['Concluído', 'ok'], faltou: ['Faltou', 'bad']};
+async function loadAgenda() {
+  const list = await api('/api/admin/appointments?day=' + S.day);
+  const dt = new Date(S.day + 'T12:00:00'), tit = dt.toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: 'long'});
+  const total = list.filter(a => a.status !== 'faltou').reduce((s, a) => s + a.preco, 0);
+  view.innerHTML = `<div class="bar">
+      <button class="btn ghost" data-act="day" data-n="-1" aria-label="Dia anterior">‹</button>
+      <input type="date" id="dayin" value="${esc(S.day)}" aria-label="Dia">
+      <button class="btn ghost" data-act="day" data-n="1" aria-label="Próximo dia">›</button>
+      <button class="btn ghost" data-act="day" data-n="0">Hoje</button></div>
+    <h2 style="text-transform:capitalize">${esc(tit)} <span class="muted" style="font-weight:400;font-size:14px">· ${list.length} atendimento(s) · ${brl(total)}</span></h2>
+    ${list.map(a => {
+      const [lb, cl] = STATUS[a.status] || [a.status, ''], ph = String(a.telefone || '').replace(/\D/g, '');
+      return `<div class="card appt"><div class="t">${esc(a.hora)}<div class="muted" style="font-weight:400;font-size:12px">até ${esc(a.fim)}</div></div>
+        <div class="i"><b>${esc(a.cliente)}</b> <span class="pill ${cl}">${lb}</span><br>
+        <span class="muted">${esc(a.servico)} · ${esc(a.barbeiro)} · ${brl(a.preco)}</span><br>
+        ${ph ? `<a class="lnk" style="padding-left:0" href="https://wa.me/55${ph}" target="_blank" rel="noopener">WhatsApp ${esc(ph)}</a>` : ''}</div>
+        ${a.status === 'agendado' ? `<div class="row">
+          <button class="btn sm" data-act="done" data-code="${esc(a.codigo)}" data-preco="${a.preco}">Concluir</button>
+          <button class="btn sm ghost" data-act="miss" data-code="${esc(a.codigo)}">Faltou</button>
+          <button class="btn sm red" data-act="cancel" data-code="${esc(a.codigo)}">Cancelar</button></div>` : ''}</div>`;
+    }).join('') || '<p class="muted">Nenhum agendamento neste dia.</p>'}
+    <p class="muted" style="font-size:13px">Eventos criados à mão no Google Agenda bloqueiam o horário no site, mas não aparecem aqui.</p>`;
+}
 
-async function caixa() {
-  const d = await api('/api/admin/summary?month=' + $('#month').value);
-  $('#cards').innerHTML = [['Entradas', d.income,'text-green-700'],['Saídas', d.expense,'text-red-600'],['Saldo', d.balance,'']]
-    .map(([t,v,c]) => `<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100"><p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">${t}</p><p class="text-3xl font-bold mt-2 ${c}">${brl(v)}</p></div>`).join('');
-  $('#mmethods').innerHTML = 'Entradas por forma de pagamento: ' + (Object.entries(d.by_method).map(([k, v]) => `${PAYN[k] || k}: <b>${brl(v)}</b>`).join(' &nbsp;·&nbsp; ') || '—') + (d.discounts ? ` &nbsp;·&nbsp; Descontos dados: <b class="text-red-600">${brl(d.discounts)}</b>` : '');
-  $('#barbers').innerHTML = table(['Barbeiro','Atendimentos','Bruto (líquido de desconto)','% comissão','A repassar','Gorjetas (repasse integral)'], d.barbers.map(b => [esc(b.name), b.n, brl(b.gross), b.pct+'%', `<b class="text-gray-900">${brl(b.commission)}</b>`, brl(b.tips)]));
-  fechamento();
-  $('#txs').innerHTML = table(['Data','Tipo','Categoria','Descrição','Pagamento','Valor'], d.transactions.map(t => [t.day, t.kind, esc(t.category), esc(t.description) + (t.discount ? ` <span class="text-gray-400 text-xs ml-1">(desc. ${brl(t.discount)})</span>` : ''), PAYN[t.method] || '—', `<span class="${t.kind==='entrada'?'text-green-600 font-bold':'text-red-600 font-bold'}">${brl(t.amount)}</span>`]));
+// ------------------------------------------------------------ RESUMO
+async function loadResumo() {
+  const d = await api('/api/admin/summary?month=' + S.month), max = Math.max(1, ...d.por_dia.map(x => x.total));
+  const dias = new Date(+S.month.slice(0, 4), +S.month.slice(5), 0).getDate(), porDia = Object.fromEntries(d.por_dia.map(x => [x.dia, x.total]));
+  view.innerHTML = `<div class="bar"><input type="month" id="monthin" value="${esc(S.month)}" aria-label="Mês"></div>
+    ${d.sem_forma ? `<div class="alert"><span><b>${d.sem_forma}</b> receita(s) sem forma de pagamento.</span><button class="btn sm" data-act="semforma">Classificar agora</button></div>` : ''}
+    <div class="grid">
+      <div class="card kpi"><div class="l">Receitas</div><div class="v pos">${brl(d.receitas)}</div></div>
+      <div class="card kpi"><div class="l">Despesas</div><div class="v neg">${brl(d.despesas)}</div></div>
+      <div class="card kpi"><div class="l">Saldo</div><div class="v ${d.saldo < 0 ? 'neg' : ''}">${brl(d.saldo)}</div></div>
+      <div class="card kpi"><div class="l">Atendimentos</div><div class="v">${d.atendimentos}</div></div>
+      <div class="card kpi"><div class="l">Ticket médio</div><div class="v">${brl(d.ticket_medio)}</div></div></div>
+    <h2>Receita por dia</h2><div class="card"><div class="bars" role="img" aria-label="Receita por dia do mês">
+      ${Array.from({length: dias}, (_, i) => `<div title="Dia ${i + 1}: ${brl(porDia[i + 1] || 0)}" style="height:${Math.round((porDia[i + 1] || 0) / max * 100)}%"></div>`).join('')}</div>
+      <div class="axis"><span>1</span><span>${dias}</span></div></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <div><h2>Por forma de pagamento</h2><div class="tbl"><table style="min-width:0"><tbody>
+        ${Object.entries(d.por_forma).map(([k, v]) => `<tr><td>${esc(FORMAS[k] || 'Sem forma informada')}</td><td class="n">${brl(v)}</td></tr>`).join('') || '<tr><td class="muted">Sem receitas neste mês.</td></tr>'}</tbody></table></div></div>
+      <div><h2>Por barbeiro</h2><div class="tbl"><table style="min-width:0"><tbody>
+        ${d.por_barbeiro.map(b => `<tr><td>${esc(b.nome)}</td><td class="n">${brl(b.total)}</td></tr>`).join('') || '<tr><td class="muted">Sem receitas neste mês.</td></tr>'}</tbody></table></div></div></div>`;
 }
-const PAYN = {dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Cartão de débito', credito: 'Cartão de crédito', outro: 'Outro', sem: 'N/A'};
-let CLD = null;
-async function fechamento() {
-  const d = CLD = await api('/api/admin/closing?day=' + $('#cday').value), f = $('#clform').elements, cl = d.closing;
-  $('#cl-cards').innerHTML = [['Entradas', brl(d.income), 'text-green-700'], ['Saídas', brl(d.expense), 'text-red-600'], ['Saldo do dia', brl(d.balance), 'text-gray-900'], ['Atendimentos', d.services, 'text-gray-900']]
-    .map(([t, v, c]) => `<div class="bg-gray-50 border border-gray-200 p-4 rounded-xl"><p class="text-xs font-semibold text-gray-500 uppercase">${t}</p><p class="text-xl font-bold mt-1 ${c}">${v}</p></div>`).join('');
-  $('#cl-methods').innerHTML = table(['Forma de pagamento', 'Entradas'], Object.entries(d.by_method).map(([k, v]) => [PAYN[k] || k, `<b>${brl(v)}</b>`]))
-    + `<p class="text-xs font-medium text-gray-500 mt-2 bg-gray-50 p-2 rounded">Gorjetas repassadas: ${brl(d.tips)} &nbsp;·&nbsp; Descontos oferecidos: ${brl(d.discounts)}</p>`;
-  $('#cl-barbers').innerHTML = d.barbers.length ? table(['Barbeiro', 'Atendimentos', 'Bruto', 'Gorjetas'], d.barbers.map(b => [esc(b.name), b.n, brl(b.gross), brl(b.tips)])) : '';
-  f.opening.value = cl ? cl.opening : d.suggested_opening; f.counted.value = cl ? cl.counted : ''; f.notes.value = cl ? cl.notes : '';
-  hintCx();
-  $('#cl-result').innerHTML = cl ? `<div class="${Math.abs(cl.diff) < 0.005 ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'} p-3 rounded-lg border font-medium">Caixa fechado às ${esc(cl.closed_at)}: esperado ${brl(cl.expected)}, apurado ${brl(cl.counted)} → ${Math.abs(cl.diff) < 0.005 ? 'Tudo certo!' : (cl.diff > 0 ? 'Sobraram ' : 'Faltaram ') + brl(Math.abs(cl.diff))} no caixa.</div>`
-    + (cl.stale ? '<p class="text-amber-700 font-bold mt-2">⚠ Houve movimento em dinheiro após fechamento. Refaça o caixa.</p>' : '') : '';
-  $('#cl-recent').innerHTML = d.recent.length ? 'Últimos dias: ' + d.recent.map(r => `${r.day.split('-').reverse().join('/')} (${Math.abs(r.diff) < 0.005 ? '<span class="text-green-600">ok</span>' : '<span class="text-red-600">' + (r.diff > 0 ? '+' : '−') + brl(Math.abs(r.diff)) + '</span>'})`).join(' · ') : '';
-}
-function hintCx() {
-  if (!CLD) return; const exp = (+$('#clform').elements.opening.value || 0) + CLD.cash_in - CLD.cash_out;
-  $('#cl-hint').innerHTML = `Líquido em Gaveta Previsto: <b>${brl(exp)}</b> <span class="text-gray-400">(Abertura + Entradas Físicas ${brl(CLD.cash_in)} − Saídas Físicas ${brl(CLD.cash_out)})</span>`;
-}
-$('#clform').elements.opening.oninput = hintCx; $('#cday').onchange = fechamento;
-$('#clform').onsubmit = async e => {
-  e.preventDefault(); const f = e.target.elements;
-  await api('/api/admin/closing', {day: $('#cday').value, opening: f.opening.value, counted: f.counted.value, notes: f.notes.value}); fechamento();
-};
-async function agenda() {
-  const d = await api('/api/admin/appointments?day=' + $('#day').value);
-  $('#appts').innerHTML = d.length ? table(['Hora','Cliente','WhatsApp','Barbeiro','Serviço','Status','Ações'], d.map(a => [
-    `<span class="font-bold text-gray-900">${a.start_at.slice(11)}</span>`, 
-    `<span class="font-medium">${esc(a.client_name)}</span>`, 
-    esc(a.phone) || '<span class="text-gray-400">—</span>', 
-    esc(a.barber), esc(a.service), 
-    `<span class="px-2 py-1 rounded-full text-xs font-bold ${a.status==='agendado'?'bg-blue-100 text-blue-800':(a.status==='concluido'?'bg-green-100 text-green-800':'bg-red-100 text-red-800')}">${a.status}</span>`,
-    a.status==='agendado' ? `<button data-id="${a.id}" data-s="concluido" data-price="${a.price}" data-name="${esc(a.client_name)}" class="text-green-600 font-bold hover:text-green-800 mr-2 transition-colors">✔ Concluir</button> <button data-id="${a.id}" data-s="faltou" class="text-amber-600 hover:text-amber-800 mr-2 transition-colors">Faltou</button> <button data-id="${a.id}" data-s="cancelado" class="text-red-600 hover:text-red-800 mr-2 transition-colors">Cancelar</button> <button data-copy="${esc(a.token)}" class="text-gray-400 hover:text-gray-800 transition-colors" title="Copiar Link Cliente">🔗</button>` : ''])) : '<div class="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Agenda livre para esta data.</div>';
-}
-async function estoque() {
-  const d = (await api('/api/admin/products')).filter(p => p.active);
-  $('#prods').innerHTML = table(['Produto / Material','Categoria','Preço Site','Em Estoque'], d.map(p => [esc(p.name), p.for_sale?'<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">Venda</span>':'<span class="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs font-bold">Uso Interno</span>', p.for_sale?`<b>${brl(p.price)}</b>`:'—', `<span class="font-bold ${p.stock <= p.min_stock ? 'text-red-600' : 'text-gray-800'}">${p.stock} un</span>`]));
-  $('#mvprod').innerHTML = d.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
-}
-async function prev() {
-  const d = await api('/api/admin/forecast?days=30');
-  $('#fc').innerHTML = table(['Produto / Material','Em Estoque','Consumo Médio (dia)','Autonomia','Sugerido Comprar (30 dias)'], d.map(r => [esc(r.product), r.stock, `<span class="text-gray-500">${r.daily_rate} un</span>`, r.days_left ? `${r.days_left} dias` : '—', `<b class="text-blue-700 text-lg">${r.buy} un</b>`]));
-}
-$('#month').onchange = caixa; $('#day').onchange = agenda;
-$('#appts').addEventListener('click', e => {
-  const b = e.target.closest('button[data-copy]'); if (!b) return;
-  const url = location.origin + '/agendamento/' + b.dataset.copy;
-  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => alert('Link de auto-gestão copiado! Envie ao cliente.'), () => prompt('Copie o link:', url));
-});
-$('#appts').onclick = async e => {
-  const b = e.target.closest('button[data-id]'); if (!b) return;
-  if (b.dataset.s === 'concluido') { openPay(b.dataset); return; }
-  await api(`/api/admin/appointments/${b.dataset.id}/status`, {status: b.dataset.s}); agenda();
-};
-// ---------- Concluir atendimento: forma de pagamento, desconto e gorjeta ----------
-let PAY = null;
-function openPay(d) {
-  PAY = {id: d.id, price: +d.price}; let last = ''; try { last = localStorage.getItem('lastPay') || ''; } catch (e) {}
-  $('#paytitle').textContent = 'Faturar: ' + d.name; $('#payform').reset(); if (last) $('#payform').elements.method.value = last;
-  payTotal(); $('#paydlg').showModal();
-}
-function payTotal() {
-  const f = $('#payform').elements, disc = +f.discount.value || 0, tip = +f.tip.value || 0;
-  $('#paytot').innerHTML = `Valor original: <span class="line-through text-gray-500">${brl(PAY.price)}</span><br>Desconto: <span class="text-red-600">−${brl(disc)}</span><br>Total devido: <b class="text-lg">${brl(PAY.price - disc)}</b>` + (tip ? `<br>+ Gorjeta Barbeiro: <span class="text-green-600">${brl(tip)}</span><br><br>Total na Máquina/Dinheiro: <b class="text-xl">${brl(PAY.price - disc + tip)}</b>` : '');
-}
-$('#payform').addEventListener('input', payTotal);
-$('#paycancel').onclick = () => $('#paydlg').close();
-$('#payform').onsubmit = async e => {
-  e.preventDefault(); const f = e.target.elements;
-  try { localStorage.setItem('lastPay', f.method.value); } catch (x) {}
-  try { await api(`/api/admin/appointments/${PAY.id}/status`, {status: 'concluido', method: f.method.value, discount: f.discount.value, tip: f.tip.value}); } catch (x) { return; }
-  $('#paydlg').close(); agenda(); caixa();
-};
-$('#txform').onsubmit = async e => { e.preventDefault(); await api('/api/admin/transactions', Object.fromEntries(new FormData(e.target))); e.target.reset(); alert('Despesa / Receita Lançada!'); };
-$('#mvform').onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
-  if (f.mode === 'venda') await api('/api/admin/sales', {product:f.product, qty:f.qty, method:f.method});
-  else await api('/api/admin/stock', {product:f.product, qty: f.mode==='consumo' ? -f.qty : +f.qty, cost:f.cost});
-  e.target.reset(); estoque(); };
-async function lembretes() {
-  const d = await api('/api/admin/reminders');
-  const bd = $('#badge'); bd.textContent = d.length; bd.classList.toggle('hidden', !d.length);
-  $('#rem').innerHTML = d.length ? table(['Gatilho','Cliente','Quando','Ação Manual','Baixa Sistema'], d.map(r => [({confirmacao:'<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Confirmação</span>', vespera:'<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">Véspera</span>', lembrete:'<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs">1h Antes</span>', retorno:'<span class="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">Retorno</span>'})[r.kind], `<b>${esc(r.name)}</b>`, r.when,
-    `<a href="${esc(r.link)}" target="_blank" rel="noopener" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow transition-colors inline-block">💬 Enviar WhatsApp</a>`, `<button data-k="${r.kind}" data-id="${r.id}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">✔ Marcar Feito</button>`])) : '<div class="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Caixa de lembretes vazia. Bom trabalho!</div>';
-}
-$('#rem').onclick = async e => { const b = e.target.closest('button[data-id]'); if (b) { await api('/api/admin/reminders/done', {kind:b.dataset.k, id:+b.dataset.id}); lembretes(); } };
-{% if demo %}
-async function wa() {
-  const d = await api('/api/admin/outbox');
-  $('#chat').innerHTML = d.length ? d.map(m => `<div><div class="text-xs text-gray-500 text-center my-2">Para +${esc(m.phone)} · ${esc(m.sent_at)}</div>
-    <div class="bg-[#dcf8c6] rounded-xl rounded-tr-none p-3 text-sm shadow-sm whitespace-pre-wrap ml-auto w-4/5 border border-gray-200">${esc(m.text)}</div></div>`).join('') : '<p class="text-center text-gray-500 italic mt-8">Caixa de saída vazia.</p>';
-}
-$('#seed').onclick = async () => { await api('/api/admin/demo/seed', {}); wa(); lembretes(); };
-$('#runrem').onclick = async () => { await api('/api/admin/demo/run', {}); wa(); lembretes(); };
-{% endif %}
 
-// ---------- Acesso dos barbeiros ----------
-let ACC = null;
-$('#acccancel').onclick = () => $('#accdlg').close();
-$('#accform').onsubmit = async e => {
-  e.preventDefault(); const f = e.target.elements;
-  try { await api('/api/admin/barbers/access', {id: ACC, login: f.login.value, password: f.password.value}); } catch (x) { return; }
-  $('#accdlg').close(); cadastros();
-};
-$('#accdel').onclick = async () => { if (!confirm('Remover o login do barbeiro?')) return; await api('/api/admin/barbers/access', {id: ACC, remove: true}); $('#accdlg').close(); cadastros(); };
+// ------------------------------------------------------------ LANÇAMENTOS
+async function loadLanc() {
+  S.tx = await api('/api/admin/transactions?month=' + S.month);
+  const rows = S.noForma ? S.tx.filter(t => t.tipo === 'receita' && !FORMAS[t.forma_pgto]) : S.tx;
+  view.innerHTML = `<div class="bar"><input type="month" id="monthin" value="${esc(S.month)}" aria-label="Mês">
+      <button class="btn" data-act="newtx">+ Novo lançamento</button>
+      <label class="chk" style="margin:0"><input type="checkbox" id="nofi"${S.noForma ? ' checked' : ''}> só sem forma de pagamento</label></div>
+    <div class="tbl"><table><thead><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="n">Valor</th><th></th></tr></thead><tbody>
+    ${rows.map(t => `<tr><td>${fdata(t.data)}</td><td>${esc(t.descricao)}<div class="muted" style="font-size:12px">${esc(t.categoria)}${t.barbeiro ? ' · ' + esc(t.barbeiro) : ''}</div></td>
+      <td>${t.tipo === 'despesa' ? '<span class="pill bad">despesa</span>' : FORMAS[t.forma_pgto] ? esc(FORMAS[t.forma_pgto]) : '<span class="pill warn">classificar</span>'}</td>
+      <td class="n ${t.tipo === 'despesa' ? 'neg' : 'pos'}">${t.tipo === 'despesa' ? '−' : ''}${brl(t.valor)}</td>
+      <td class="n"><button class="btn sm ghost" data-act="edittx" data-id="${esc(t.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada por aqui.</td></tr>'}
+    </tbody></table></div>
+    <p class="muted" style="font-size:13px">Atendimentos concluídos entram sozinhos. Para apagar um lançamento, use a planilha financeira.</p>`;
+}
+async function newTx() {
+  const bs = await barbers();
+  const v = await ask({title: 'Novo lançamento', ok: 'Lançar', values: {data: hoje(), tipo: 'receita', categoria: 'servico'}, fields: [
+    {k: 'tipo', label: 'Tipo', type: 'select', opts: [['receita', 'Receita'], ['despesa', 'Despesa']]},
+    {k: 'descricao', label: 'Descrição', req: true}, {k: 'valor', label: 'Valor (R$)', type: 'number', req: true, min: 0.01},
+    {k: 'data', label: 'Data', type: 'date', req: true},
+    {k: 'forma_pgto', label: 'Forma de pagamento', type: 'select', opts: [['', '—']].concat(Object.entries(FORMAS))},
+    {k: 'categoria', label: 'Categoria (servico, produto, aluguel…)', max: 40},
+    {k: 'barbeiro', label: 'Barbeiro (opcional)', type: 'select', opts: [['', '—']].concat(bs.filter(b => b.ativo).map(b => [b.nome, b.nome]))}]});
+  if (v) run(() => api('/api/admin/transactions', v), 'Lançamento salvo');
+}
+async function editTx(id) {
+  const t = S.tx.find(x => x.id === id); if (!t) return;
+  const v = await ask({title: 'Editar lançamento', values: t, fields: [
+    {k: 'descricao', label: 'Descrição', req: true}, {k: 'valor', label: 'Valor (R$)', type: 'number', req: true, min: 0},
+    ...(t.tipo === 'receita' ? [{k: 'forma_pgto', label: 'Forma de pagamento', type: 'select', opts: [['', '—']].concat(Object.entries(FORMAS))}] : []),
+    {k: 'categoria', label: 'Categoria', max: 40}]});
+  if (v) run(() => api('/api/admin/transactions/' + encodeURIComponent(id), v), 'Lançamento atualizado');
+}
 
-// ---------- Clientes (histórico) ----------
-let CQT;
-async function clientes() {
-  const d = await api('/api/admin/clients?q=' + encodeURIComponent($('#cq').value));
-  $('#cl-list').innerHTML = d.length ? table(['Cliente', 'WhatsApp', 'Visitas', 'Faltas', 'Última visita', 'Ticket Gasto', 'Mkt'], d.map(c => [
-    `<button data-ph="${esc(c.phone)}" class="text-blue-700 font-bold hover:underline transition-all">${esc(c.name)}</button>`, esc(c.phone), `<span class="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold">${c.visits}</span>`, c.noshows,
-    c.last_visit ? `<span class="text-gray-500 text-xs">${fmtD(c.last_visit.slice(0, 10))}</span>` : '—', `<b>${brl(c.spent)}</b>`,
-    c.optout ? '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">Cancelou</span>' : '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">Ativo</span>'])) : '<div class="p-6 text-center text-gray-500">Nenhum cliente encontrado.</div>';
+// ------------------------------------------------------------ ESTOQUE
+async function loadEstoque() {
+  S.prod = await api('/api/admin/products');
+  const baixo = S.prod.filter(p => p.ativo && p.baixo).length;
+  view.innerHTML = `<div class="bar"><button class="btn" data-act="newprod">+ Novo produto</button></div>
+    ${baixo ? `<div class="alert"><b>${baixo}</b> produto(s) com estoque no mínimo ou abaixo.</div>` : ''}
+    <div class="tbl"><table><thead><tr><th>Produto</th><th class="n">Preço</th><th class="n">Estoque</th><th></th></tr></thead><tbody>
+    ${S.prod.map(p => `<tr style="${p.ativo ? '' : 'opacity:.5'}"><td>${esc(p.nome)}${p.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">mínimo ${p.estoque_minimo}</div></td>
+      <td class="n">${brl(p.preco)}</td><td class="n"><span class="pill ${p.baixo ? 'bad' : 'ok'}">${p.estoque}</span></td>
+      <td class="n"><div class="row end">
+        <button class="btn sm" data-act="sell" data-id="${esc(p.id)}">Venda</button>
+        <button class="btn sm ghost" data-act="mov" data-t="entrada" data-id="${esc(p.id)}">Entrada</button>
+        <button class="btn sm ghost" data-act="mov" data-t="saida" data-id="${esc(p.id)}">Saída</button>
+        <button class="btn sm ghost" data-act="mov" data-t="ajuste" data-id="${esc(p.id)}">Ajuste</button>
+        <button class="btn sm ghost" data-act="editprod" data-id="${esc(p.id)}">Editar</button></div></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nenhum produto cadastrado.</td></tr>'}
+    </tbody></table></div>
+    <p class="muted" style="font-size:13px">O estoque nunca é digitado direto: ele é calculado pelas movimentações (entradas − saídas ± ajustes). Venda baixa o estoque e lança a receita.</p>`;
 }
-$('#cq').oninput = () => { clearTimeout(CQT); CQT = setTimeout(clientes, 300); };
-const STP = {agendado: 'Agendado', concluido: 'Concluído', cancelado: 'Cancelado', faltou: 'Faltou'};
-async function perfil(ph) {
-  const d = await api('/api/admin/clients/' + encodeURIComponent(ph)), s = d.stats, dt = v => v ? fmtD(v.slice(0, 10)) + (v.length > 10 ? ' ' + v.slice(11) : '') : '—';
-  const card = (t, v) => `<div class="bg-gray-50 border border-gray-100 p-4 rounded-xl shadow-sm"><p class="text-xs font-semibold text-gray-500 uppercase">${t}</p><p class="text-lg font-bold text-gray-800 mt-1">${v}</p></div>`;
-  $('#cl-detail').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b pb-4"><div class="flex flex-col"><h2 class="text-2xl font-bold text-gray-900">${esc(d.name)}</h2><span class="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded w-fit mt-1">${esc(d.phone)}</span></div>
-      <button data-new="${esc(d.phone)}" data-nm="${esc(d.name)}" class="bg-gray-900 text-white font-bold rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors shadow">Nova Reserva</button></div>
-    <div class="grid sm:grid-cols-4 gap-4">${card('Check-ins', s.visits)}${card('Total Investido', brl(s.spent))}${card('No-Shows/Cancel', s.noshows + ' / ' + s.cancels)}${card('Recorrência Média', s.avg_interval_days ? s.avg_interval_days + ' dias' : '—')}
-      ${card('Último Corte', dt(s.last_visit))}${card('Previsão Retorno', s.expected_return ? fmtD(s.expected_return) : '—')}${card('Combo Favorito', esc((s.fav_service || '—') + ' · ' + (s.fav_barber || '—')))}</div>
-    <div class="bg-blue-50 border border-blue-100 p-3 rounded-lg"><p class="text-xs font-semibold text-blue-800">Status Marketing: ${d.optout ? '<b class="text-red-600">Opt-Out Solicitado</b>' : (d.consent ? 'Autorizado ' + esc(d.consent) + '' : 'Sem Consentimento Oficial')}</p></div>
-    <div class="flex gap-4 items-start"><label class="block text-xs font-semibold text-gray-700 uppercase flex-1">Caderno de Notas (Ficha Técnica)<textarea id="cnote" maxlength="500" rows="2" placeholder="Estilo de corte, bebida favorita, observações..." class="border p-3 rounded-lg w-full mt-2 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all">${esc(d.note)}</textarea></label>
-    <button data-note="${esc(d.phone)}" class="bg-blue-600 text-white font-bold rounded-lg px-4 py-3 mt-6 hover:bg-blue-700 shadow">Salvar Ficha</button></div>
-    <h3 class="font-bold text-gray-800 mt-4">Histórico de Sessões</h3>
-    <div class="overflow-x-auto border border-gray-100 rounded-lg">${table(['Data', 'Serviço', 'Profissional', 'Status', 'Faturado'], d.appointments.map(a => [dt(a.start_at), `<b>${esc(a.service)}</b>`, esc(a.barber), `<span class="text-xs font-bold px-2 py-0.5 rounded ${a.status==='concluido'?'bg-green-100 text-green-800':'bg-gray-100 text-gray-800'}">${STP[a.status] || a.status}</span>`, a.paid != null ? brl(a.paid) : '—']))}</div></div>`;
-  $('#cl-detail').scrollIntoView({behavior: 'smooth', block: 'start'});
-}
-$('#cl-list').onclick = e => { const b = e.target.closest('button[data-ph]'); if (b) perfil(b.dataset.ph); };
-$('#cl-detail').onclick = async e => {
-  const n = e.target.closest('button[data-note]'), g = e.target.closest('button[data-new]');
-  if (n) { await api('/api/admin/clients/note', {phone: n.dataset.note, note: $('#cnote').value}); alert('Ficha técnica guardada!'); }
-  if (g) { document.querySelector('#tabs button[data-t="agenda"]').click(); const f = $('#newappt').elements; f.name.value = g.dataset.nm; f.phone.value = g.dataset.new; f.consent.checked = true; window.scrollTo(0, 0); }
-};
+const prodFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'preco', label: 'Preço (R$)', type: 'number', req: true, min: 0},
+  {k: 'estoque_minimo', label: 'Estoque mínimo (alerta)', type: 'number', step: '1', min: 0}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
 
-// ---------- Relatórios (CSV) ----------
-const REL = [['comissoes', 'Fecho de Comissões', 'Tabela completa de barbeiros, produtividade e rateios.'], ['lancamentos', 'Livro de Caixa', 'Despesas e receitas detalhadas, balanço financeiro.'],
-  ['diario', 'Dashboard Diário', 'Performance financeira dividida por dias.'], ['fechamentos', 'Auditoria de Caixa', 'Registo diário de contagens de gaveta e quebras.'],
-  ['agendamentos', 'Histórico de Agenda', 'Log de todos os horários e situações ocorridas.'], ['clientes', 'Base de Clientes', 'CRM Exportável (respeite as normas de proteção de dados).']];
-function relatorios() {
-  if (!$('#rfrom').value) { const n = new Date(); $('#rfrom').value = new Date(n.getFullYear(), n.getMonth(), 1).toLocaleDateString('en-CA'); $('#rto').value = new Date(n.getFullYear(), n.getMonth() + 1, 0).toLocaleDateString('en-CA'); }
-  const q = `from=${$('#rfrom').value}&to=${$('#rto').value}`;
-  $('#rlinks').innerHTML = REL.map(([k, t, d]) => `<a href="/api/admin/export/${k}?${q}" download class="block bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:border-gray-400 hover:shadow transition-all group"><b class="text-gray-900 group-hover:text-blue-600 transition-colors">${t}</b> <span class="text-xs bg-gray-100 text-gray-500 px-1 py-0.5 rounded font-bold ml-1">CSV</span><p class="text-xs text-gray-500 mt-2">${d}</p></a>`).join('');
+// ------------------------------------------------------------ CADASTROS
+async function loadCad() {
+  S.barbers = null;
+  const [sv, bs] = await Promise.all([api('/api/admin/services'), barbers()]); S.serv = sv;
+  view.innerHTML = `<h2>Serviços <button class="btn sm" data-act="newserv" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Serviço</th><th class="n">Duração</th><th class="n">Preço</th><th></th></tr></thead><tbody>
+    ${sv.map(s => `<tr style="${s.ativo ? '' : 'opacity:.5'}"><td>${esc(s.nome)}${s.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(s.descricao)}</div></td><td class="n">${s.minutos} min</td><td class="n">${brl(s.preco)}</td>
+      <td class="n"><button class="btn sm ghost" data-act="editserv" data-id="${esc(s.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nenhum serviço.</td></tr>'}</tbody></table></div>
+    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Nome</th><th>Agenda própria</th><th></th></tr></thead><tbody>
+    ${bs.map(b => `<tr style="${b.ativo ? '' : 'opacity:.5'}"><td>${esc(b.nome)}${b.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(b.funcao)}</div></td>
+      <td>${b.calendario ? '<span class="pill ok">sim</span>' : '<span class="muted">usa a agenda padrão</span>'}</td>
+      <td class="n"><button class="btn sm ghost" data-act="editbarb" data-id="${esc(b.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>
+    <p class="muted" style="font-size:13px">Itens inativos somem do site, mas o histórico continua. Antes de inativar um barbeiro, confira se ele não tem horários marcados.</p>`;
 }
-['#rfrom', '#rto'].forEach(s => $(s).onchange = relatorios);
+const servFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'descricao', label: 'Descrição', max: 160},
+  {k: 'minutos', label: 'Duração (minutos)', type: 'number', step: '5', min: 5, req: true}, {k: 'preco', label: 'Preço (R$)', type: 'number', min: 0, req: true},
+  {k: 'ativo', label: 'Ativo no site', type: 'check'}];
+const barbFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'funcao', label: 'Função (ex.: Barbeiro)', max: 60},
+  {k: 'calendario', label: 'ID da agenda do barbeiro (vazio = agenda padrão)', max: 200}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
 
-// ---------- Site: dados e galeria ----------
-async function siteTab() {
-  const [s, g] = await Promise.all([api('/api/admin/site'), api('/api/admin/gallery')]), f = $('#siteform').elements;
-  for (const k in s.values) { f[k].value = s.values[k]; f[k].placeholder = s.defaults[k] || f[k].placeholder; }
-  $('#gal-list').innerHTML = g.length ? g.map((p, i) => `<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group">
-    <div class="h-40 overflow-hidden bg-gray-50"><img src="/media/gallery/${esc(p.filename)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"></div>
-    <div class="p-3 space-y-2"><input data-cap="${p.id}" value="${esc(p.caption || '')}" maxlength="120" placeholder="Sem legenda..." class="border p-2 rounded-lg w-full text-xs bg-gray-50 focus:bg-white focus:ring-1 outline-none">
-      <div class="flex justify-between items-center text-xs">
-        <span class="flex border rounded-lg overflow-hidden"><button data-mv="up" data-id="${p.id}" ${i ? '' : 'disabled'} class="px-3 py-1.5 bg-gray-50 hover:bg-gray-200 disabled:opacity-30">◀</button><div class="w-px bg-gray-200"></div><button data-mv="down" data-id="${p.id}" ${i < g.length - 1 ? '' : 'disabled'} class="px-3 py-1.5 bg-gray-50 hover:bg-gray-200 disabled:opacity-30">▶</button></span>
-      <button data-gdel="${p.id}" class="text-red-500 font-bold hover:text-red-700 hover:underline">Apagar</button></div></div></div>`).join('') : '<div class="col-span-full p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">Sem fotos no portfólio. O bloco "Galeria" não aparece no site.</div>';
+// ------------------------------------------------------------ HORÁRIOS E FOLGAS
+async function loadHorarios() {
+  const bs = await barbers(), b = S.hb || '*';
+  const [hs, folgas] = await Promise.all([api('/api/admin/hours?barber=' + encodeURIComponent(b)), api('/api/admin/timeoff')]);
+  const nome = id => id === '*' ? 'Todos' : (bs.find(x => x.id === id) || {nome: id}).nome;
+  view.innerHTML = `<h2>Expediente semanal</h2>
+    <div class="bar"><select id="hb" aria-label="Barbeiro">${options([['*', 'Horário geral (todos)']].concat(bs.filter(x => x.ativo).map(x => [x.id, x.nome])), b)}</select></div>
+    <div class="tbl hrs"><table><thead><tr><th>Dia</th><th>Abre</th><th>Fecha</th><th>Almoço de</th><th>até</th></tr></thead><tbody>
+    ${hs.map((h, i) => `<tr><td>${DIAS[i]}</td>${['abre', 'fecha', 'almoco_ini', 'almoco_fim'].map(k => `<td><input type="time" data-i="${i}" data-k="${k}" value="${esc(h[k])}" aria-label="${DIAS[i]} ${k}"></td>`).join('')}</tr>`).join('')}
+    </tbody></table></div>
+    <p class="muted" style="font-size:13px">Deixe “abre” e “fecha” vazios para o dia ficar fechado. Um barbeiro com horário próprio ignora o horário geral.</p>
+    <button class="btn" data-act="savehours">Salvar horários</button>
+    <h2>Folgas, feriados e bloqueios <button class="btn sm" data-act="newoff" style="margin-left:8px">+ Nova</button></h2>
+    <div class="tbl"><table><thead><tr><th>Data</th><th>Quem</th><th>Período</th><th>Motivo</th><th></th></tr></thead><tbody>
+    ${folgas.map(f => `<tr><td>${fdata(f.data)}/${f.data.slice(0, 4)}</td><td>${esc(nome(f.barbeiro))}</td><td>${f.inicio ? esc(f.inicio) + '–' + esc(f.fim) : 'dia todo'}</td><td>${esc(f.motivo)}</td>
+      <td class="n"><button class="btn sm red" data-act="deloff" data-row="${f.row}" data-d="${esc(f.data)}">Remover</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma folga futura.</td></tr>'}</tbody></table></div>`;
 }
-$('#siteform').onsubmit = async e => {
-  e.preventDefault(); const f = e.target.elements, d = {}; for (const k of ['name', 'short_name', 'brand', 'address', 'whatsapp', 'instagram', 'tagline']) d[k] = f[k].value;
-  await api('/api/admin/site', d); alert('Website reconfigurado online com sucesso!'); siteTab();
-};
-$('#galform').onsubmit = async e => {
-  e.preventDefault(); const f = e.target.elements; let fails = 0;
-  for (const file of f.file.files) {
-    const fd = new FormData(); fd.append('file', file); fd.append('caption', f.caption.value);
-    const r = await fetch('/api/admin/gallery', {method: 'POST', body: fd}); if (!r.ok) { fails++; alert(file.name + ': ' + ((await r.json().catch(() => ({}))).error || 'erro ao enviar')); }
+
+// ------------------------------------------------------------ SITE
+async function loadSite() {
+  const c = await api('/api/admin/config');
+  view.innerHTML = `<h2>Dados exibidos no site</h2><form class="card" id="siteform">
+    <label>Nome da barbearia<input name="nome" value="${esc(c.nome)}" maxlength="120" required></label>
+    <div class="grid"><label>Nome curto (cabeçalho)<input name="nome_curto" value="${esc(c.nome_curto)}" maxlength="40"></label>
+    <label>Marca do logo (até 6 letras)<input name="marca" value="${esc(c.marca)}" maxlength="6"></label></div>
+    <label>Endereço<input name="endereco" value="${esc(c.endereco)}" maxlength="200"></label>
+    <div class="grid"><label>WhatsApp (com DDD)<input name="whatsapp" value="${esc(c.whatsapp)}" inputmode="tel" maxlength="20"></label>
+    <label>Instagram (sem @)<input name="instagram" value="${esc(c.instagram)}" maxlength="60"></label></div>
+    <label>Descrição<textarea name="descricao" rows="2" maxlength="300">${esc(c.descricao)}</textarea></label>
+    <label>Intervalo entre horários (minutos)<input name="intervalo_min" type="number" min="5" max="120" step="5" value="${esc(c.intervalo_min)}"></label>
+    <button class="btn">Salvar</button></form>
+    <p class="muted" style="font-size:13px">As mudanças aparecem no site em até 1 minuto.</p>`;
+}
+
+const LOAD = {agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
+
+// ------------------------------------------------------------ eventos
+view.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const d = b.dataset, act = d.act;
+  if (act === 'retry') return show(S.tab);
+  if (act === 'day') { const dt = new Date(S.day + 'T12:00:00'); if (+d.n) dt.setDate(dt.getDate() + +d.n); else return (S.day = hoje(), show('agenda')); S.day = dt.toLocaleDateString('en-CA'); return show('agenda'); }
+  if (act === 'done') {
+    const v = await ask({title: 'Concluir atendimento', ok: 'Concluir', values: {method: 'pix', discount: '', tip: ''}, fields: [
+      {k: 'method', label: 'Forma de pagamento', type: 'select', req: true, opts: Object.entries(FORMAS)},
+      {k: 'discount', label: `Desconto (R$) — serviço: ${brl(d.preco)}`, type: 'number', min: 0},
+      {k: 'tip', label: 'Gorjeta (R$), entra à parte', type: 'number', min: 0}]});
+    if (v) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'concluido', ...v}), 'Atendimento concluído');
   }
-  e.target.reset(); siteTab();
-};
-$('#gal-list').addEventListener('change', async e => { const i = e.target.closest('input[data-cap]'); if (i) await api('/api/admin/gallery/caption', {id: +i.dataset.cap, caption: i.value}); });
-$('#gal-list').addEventListener('click', async e => {
-  const d = e.target.closest('button[data-gdel]'), m = e.target.closest('button[data-mv]');
-  if (d && confirm('Confirmar exclusão definitiva da foto?')) { await api('/api/admin/gallery/delete', {id: +d.dataset.gdel}); siteTab(); }
-  if (m) { await api('/api/admin/gallery/move', {id: +m.dataset.id, dir: m.dataset.mv}); siteTab(); }
-});
-
-// ---------- Horários, folgas e feriados ----------
-const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], fmtD = d => d.split('-').reverse().join('/');
-let HB = [];
-async function horarios() {
-  if (!HB.length) {
-    HB = (await api('/api/admin/barbers')).filter(b => b.active);
-    $('#hb').innerHTML = HB.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
-    $('#tb').innerHTML = '<option value="">Loja Encerrada (Feriado Global)</option>' + HB.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
-    $('#hy').value = new Date().getFullYear();
+  if (act === 'miss' && confirm('Marcar que o cliente faltou? O horário volta a ficar livre.')) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'faltou'}), 'Marcado como faltou');
+  if (act === 'cancel' && confirm('Cancelar este agendamento? O evento será apagado da agenda.')) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'cancelado'}), 'Agendamento cancelado');
+  if (act === 'semforma') { S.noForma = true; return show('lanc'); }
+  if (act === 'newtx') return newTx();
+  if (act === 'edittx') return editTx(d.id);
+  if (act === 'newprod') { const v = await ask({title: 'Novo produto', fields: prodFields, values: {ativo: true, estoque_minimo: 3}}); if (v) run(() => api('/api/admin/products', v), 'Produto criado'); }
+  if (act === 'editprod') { const p = S.prod.find(x => x.id === d.id), v = await ask({title: 'Editar produto', fields: prodFields, values: {...p, ativo: p.ativo}}); if (v) run(() => api('/api/admin/products', {...v, id: d.id}), 'Produto atualizado'); }
+  if (act === 'mov') {
+    const p = S.prod.find(x => x.id === d.id), nomeT = {entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste'}[d.t];
+    const v = await ask({title: `${nomeT} · ${p.nome}`, fields: [
+      {k: 'quantidade', label: d.t === 'ajuste' ? 'Quantidade (pode ser negativa)' : 'Quantidade', type: 'number', step: '1', req: true, ...(d.t === 'ajuste' ? {} : {min: 1})},
+      {k: 'motivo', label: 'Motivo (opcional)', max: 80}]});
+    if (v) run(() => api('/api/admin/stock', {product: d.id, tipo: d.t, ...v}), 'Estoque atualizado');
   }
-  await carregaHoras(); await folgas();
-}
-async function carregaHoras() {
-  if (!$('#hb').value) return;
-  const d = await api('/api/admin/hours?barber=' + $('#hb').value), t = 'border p-2 rounded-lg bg-gray-50 focus:bg-white transition-colors w-full';
-  $('#hgrid').innerHTML = `<table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-100"><tr><th class="p-3 rounded-tl-lg">Dia da Semana</th><th class="p-3 text-center">Laboral</th><th class="p-3">Início</th><th class="p-3">Fim</th><th class="p-3">Almoço (De)</th><th class="p-3 rounded-tr-lg">Almoço (Ate)</th></tr></thead><tbody class="divide-y divide-gray-100">`
-    + d.map(r => `<tr data-wd="${r.weekday}" class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">${DIAS[r.weekday]}</td>
-      <td class="p-3 text-center"><input type="checkbox" data-f="open" class="w-5 h-5 text-gray-900 rounded focus:ring-gray-900" ${r.open ? 'checked' : ''}></td>
-      <td class="p-3"><input type="time" data-f="t_start" value="${r.t_start}" class="${t}"></td>
-      <td class="p-3"><input type="time" data-f="t_end" value="${r.t_end}" class="${t}"></td>
-      <td class="p-3"><input type="time" data-f="lunch_start" value="${r.lunch_start || ''}" class="${t}"></td>
-      <td class="p-3"><input type="time" data-f="lunch_end" value="${r.lunch_end || ''}" class="${t}"></td></tr>`).join('') + '</tbody></table>';
-}
-$('#hb').onchange = carregaHoras;
-$('#hsave').onclick = async () => {
-  const days = [...document.querySelectorAll('#hgrid tr[data-wd]')].map(tr => { const g = f => tr.querySelector(`[data-f="${f}"]`);
-    return {weekday: +tr.dataset.wd, open: g('open').checked, t_start: g('t_start').value, t_end: g('t_end').value, lunch_start: g('lunch_start').value, lunch_end: g('lunch_end').value}; });
-  const r = await api('/api/admin/hours', {barber: +$('#hb').value, days});
-  alert('Nova escala aprovada.' + (r.conflicts ? `\n\nALERTA: Há ${r.conflicts} agendamento(s) fora da nova cobertura! Por favor, realoque.` : ''));
-  carregaHoras();
-};
-async function folgas() {
-  const d = await api('/api/admin/timeoff');
-  $('#to-list').innerHTML = d.length ? table(['Período', 'Faixa Horária', 'Profissional', 'Justificativa', 'Gestão'], d.map(r => [`<b>${r.day_from === r.day_to ? fmtD(r.day_from) : `${fmtD(r.day_from)} a ${fmtD(r.day_to)}`}</b>`,
-    r.t_from ? `<span class="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold">${r.t_from}–${r.t_to}</span>` : '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-bold">Dia Inteiro</span>', esc(r.barber), esc(r.reason || '—'), `<button data-del="${r.id}" class="text-red-500 font-bold hover:underline">Apagar</button>`])) : '<div class="p-4 text-center text-gray-500 italic">Folhas de ponto limpas (sem bloqueios).</div>';
-}
-$('#to-list').onclick = async e => { const b = e.target.closest('button[data-del]'); if (b && confirm('Restaurar este período na agenda pública?')) { await api('/api/admin/timeoff/delete', {id: +b.dataset.del}); folgas(); } };
-$('#toform').onsubmit = async e => {
-  e.preventDefault(); const f = e.target.elements;
-  const r = await api('/api/admin/timeoff', {barber: f.barber.value, from: f.from.value, to: f.to.value, t_from: f.t_from.value, t_to: f.t_to.value, reason: f.reason.value});
-  if (r.conflicts) alert(`CUIDADO: Existem ${r.conflicts} bloqueio(s) agendados que colidem com esta folga! Necessário reagendar.`);
-  e.target.reset(); folgas();
-};
-$('#hol').onclick = async () => {
-  const r = await api('/api/admin/holidays', {year: +$('#hy').value});
-  alert(r.added ? `Foram injetados ${r.added} feriados na matriz. (Dica: Carnaval e Corpus Christi são facultativos, reveja se desejar operar)` : 'Calendário já se encontrava atualizado.'); folgas();
-};
-
-// ---------- Backup ----------
-async function backup() {
-  const [d, h] = await Promise.all([api('/api/admin/backup/status'), api('/api/admin/health')]), when = v => v ? esc(v) : '—';
-  $('#bkp-info').innerHTML = `
-    <div class="grid sm:grid-cols-2 gap-4">
-      <div><p class="font-bold text-gray-900 mb-1">Rotina Local DB</p><p>Instantâneo Diário (03:30)</p><p>Arquivos Saudáveis: ${d.local_count} retenções</p><p>Backup Mais Recente: ${when(d.last_local)}</p></div>
-      <div><p class="font-bold text-gray-900 mb-1">Cofre em Nuvem (Offsite)</p><p>${d.remote ? `Espelho Cloud: <code>${esc(d.remote)}</code>` : '<span class="text-red-600 font-bold">Inativo (Sem Drive Link)</span>'}</p><p>Sincronização: ${when(d.last_offsite)}</p></div>
-    </div>
-    <hr class="my-4 border-gray-100">
-    <div class="grid sm:grid-cols-3 gap-4">
-      <div><p class="font-bold text-gray-900 mb-1">Módulo WhatsApp</p><p>${h.whatsapp ? `<span class="font-bold ${h.whatsapp === 'conectado' ? 'text-green-600' : 'text-red-600'}">${esc(h.whatsapp)}</span>` : 'Módulo Ausente'}</p><p>Fila Restante: ${h.pending_messages}</p></div>
-      <div><p class="font-bold text-gray-900 mb-1">Infraestrutura</p><p>Cron Job: ${h.scheduler_on ? '<span class="text-green-600 font-bold">Operacional</span>' : '<span class="text-red-600">Parado</span>'}</p><p>Storage Disponível: ${h.disk_free_pct}%</p></div>
-      <div><p class="font-bold text-gray-900 mb-1">Auditoria Auth</p><p>Intrusões (24h): ${h.failed_logins_24h}</p><p>Alerta Remoto: ${h.alert_channel ? 'Ativo (ntfy)' : 'Desligado'}</p></div>
-    </div>`;
-}
-$('#bkp-up').onclick = async () => { await api('/api/admin/backup/upload', {}); alert('Pacote de dados espelhado na nuvem com sucesso.'); backup(); };
-
-// ---------- Cadastros ----------
-const ENT = {
-  barbers:  {t:'Equipe de Profissionais', url:'/api/admin/barbers', f:[['name','Nome (Completo ou Apelido)','text',1],['role','Cargo Especialidade','text'],['commission_pct','Comissão (%)','number',1,{min:0,max:100,step:'0.01',value:50}],['calendar_id','Chave GCalendar Privada','text']]},
-  services: {t:'Catálogo de Serviços',  url:'/api/admin/services', f:[['name','Título do Serviço','text',1],['description','Descritivo de Venda (Site)','text'],['price','Tarifa Base (R$)','number',1,{min:0.01,step:'0.01'}],['minutes','Duração Tempo (Mins)','number',1,{min:5,max:480,step:'5'}]]},
-  products: {t:'Gestão SKU (Produtos)', url:'/api/admin/products', f:[['name','Nomenclatura Item','text',1],['price','Preço Prateleira (R$)','number',1,{min:0,step:'0.01',value:0}],['stock','Aporte Estoque Base','number',0,{min:0,step:'1',value:0}],['for_sale','Classificação Fiscal','select',1,{opts:[[1,'Produto Final (Site)'],[0,'Insumo Interno (Consumo)']}]]}
-};
-const inp = 'border p-2.5 rounded-lg w-full mt-1 bg-gray-50 focus:bg-white transition-colors';
-function field([n, label, type, req, o = {}]) {
-  const attrs = Object.entries(o).filter(([k]) => k !== 'opts').map(([k, v]) => `${k}="${esc(v)}"`).join(' ');
-  const el = type === 'select'
-    ? `<select name="${n}" class="${inp}">${o.opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select>`
-    : `<input name="${n}" type="${type}" ${req ? 'required' : ''} ${attrs} class="${inp}">`;
-  return `<label class="text-xs font-semibold text-gray-700 uppercase tracking-wide block">${label}${el}</label>`;
-}
-function entHtml(k) {
-  const E = ENT[k], rows = CAD[k];
-  const cell = (r, [n,,type,,o]) => n === 'for_sale' ? (r.for_sale ? '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">Venda</span>' : '<span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded text-xs font-bold">Insumo</span>') : (type === 'number' && /price/.test(n) ? `<b>${brl(r[n])}</b>` : esc(r[n] ?? ''));
-  const head = [...E.f.map(f => f[1]), k === 'products' ? 'Saldo Inventário' : null, 'Status', 'Gestão'].filter(Boolean);
-  const body = rows.map(r => [...E.f.filter(f => f[0] !== 'stock').map(f => cell(r, f)), ...(k === 'products' ? [`<span class="font-bold text-gray-800">${r.stock} un</span>`] : []),
-    r.active ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">Disponível</span>' : '<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold">Arquivado</span>',
-    `<button data-act="edit" data-k="${k}" data-id="${r.id}" class="text-blue-600 font-bold hover:underline mr-2">Editar</button> <button data-act="toggle" data-k="${k}" data-id="${r.id}" class="font-bold hover:underline mr-2 ${r.active ? 'text-gray-500' : 'text-green-600'}">${r.active ? 'Desligar' : 'Ligar'}</button>`
-      + (k === 'barbers' && r.calendar_id ? ` <button data-act="gtest" data-id="${r.id}" class="text-purple-600 font-bold hover:underline mr-2" title="Ping na conta Google">Testar Ligação</button>` : '')
-      + (k === 'barbers' ? ` <button data-act="access" data-id="${r.id}" class="text-indigo-600 font-bold hover:underline">${r.login ? 'Credenciais: ' + esc(r.login) : 'Atribuir Portal'}</button>` : '')]);
-  const heads = E.f.filter(f => f[0] !== 'stock').map(f => f[1]);
-  const tbl = table([...heads, ...(k === 'products' ? ['Inventário'] : []), 'Status', 'Gestão'], body);
-  return `<h2 class="text-lg font-bold text-gray-800 mb-3">${E.t}</h2><div class="overflow-x-auto border border-gray-100 rounded-lg">${tbl}</div>
-    <form data-k="${k}" class="bg-gray-50 p-6 rounded-lg border border-gray-100 grid sm:grid-cols-5 gap-4 mt-4 items-end">
-      <input type="hidden" name="id">${E.f.map(field).join('')}
-      <div class="flex gap-2 sm:col-span-5 md:col-span-1"><button class="bg-gray-900 text-white font-bold rounded-lg px-4 py-2.5 w-full hover:bg-gray-800 transition-colors" data-save>Adicionar</button><button type="button" data-act="cancel" class="border border-gray-300 bg-white rounded-lg px-4 py-2.5 hidden hover:bg-gray-50">Sair</button></div>
-    </form>`;
-}
-async function cadastros() {
-  const [b, s, p, g] = await Promise.all([api('/api/admin/barbers'), api('/api/admin/services'), api('/api/admin/products'), api('/api/admin/gcal')]);
-  CAD = {barbers: b, services: s, products: p};
-  $('#gcal-info').innerHTML = g.ok
-    ? `<b>Motor Google Integrado:</b> SA Proxy <code>${esc(g.email)}</code> ativa. <br>Delegação: Abra as agendas nativas e dê privilégio de 'Edição' para esta proxy. Anexe os Calendar IDs aos barbeiros.`
-    : g.configured ? `<b>Anomalia Motor Google:</b> Credencial no servidor, mas falha de token (${esc(g.error || 'revisar GOOGLE_SA_FILE')}).`
-    : `<b>Motor Google em Espera:</b> Variável <code>GOOGLE_SA_FILE</code> vazia. Sistema interno provisório (clientes vêem botões "Add Calendar" simples).`;
-  for (const k in ENT) $('#ent-' + k).innerHTML = entHtml(k);
-}
-$('#cad').addEventListener('submit', async e => {
-  e.preventDefault(); const f = e.target, k = f.dataset.k, d = Object.fromEntries(new FormData(f));
-  if (!d.id) delete d.id; else d.id = +d.id;
-  await api(ENT[k].url, d); cadastros();
-});
-$('#cad').addEventListener('click', async e => {
-  const b = e.target.closest('button[data-act]'); if (!b) return;
-  const k = b.dataset.k, id = +b.dataset.id, a = b.dataset.act;
-  if (a === 'toggle') { const r = CAD[k].find(x => x.id === id); await api(ENT[k].url, {id, active: r.active ? 0 : 1}); cadastros(); }
-  else if (a === 'access') {
-    const r = CAD.barbers.find(x => x.id === id), f = $('#accform').elements; ACC = id;
-    $('#acctitle').textContent = 'Workspace: ' + r.name; $('#accurl').textContent = location.origin + '/barbeiro';
-    f.login.value = r.login || ''; f.password.value = ''; f.password.required = !r.login; $('#accdel').classList.toggle('hidden', !r.login); $('#accdlg').showModal();
+  if (act === 'sell') {
+    const p = S.prod.find(x => x.id === d.id), bs = await barbers();
+    const v = await ask({title: `Venda · ${p.nome} (${brl(p.preco)})`, ok: 'Vender', values: {quantidade: 1, method: 'pix'}, fields: [
+      {k: 'quantidade', label: 'Quantidade', type: 'number', step: '1', min: 1, req: true},
+      {k: 'method', label: 'Forma de pagamento', type: 'select', opts: Object.entries(FORMAS)},
+      {k: 'barbeiro', label: 'Vendido por (opcional)', type: 'select', opts: [['', '—']].concat(bs.filter(x => x.ativo).map(x => [x.nome, x.nome]))}]});
+    if (v) run(() => api('/api/admin/sales', {product: d.id, ...v}), 'Venda registrada');
   }
-  else if (a === 'gtest') { await api('/api/admin/gcal/test', {barber: id}); alert('Ping efetuado (200 OK)! Pacote de teste entregue e revogado no servidor GCal do profissional.'); }
-  else if (a === 'edit') {
-    const f = $(`form[data-k="${k}"]`), r = CAD[k].find(x => x.id === id);
-    f.elements.id.value = id; ENT[k].f.forEach(([n]) => { if (f.elements[n]) f.elements[n].value = r[n] ?? ''; });
-    if (f.elements.stock) f.elements.stock.disabled = true;
-    f.querySelector('[data-save]').textContent = 'Aplicar Patch'; f.querySelector('[data-act="cancel"]').classList.remove('hidden'); f.scrollIntoView({block:'center', behavior: 'smooth'});
-  } else if (a === 'cancel') cadastros();
+  if (act === 'newserv') { const v = await ask({title: 'Novo serviço', fields: servFields, values: {ativo: true, minutos: 30}}); if (v) run(() => api('/api/admin/services', v), 'Serviço criado'); }
+  if (act === 'editserv') { const s = S.serv.find(x => x.id === d.id), v = await ask({title: 'Editar serviço', fields: servFields, values: s}); if (v) run(() => api('/api/admin/services', {...v, id: d.id}), 'Serviço atualizado'); }
+  if (act === 'newbarb') { const v = await ask({title: 'Novo barbeiro', fields: barbFields, values: {ativo: true}}); if (v) run(() => api('/api/admin/barbers', v), 'Barbeiro criado'); }
+  if (act === 'editbarb') { const x = (await barbers()).find(y => y.id === d.id), v = await ask({title: 'Editar barbeiro', fields: barbFields, values: x}); if (v) run(() => api('/api/admin/barbers', {...v, id: d.id}), 'Barbeiro atualizado'); }
+  if (act === 'savehours') {
+    const days = Array.from({length: 7}, () => ({}));
+    view.querySelectorAll('.hrs input').forEach(i => days[+i.dataset.i][i.dataset.k] = i.value);
+    run(() => api('/api/admin/hours', {barber: S.hb || '*', days}), 'Horários salvos');
+  }
+  if (act === 'newoff') {
+    const bs = await barbers();
+    const v = await ask({title: 'Nova folga / bloqueio', fields: [
+      {k: 'barbeiro', label: 'Quem', type: 'select', opts: [['*', 'Todos (feriado, férias coletivas)']].concat(bs.filter(x => x.ativo).map(x => [x.id, x.nome]))},
+      {k: 'data', label: 'Data', type: 'date', req: true}, {k: 'inicio', label: 'Das (vazio = dia todo)', type: 'time'}, {k: 'fim', label: 'Até', type: 'time'},
+      {k: 'motivo', label: 'Motivo', max: 80}]});
+    if (v) run(() => api('/api/admin/timeoff', v), 'Folga cadastrada');
+  }
+  if (act === 'deloff' && confirm('Remover esta folga? O horário volta a ser oferecido no site.')) run(() => api('/api/admin/timeoff/delete', {row: +d.row, data: d.d}), 'Folga removida');
 });
-$('#gsync').onclick = async () => { const r = await api('/api/admin/gcal/sync', {}); alert(`Upload GCal: ${r.synced} nós transportados com sucesso.` + (r.pending ? ` Restaram ${r.pending} órfaos (revisar Calendar IDs nos Profissionais).` : '')); };
+view.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'dayin' && t.value) { S.day = t.value; show('agenda'); }
+  if (t.id === 'monthin' && t.value) { S.month = t.value; show(S.tab); }
+  if (t.id === 'nofi') { S.noForma = t.checked; show('lanc'); }
+  if (t.id === 'hb') { S.hb = t.value; show('horarios'); }
+});
+view.addEventListener('submit', e => {
+  if (e.target.id !== 'siteform') return;
+  e.preventDefault();
+  run(() => api('/api/admin/config', Object.fromEntries(new FormData(e.target))), 'Dados do site salvos');
+});
 
-$('#privform').onsubmit = async e => {
-  e.preventDefault(); const d = await api('/api/admin/privacy/export?phone=' + encodeURIComponent(e.target.elements.phone.value)), o = $('#privout');
-  o.textContent = JSON.stringify(d, null, 2); o.classList.remove('hidden');
-};
-$('#privdel').onclick = async () => {
-  const ph = $('#privform').elements.phone.value; if (!ph) return;
-  if (!confirm('Procedimento Crítico: A máscara de anonimização será aplicada no banco de dados e irreversível.\n\nAutoriza a continuação?')) return;
-  const r = await api('/api/admin/privacy/erase', {phone: ph}); alert(`Compliance LGPD: ${r.anonymized} traços de identificação pulverizados.`); $('#privout').classList.add('hidden');
-};
-async function alertas() {
-  try { const r = await fetch('/api/admin/health'); if (!r.ok) return; const d = await r.json(), b = $('#alertbar');
-    b.innerHTML = d.alerts.map(a => '⚠ ' + esc(a.msg)).join('<br>'); b.classList.toggle('hidden', !d.alerts.length);
-    $('#privret').textContent = d.retention_months ? `Ciclo de Expurgo (LGPD): Cadastros dormentes > ${d.retention_months} meses destruídos às 03:40 diariamente.` : 'Lifecycle Management Suspenso (RETENTION_MONTHS=0).'; } catch (e) {}
-}
-$('#cday').value = today; alertas(); setInterval(alertas, 120000);
-setInterval(lembretes, 60000); lembretes(); caixa();
+// ------------------------------------------------------------ início
+(async () => {
+  try {
+    S.links = await api('/api/admin/links');
+    [['l-fin', 'financeiro'], ['l-est', 'estoque'], ['l-age', 'agenda']].forEach(([id, k]) => { if (S.links[k]) { const a = $('#' + id); a.href = S.links[k]; a.hidden = false; } });
+  } catch (e) { /* atalhos são opcionais */ }
+  const t = location.hash.slice(1);
+  show(LOAD[t] ? t : 'agenda');
+})();
 </script>
+{% endraw %}
 </body>
 </html>
