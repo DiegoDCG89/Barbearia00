@@ -15,7 +15,7 @@ TZ = ZoneInfo("America/Sao_Paulo")
 
 # campos do agendamento guardados no evento (data/hora vêm do início do evento)
 PRIVATE_KEYS = ("codigo", "barbeiro_id", "barbeiro", "servico_id", "servico", "minutos", "preco",
-                "cliente", "telefone", "status", "remarcacoes", "consentimento", "optout", "criado_em")
+                "cliente", "usuario_id", "telefone", "status", "remarcacoes", "consentimento", "optout", "criado_em")
 
 
 def _dt(s):
