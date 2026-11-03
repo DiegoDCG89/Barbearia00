@@ -137,9 +137,10 @@ class SheetsBackend:
         with self._lock:
             return self._sheet(tab).get_all_values()
 
-    def append(self, tab, row):
+    def append(self, tab, row, formulas=False):
         with self._lock:
-            self._sheet(tab).append_row([_cell(c) for c in row], value_input_option="RAW",
+            self._sheet(tab).append_row([_cell(c) for c in row],
+                                        value_input_option="USER_ENTERED" if formulas else "RAW",
                                         table_range="A1")
 
     def update_row(self, tab, rownum, row):
@@ -195,8 +196,8 @@ class Sheets:
     def values(self, tab):
         return self._b(tab).values(tab)
 
-    def append(self, tab, row):
-        self._b(tab).append(tab, row)
+    def append(self, tab, row, formulas=False):
+        self._b(tab).append(tab, row, formulas=formulas)
 
     def update_row(self, tab, rownum, row):
         self._b(tab).update_row(tab, rownum, row)
