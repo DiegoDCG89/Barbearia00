@@ -26,12 +26,13 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=int(os.environ.get("PROXY_HOPS", "1"
 
 # Segredos: só por variável de ambiente (Vercel > Settings > Environment Variables). Sem valor padrão.
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)  # sem SECRET_KEY o login não persiste entre instâncias
+if not os.environ.get("SECRET_KEY"):
+    log.warning("SECRET_KEY não definida: cada instância usa uma chave diferente e os logins vão cair toda hora. Defina na Vercel.")
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
                   SESSION_COOKIE_SECURE=bool(os.environ.get("VERCEL")),
                   PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")  # só para o acesso de emergência (login "admin"); vazio = desligado
 CRON_SECRET = os.environ.get("CRON_SECRET", "")
-_login_fail = defaultdict(deque)
 
 
 def _same(a, b):
@@ -44,7 +45,7 @@ BOOK_PER_IP_HOUR = int(os.environ.get("BOOK_PER_IP_HOUR", "10"))
 CHANGE_DEADLINE_HOURS = int(os.environ.get("CHANGE_DEADLINE_HOURS", "2"))
 MAX_RESCHEDULES = int(os.environ.get("MAX_RESCHEDULES", "3"))
 MIN_FILL_MS = 3000
-PRIVACY_VERSION = "1.0"
+PRIVACY_VERSION = "1.1"
 TTL_CATALOG = 60   # segundos (Config, serviços, horários...)
 TTL_APPTS = 15     # segundos (eventos do dia na agenda; é invalidado a cada gravação nossa)
 SYNC_MINUTES = int(os.environ.get("SYNC_MINUTES", "10"))           # de quanto em quanto tempo lança atendimentos feitos
@@ -114,39 +115,6 @@ def num(v, default=0.0):
                      if "," in str(v) else str(v).replace("R$", "").strip())
     except ValueError:
         return default
-
-# ------------------------------------------------------------------ ROTAS DE ADMINISTRAÇÃO
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        ip, t = request.remote_addr or "?", time.time()
-        q = _login_fail[ip]
-        while q and t - q[0] > 900:
-            q.popleft()
-        if len(q) >= 5:
-            return "Muitas tentativas. Aguarde 15 minutos.", 429
-        if _same(request.form.get('senha', ''), ADMIN_PASSWORD):
-            session.clear()
-            session.permanent = True
-            session['admin_logado'] = True
-            return redirect('/admin')
-        q.append(t)
-        return "Senha incorreta. Volte atrás e tente novamente.", 401
-    return '''
-    <div style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6;">
-        <form method="post" style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
-            <h2 style="margin-bottom: 1.5rem;">Acesso Restrito</h2>
-            <input type="password" name="senha" placeholder="Digite a senha" required style="padding: 0.5rem; width: 100%; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-            <br>
-            <button type="submit" style="padding: 0.75rem; width: 100%; background: #000; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Entrar no Painel</button>
-        </form>
-    </div>
-    '''
-
-@app.route('/logout')
-def logout():
-    session.pop('admin_logado', None)
-    return redirect('/login')
 
 def is_active(row):
     return row.get("ativo", "").strip().lower() not in ("nao", "não", "n", "0", "false", "off", "inativo")
@@ -541,20 +509,23 @@ def api_slots():
 @app.route("/api/appointments", methods=["POST"])
 def api_book():
     j = request.get_json(silent=True) or {}
+    u = usuario_atual()  # contas.py
+    if not u:
+        return jsonify(error="Entre na sua conta para agendar.", login=True), 401
+    if u.get("master"):
+        return jsonify(error="Entre com a sua conta pessoal para agendar."), 403
     if j.get("website"):  # honeypot
         return jsonify(error="Não foi possível agendar."), 400
     if int(num(j.get("elapsed"), 0)) < MIN_FILL_MS:
         return jsonify(error="Preencha o formulário com calma e tente de novo."), 400
-    if j.get("consent") is not True:
-        return jsonify(error="É necessário aceitar a Política de Privacidade."), 400
     if rate_limited(request.remote_addr or "?"):
         return jsonify(error="Muitas tentativas. Tente mais tarde."), 429
-    name, phone = (j.get("name") or "").strip(), norm_phone(j.get("phone"))
+    name, phone = (u.get("nome") or "").strip(), norm_phone(u.get("telefone"))
     d, t = parse_date(j.get("date")), parse_time(j.get("time"))
     if not (2 <= len(name) <= 80):
-        return jsonify(error="Informe seu nome."), 400
+        return jsonify(error="Complete o seu nome em Minha conta."), 400
     if not phone:
-        return jsonify(error="Informe um WhatsApp válido com DDD."), 400
+        return jsonify(error="Complete o seu WhatsApp em Minha conta."), 400
     try:
         with _book_lock:
             invalidate_cal()
@@ -570,8 +541,8 @@ def api_book():
             code = secrets.token_urlsafe(9)
             row = {"codigo": code, "data": d.isoformat(), "hora": fmt_time(t), "barbeiro_id": b["id"],
                    "barbeiro": b["nome"], "servico_id": s["id"], "servico": s["nome"], "minutos": minutes,
-                   "preco": s.get("preco", ""), "cliente": name, "telefone": phone, "status": "agendado",
-                   "remarcacoes": "0", "consentimento": f"sim v{PRIVACY_VERSION} {n.isoformat(timespec='seconds')}",
+                   "preco": s.get("preco", ""), "cliente": name, "usuario_id": u["id"], "telefone": phone, "status": "agendado",
+                   "remarcacoes": "0", "consentimento": u.get("consentimento") or f"sim v{PRIVACY_VERSION} {n.isoformat(timespec='seconds')}",
                    "optout": "", "criado_em": n.isoformat(timespec="seconds")}
             start = appt_start(row)
             manage_url = f"{base_url()}/agendamento/{code}"
@@ -665,6 +636,41 @@ def api_manage_cancel(token):
         log.exception("cancel")
         return jsonify(error="Não foi possível cancelar agora. Tente novamente."), 503
 
+@app.route("/api/manage/<token>/reschedule", methods=["POST"])
+def api_manage_reschedule(token):
+    j = request.get_json(silent=True) or {}
+    d, t = parse_date(j.get("date")), parse_time(j.get("time"))
+    if not d or t is None:
+        return jsonify(error="Dados inválidos."), 400
+    try:
+        with _book_lock:
+            invalidate_cal()
+            a = get_appt(token)
+            if not a:
+                return jsonify(error="Agendamento não encontrado."), 404
+            ok, reason = change_state(a)
+            if not ok:
+                return jsonify(error=reason), 403
+            minutes = int(num(a.get("minutos"), 30))
+            if fmt_time(t) not in free_slots(a["barbeiro_id"], minutes, d, ignore_code=token):
+                return jsonify(error="Esse horário acabou de ser ocupado. Escolha outro."), 409
+            antes = {"data": a["data"], "hora": a["hora"], "remarcacoes": a.get("remarcacoes", "0")}
+            patch_appt(a, data=d.isoformat(), hora=fmt_time(t), remarcacoes=str(int(num(a.get("remarcacoes"))) + 1))
+            # mesma conferência do agendamento: outra instância pode ter ocupado o horário ao mesmo tempo
+            st = appt_start(a)
+            rivais = [e for e in get_calendar().list_events(a["_cal"], st, st + timedelta(minutes=minutes))
+                      if e["id"] != a["_event"] and blocks_barber(e, a["barbeiro_id"])]
+            mine = (a.get("criado_em", ""), token)
+            if any(not e["private"].get("codigo") or (e["private"].get("criado_em", ""), e["private"]["codigo"]) < mine
+                   for e in rivais):
+                patch_appt(a, **antes)
+                return jsonify(error="Esse horário acabou de ser ocupado. Escolha outro."), 409
+        return jsonify(ok=True)
+    except Exception:
+        log.exception("remarcar")
+        return jsonify(error="Não foi possível remarcar agora. Tente novamente."), 503
+
+
 # ------------------------------------------------------------------ atendimentos -> financeiro
 # (Mantenha a função sync_receitas() original e apenas substitua o bloco start_sync abaixo)
 
@@ -747,7 +753,9 @@ start_sync()
 
 import sys  # noqa: E402
 import admin_panel  # noqa: E402
+import contas  # noqa: E402
 
+contas.register(app, sys.modules[__name__])       # cadastro, login, minha conta (ver contas.py) — antes do painel
 admin_panel.register(app, sys.modules[__name__])  # painel /admin (ver admin_panel.py)
 
 if __name__ == "__main__":
