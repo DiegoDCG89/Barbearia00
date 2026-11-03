@@ -33,17 +33,17 @@ python app.py        # http://localhost:8080
 - **Cliente faltou?** Apague o evento (ou marque "Disponível") antes do app lançar o atendimento no financeiro.
 
 **Financeiro** (planilha 1)
-- A cada ~10 min (`SYNC_MINUTES`), todo atendimento cujo horário já passou vira uma linha `receita` / `servico` em `Lancamentos` (valor = preço do serviço) e o evento fica verde (`concluido`). Não duplica.
-- Preencha `forma_pgto` (dinheiro, pix, debito, credito) e corrija `valor` se houve desconto. Despesas, venda de produtos e outras receitas: digite uma linha (`tipo` = `receita` ou `despesa`; `data` no formato AAAA-MM-DD).
+- Todo atendimento cujo horário já passou (cron diário na Vercel, ou ao clicar **Concluir** no painel) vira uma linha `receita` / `servico` em `Lancamentos` (valor = preço do serviço) e o evento fica verde (`concluido`). Não duplica.
+- Ao concluir pelo painel a forma de pagamento já é gravada; os lançamentos automáticos ficam como “classificar” até você editar (aba Lançamentos). Despesas, venda de produtos e outras receitas: digite uma linha (`tipo` = `receita` ou `despesa`; `data` no formato AAAA-MM-DD).
 - A aba **Resumo** mostra receitas, despesas, saldo e total por forma de pagamento do mês digitado em `B1` (AAAA-MM).
 
 **Estoque** (planilha 2)
 - Não edite a quantidade: registre **movimentações** em `Movimentacoes` (`tipo` = `entrada`, `saida` ou `ajuste`; ajuste aceita número negativo). O estoque atual = entradas − saídas + ajustes; aparece na coluna `estoque` de `Produtos` e no site.
 - Produto novo: adicione a linha em `Produtos` e copie a fórmula da coluna `estoque` da linha de cima.
 
-**Atalhos do app:** `/admin` abre a planilha financeira, `/estoque` a de estoque, `/agenda` o Google Agenda.
+**Painel (`/admin`)** — faz pelo celular tudo o que antes exigia abrir a planilha: concluir/cancelar atendimentos (com forma de pagamento, desconto e gorjeta), ver o resumo do mês, lançar receitas e despesas, vender produtos e dar entrada/saída no estoque, cadastrar serviços e barbeiros, ajustar horários e folgas e editar os dados do site. Os atalhos do topo abrem as planilhas e o Google Agenda.
 
 ## Limites a conhecer
 - A API do Google permite ~60 leituras/min por planilha; o app usa cache de 15–60 s (mudanças na planilha levam até 1 min para aparecer no site).
-- Use **1 worker** do gunicorn (já configurado): o bloqueio de duplo agendamento e a rotina de lançamento dependem de um único processo.
+- Na Vercel há várias instâncias: o bloqueio de duplo agendamento é feito conferindo a Agenda depois de criar o evento (o horário mais novo é desfeito), não por trava em memória.
 - Conta de serviço não convida clientes por e-mail; por isso o cliente recebe o botão "Adicionar ao Google Agenda" na tela de confirmação.
