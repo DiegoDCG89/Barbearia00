@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Minha conta · {{ shop.name }}</title>
+<style>
+:root{--bg:#0a0a0a;--card:#111;--card2:#1a1a1a;--line:#2a2a2a;--gold:#c19b6c;--gold-h:#a8865b;--ink:#f2efe9;--mute:#9a958b;--bad:#ff8a80;--ok:#6fd3a0}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font:700 28px/1 Georgia,"Playfair Display",serif;color:var(--ink);text-decoration:none}
+.brand:hover{color:var(--gold)}
+.sp{flex:1}
+header a.l{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.15em;text-decoration:none;font-weight:600}
+header a.l:hover{color:var(--gold)}
+main{max-width:640px;margin:0 auto;padding:26px 16px 70px}
+h1{margin:0;font-size:22px}
+.sub{color:var(--mute);margin:2px 0 18px;font-size:13px}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:var(--gold);margin:34px 0 12px}
+.btn{display:inline-block;background:var(--gold);color:#000;border:0;font:700 11px/1 inherit;letter-spacing:.2em;text-transform:uppercase;padding:14px 20px;cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--gold-h)}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn.sm{padding:10px 14px;font-size:10px}
+.btn:disabled{opacity:.6;cursor:wait}
+.tabs{display:flex;border-bottom:1px solid var(--line);margin:22px 0 14px}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--mute);font:600 11px/1 inherit;letter-spacing:.18em;text-transform:uppercase;padding:12px 16px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected=true]{color:var(--gold);border-color:var(--gold)}
+.item{background:var(--card);border:1px solid var(--line);padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.item .d{min-width:92px}
+.item .d b{display:block;font-size:20px;font-family:Georgia,serif;color:var(--gold)}
+.item .d span{font-size:12px;color:var(--mute);text-transform:capitalize}
+.item .i{flex:1;min-width:160px}
+.item .i small{color:var(--mute)}
+.pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--line);color:var(--mute);margin-left:6px}
+.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.bad{color:var(--bad);border-color:var(--bad)}
+.vazio{color:var(--mute);text-align:center;padding:26px 10px;border:1px dashed var(--line)}
+form.box{background:var(--card);border:1px solid var(--line);padding:20px}
+label{display:block;font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.18em;margin:0 0 6px}
+.f{margin-bottom:14px}
+input{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--ink);font:inherit;padding:12px;border-radius:0}
+input:focus{outline:none;border-color:var(--gold)}
+.msg{min-height:18px;font-size:12px;font-weight:600;margin:0 0 10px}
+.msg.e{color:var(--bad)}.msg.o{color:var(--ok)}
+.hint{color:var(--mute);font-size:12px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">{{ shop.brand }}</a><div class="sp"></div>
+  <a class="l" href="/">Site</a>
+  <a class="l" id="painel" href="/admin" hidden>Painel</a>
+  <a class="l" href="/logout">Sair</a>
+</header>
+<main>
+  <h1 id="ola">Minha conta</h1>
+  <p class="sub">Seus horários e seu histórico na {{ shop.name }}.</p>
+  <a class="btn" href="/?agendar=1">Agendar novo horário</a>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" id="tb-prox" aria-selected="true">Próximos</button>
+    <button type="button" role="tab" id="tb-hist" aria-selected="false">Histórico</button>
+  </div>
+  <div id="lista" aria-live="polite"><p class="vazio">Carregando…</p></div>
+
+  <h2>Meus dados</h2>
+  <form class="box" id="f-perfil" novalidate>
+    <div class="f"><label for="pn">Nome</label><input id="pn" maxlength="80" autocomplete="name" required></div>
+    <div class="f"><label for="pt">WhatsApp (com DDD)</label><input id="pt" type="tel" inputmode="tel" autocomplete="tel" required></div>
+    <div class="f"><label for="pe">E-mail (opcional)</label><input id="pe" type="email" maxlength="120" autocomplete="email"></div>
+    <p class="msg" id="m-perfil" role="status"></p>
+    <button class="btn" type="submit">Salvar dados</button>
+  </form>
+
+  <h2>Trocar senha</h2>
+  <form class="box" id="f-senha" novalidate>
+    <div class="f"><label for="sa">Senha atual</label><input id="sa" type="password" autocomplete="current-password" maxlength="128" required></div>
+    <div class="f"><label for="sn">Nova senha</label><input id="sn" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
+      <p class="hint">Mínimo de 8 caracteres. Ao trocar, os outros aparelhos conectados saem da conta.</p></div>
+    <p class="msg" id="m-senha" role="status"></p>
+    <button class="btn ghost" type="submit">Trocar senha</button>
+  </form>
+</main>
+{% raw %}
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = n => Number(n || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+let DADOS = {proximos: [], historico: []}, ABA = 'prox';
+
+async function api(url, body) {
+  const r = await fetch(url, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (r.status === 401) { location.href = '/entrar?next=/minha-conta'; throw new Error('Sessão expirada'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Erro inesperado.');
+  return j;
+}
+function msg(id, texto, ok) { const m = $(id); m.textContent = texto; m.className = 'msg ' + (ok ? 'o' : 'e'); }
+
+const ROTULO = {agendado: ['Agendado', ''], concluido: ['Realizado', 'ok'], faltou: ['Faltou', 'bad']};
+function card(a) {
+  const dt = new Date(a.data + 'T12:00:00');
+  const [txt, cl] = a.futuro ? ['Agendado', ''] : (ROTULO[a.status] && a.status !== 'agendado' ? ROTULO[a.status] : ['Passado', '']);
+  return `<div class="item"><div class="d"><b>${esc(a.hora)}</b><span>${esc(dt.toLocaleDateString('pt-BR', {weekday: 'short', day: '2-digit', month: '2-digit'}))}</span></div>
+    <div class="i">${esc(a.servico)} <span class="pill ${cl}">${txt}</span><br><small>com ${esc(a.barbeiro)} · ${brl(a.preco)}</small></div>
+    ${a.futuro ? `<a class="btn ghost sm" href="${esc(a.link)}">${a.pode_alterar ? 'Remarcar / cancelar' : 'Detalhes'}</a>` : ''}</div>`;
+}
+function render() {
+  const l = ABA === 'prox' ? DADOS.proximos : DADOS.historico;
+  $('#lista').innerHTML = l.length ? l.map(card).join('') :
+    `<p class="vazio">${ABA === 'prox' ? 'Você não tem horários marcados.' : 'Seu histórico aparece aqui depois do primeiro atendimento.'}</p>`;
+  $('#tb-prox').setAttribute('aria-selected', String(ABA === 'prox')); $('#tb-hist').setAttribute('aria-selected', String(ABA !== 'prox'));
+}
+$('#tb-prox').onclick = () => { ABA = 'prox'; render(); };
+$('#tb-hist').onclick = () => { ABA = 'hist'; render(); };
+
+async function iniciar() {
+  const me = (await api('/api/me')).user;
+  if (!me) { location.href = '/entrar?next=/minha-conta'; return; }
+  $('#ola').textContent = 'Olá, ' + me.nome.split(' ')[0];
+  $('#pn').value = me.nome; $('#pt').value = me.telefone; $('#pe').value = me.email;
+  if (me.papel === 'barbeiro') $('#painel').hidden = false;
+  try { DADOS = await api('/api/conta/agendamentos'); render(); }
+  catch (e) { $('#lista').innerHTML = `<p class="vazio">${esc(e.message)}</p>`; }
+}
+
+$('#f-perfil').onsubmit = async e => {
+  e.preventDefault(); msg('#m-perfil', '', true);
+  try {
+    const j = await api('/api/conta/perfil', {nome: $('#pn').value, telefone: $('#pt').value, email: $('#pe').value});
+    $('#pt').value = j.user.telefone; $('#ola').textContent = 'Olá, ' + j.user.nome.split(' ')[0]; msg('#m-perfil', 'Dados salvos.', true);
+  } catch (err) { msg('#m-perfil', err.message, false); }
+};
+$('#f-senha').onsubmit = async e => {
+  e.preventDefault(); msg('#m-senha', '', true);
+  try {
+    await api('/api/conta/senha', {atual: $('#sa').value, nova: $('#sn').value});
+    $('#sa').value = $('#sn').value = ''; msg('#m-senha', 'Senha alterada.', true);
+  } catch (err) { msg('#m-senha', err.message, false); }
+};
+iniciar();
+</script>
+{% endraw %}
+</body>
+</html>
