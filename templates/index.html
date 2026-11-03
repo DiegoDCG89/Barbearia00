@@ -1,497 +1,439 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ shop.name }}</title>
-<meta name="description" content="{{ shop.tagline }}">
-<link rel="canonical" href="{{ base }}/">
-<meta name="theme-color" content="#0a0a0a">
-<meta property="og:type" content="website"><meta property="og:locale" content="pt_BR">
-<meta property="og:title" content="{{ shop.name }}"><meta property="og:description" content="{{ shop.tagline }}"><meta property="og:url" content="{{ base }}/">
-{% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
-<meta name="twitter:card" content="{{ 'summary_large_image' if og_image else 'summary' }}">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%88%3C/text%3E%3C/svg%3E">
-<script type="application/ld+json">{{ jsonld|safe }}</script>
-{% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = { theme: { extend: {
-    colors: { gold: { DEFAULT: '#c19b6c', hover: '#a8865b' }, dark: { 900: '#0a0a0a', 800: '#111111', 700: '#1a1a1a', 600: '#2a2a2a' } },
-    fontFamily: { serif: ['Playfair Display', 'serif'] } } } }
-</script>{% endif %}
-
-<!-- Tipografia Premium -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel · {{ shop.name }}</title>
 <style>
-  body { font-family: 'Montserrat', sans-serif; overflow-x: hidden; }
-
-  /* Scrollbar Premium */
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: #0a0a0a; }
-  ::-webkit-scrollbar-thumb { background: #1a1a1a; }
-  ::-webkit-scrollbar-thumb:hover { background: #c19b6c; }
-
-  /* Efeitos de Máscara (Esmaecer a imagem) */
-  .mask-gradient {
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 60%);
-    mask-image: linear-gradient(to right, transparent 0%, black 60%);
-  }
-
-  /* Classes de Animação de Scroll */
-  .fade-up { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
-  .fade-up.visible { opacity: 1; transform: translateY(0); }
+:root{--bg:#f5f4f1;--card:#fff;--ink:#1c1b19;--mute:#6b675f;--line:#e4e1da;--gold:#b08650;--gold-d:#8f6a3a;--ok:#1f7a4d;--okbg:#e3f3ea;--bad:#b3261e;--badbg:#fbe7e5;--warn:#8a5a00;--warnbg:#fdf0d5;--r:12px}
+@media (prefers-color-scheme:dark){:root{--bg:#121110;--card:#1b1a18;--ink:#efece6;--mute:#a09b90;--line:#2e2c28;--gold:#c9a06a;--gold-d:#d8b17c;--ok:#5fd29a;--okbg:#14301f;--bad:#ff8a80;--badbg:#3a1815;--warn:#f2c66d;--warnbg:#3a2d10}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{max-width:1000px;margin:auto;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.02em}
+.brand small{color:var(--mute);font-weight:500}
+.sp{flex:1}
+.lnk{font-size:13px;color:var(--mute);text-decoration:none;padding:4px 6px;border-radius:6px}
+.lnk:hover{color:var(--ink);background:var(--bg)}
+nav{max-width:1000px;margin:auto;display:flex;gap:4px;overflow-x:auto;padding:0 10px 8px;scrollbar-width:none}
+nav button{border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--ink);color:var(--bg)}
+main{max-width:1000px;margin:auto;padding:16px 14px 60px}
+h2{font-size:18px;margin:22px 0 10px}
+h2:first-child{margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi .v{font-size:22px;font-weight:700}
+.kpi .l{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.end{justify-content:flex-end}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:inherit;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}
+.btn.red{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:wait}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:100%}
+input:focus,select:focus,textarea:focus,.btn:focus-visible,nav button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:10px}
+label input,label select,label textarea{display:block;width:100%;margin-top:3px;color:var(--ink)}
+label.chk{display:flex;gap:8px;align-items:center}
+label.chk input{width:auto;margin:0}
+.muted{color:var(--mute)}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--mute)}
+.pill.ok{background:var(--okbg);color:var(--ok)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.warn{background:var(--warnbg);color:var(--warn)}
+.appt{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.appt .t{font-weight:700;font-size:17px;min-width:92px}
+.appt .i{flex:1;min-width:180px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;white-space:nowrap}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:8px}
+.bars div{flex:1;background:var(--gold);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.bars div:hover{opacity:1}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
+.alert{background:var(--warnbg);color:var(--warn);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:18px;width:min(440px,calc(100vw - 24px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 12px}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
+#toast.show{opacity:1}#toast.err{background:var(--bad);color:#fff}
+.hrs input[type=time]{width:100%;min-width:92px}
+@media (max-width:560px){.top{gap:6px}.kpi .v{font-size:19px}}
 </style>
-<noscript><style>.fade-up { opacity: 1; transform: none; }</style></noscript>
 </head>
-<body class="bg-dark-900 text-gray-300 scroll-smooth selection:bg-gold selection:text-black">
-
-<!-- CABEÇALHO (HEADER) -->
-<header class="bg-dark-900/95 backdrop-blur-md sticky top-0 z-50 border-b border-dark-700">
-  <div class="container mx-auto px-6 py-5 flex justify-between items-center relative">
-
-    <!-- Logotipo -->
-    <a href="#" class="font-serif text-4xl text-white font-bold tracking-tighter hover:text-gold transition-colors duration-500">{{ shop.brand }}</a>
-
-    <!-- Navegação Desktop -->
-    <nav class="hidden md:flex gap-10 text-[11px] font-semibold tracking-[0.2em] text-gray-400 uppercase absolute left-1/2 -translate-x-1/2" aria-label="Seções">
-      <a href="#" class="hover:text-gold transition-colors duration-300">Home</a>
-      <a href="#servicos" class="hover:text-gold transition-colors duration-300">Serviços</a>
-      <a href="#equipe" class="hover:text-gold transition-colors duration-300">Equipe</a>
-      <a id="nav-produtos" href="#produtos" class="hidden hover:text-gold transition-colors duration-300">Produtos</a>
-      {% if gallery %}<a href="#galeria" class="hover:text-gold transition-colors duration-300">Galeria</a>{% endif %}
-      <a href="#local" class="hover:text-gold transition-colors duration-300">Contato</a>
-    </nav>
-
-    <!-- Botões Direito -->
-    <div class="hidden md:flex items-center gap-6">
-      <a href="/admin" class="text-[10px] font-semibold tracking-widest text-dark-600 hover:text-gold transition-colors uppercase">Login</a>
-      <button data-open-booking class="border border-gold text-gold hover:bg-gold hover:text-black font-semibold px-6 py-2.5 text-[11px] tracking-widest uppercase transition-all duration-300 shadow-[0_0_15px_rgba(193,155,108,0.1)] hover:shadow-[0_0_25px_rgba(193,155,108,0.3)]">
-        Agendar Agora
-      </button>
-    </div>
-
-    <!-- Botão Menu Mobile -->
-    <button id="mobile-btn" aria-label="Abrir menu" class="md:hidden text-gray-400 hover:text-gold transition-colors">
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-    </button>
+<body>
+<header>
+  <div class="top">
+    <div class="brand">{{ shop.name }} <small>· painel</small></div>
+    <div class="sp"></div>
+    <span class="muted" style="font-size:13px">{{ eu.nome }}</span>
+    <a class="lnk" href="/minha-conta">Minha conta</a>
+    <a class="lnk" href="/" target="_blank" rel="noopener">Ver site</a>
+    <a class="lnk" id="l-fin" href="#" target="_blank" rel="noopener" hidden>Planilha financeira</a>
+    <a class="lnk" id="l-est" href="#" target="_blank" rel="noopener" hidden>Planilha de estoque</a>
+    <a class="lnk" id="l-age" href="#" target="_blank" rel="noopener" hidden>Google Agenda</a>
+    <a class="lnk" href="/logout">Sair</a>
   </div>
+  <nav id="nav" aria-label="Seções">
+    <button data-tab="agenda">Agenda</button>
+    <button data-tab="resumo">Resumo</button>
+    <button data-tab="lanc">Lançamentos</button>
+    <button data-tab="estoque">Estoque</button>
+    <button data-tab="cad">Cadastros</button>
+    <button data-tab="horarios">Horários</button>
+    <button data-tab="usuarios">Usuários</button>
+    <button data-tab="site">Site</button>
+  </nav>
 </header>
+<main id="view" aria-live="polite"></main>
+<dialog id="dlg"><h3 id="dlgtitle"></h3><form id="dlgform" method="dialog"></form></dialog>
+<div id="toast" role="status"></div>
 
-<!-- MENU MOBILE (Escondido por padrão) -->
-<div id="mobile-menu" class="fixed inset-0 bg-dark-900/95 backdrop-blur-lg z-40 hidden flex-col items-center justify-center space-y-8 opacity-0 transition-opacity duration-300">
-  <a href="#" class="mobile-link text-white text-xl uppercase tracking-[0.3em] font-light hover:text-gold">Home</a>
-  <a href="#servicos" class="mobile-link text-white text-xl uppercase tracking-[0.3em] font-light hover:text-gold">Serviços</a>
-  <a href="#equipe" class="mobile-link text-white text-xl uppercase tracking-[0.3em] font-light hover:text-gold">Equipe</a>
-  <a id="nav-produtos-m" href="#produtos" class="mobile-link hidden text-white text-xl uppercase tracking-[0.3em] font-light hover:text-gold">Produtos</a>
-  {% if gallery %}<a href="#galeria" class="mobile-link text-white text-xl uppercase tracking-[0.3em] font-light hover:text-gold">Galeria</a>{% endif %}
-  <a href="#local" class="mobile-link text-white text-xl uppercase tracking-[0.3em] font-light hover:text-gold">Contato</a>
-  <button data-open-booking class="mobile-link border border-gold text-gold hover:bg-gold hover:text-black font-semibold px-8 py-3 text-xs tracking-widest uppercase transition-all duration-300">Agendar Agora</button>
-  <a href="/admin" class="mobile-link text-gold text-sm uppercase tracking-widest mt-8">Login Restrito</a>
-</div>
-
-<main>
-<!-- SESSÃO HERO (DESTAQUE INICIAL) -->
-<section class="relative flex flex-col lg:flex-row min-h-[85vh] border-b border-dark-700">
-
-  <!-- Lado Esquerdo: Textos -->
-  <div class="flex-1 flex flex-col justify-center p-8 lg:p-20 z-10 bg-dark-900 relative fade-up">
-    <div class="max-w-xl">
-      <h1 class="text-4xl lg:text-6xl font-bold text-white leading-tight mb-6 tracking-wide uppercase">
-        <span class="font-serif text-gold font-normal italic lowercase text-5xl lg:text-7xl mr-2">{{ shop.brand }}</span> Barbearia.<br>
-        Seu Estilo,<br> Nossa Essência.<br>
-      </h1>
-      <p class="text-gray-400 mb-10 text-sm tracking-widest uppercase leading-relaxed border-l-2 border-gold pl-4 opacity-80">
-        Estilo Urbano. Tradição & Modernidade<br>no coração da sua cidade.
-      </p>
-      <button data-open-booking class="bg-gold hover:bg-gold-hover text-black font-bold px-10 py-4 uppercase text-xs tracking-[0.2em] transition-all duration-300 transform hover:scale-105 hover:shadow-[0_0_30px_rgba(193,155,108,0.4)]">
-        Agende Sua Visita
-      </button>
-    </div>
-  </div>
-
-  <!-- Lado Direito: Imagem com Esmaecimento -->
-  <div class="flex-1 relative min-h-[50vh] lg:min-h-full">
-    <!-- A classe mask-gradient faz a imagem desaparecer gradualmente para a esquerda -->
-    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-1000 mask-gradient"></div>
-    <div class="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-dark-900 via-dark-900/10 to-transparent"></div>
-  </div>
-</section>
-
-<!-- SESSÃO SERVIÇOS -->
-<section id="servicos" class="py-24 bg-dark-800">
-  <div class="container mx-auto px-6 fade-up">
-    <h2 class="text-center text-xl font-bold text-white mb-16 uppercase tracking-[0.3em] flex flex-col items-center">
-      Nossos Serviços
-      <span class="w-12 h-px bg-gold mt-6"></span>
-    </h2>
-    <div id="services" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto"></div>
-  </div>
-</section>
-
-<!-- SESSÃO EQUIPE -->
-<section id="equipe" class="py-24 bg-dark-900 border-y border-dark-700">
-  <div class="container mx-auto px-6 fade-up">
-    <h2 class="text-center text-xl font-bold text-white mb-16 uppercase tracking-[0.3em] flex flex-col items-center">
-      A Experiência {{ shop.brand }}
-      <span class="w-12 h-px bg-gold mt-6"></span>
-    </h2>
-    <div id="barbers" class="grid grid-cols-2 md:grid-cols-4 gap-1 max-w-5xl mx-auto border border-dark-700 bg-dark-700 p-1 rounded-sm shadow-2xl"></div>
-  </div>
-</section>
-
-<!-- SESSÃO PRODUTOS (aparece só se houver produtos à venda) -->
-<section id="produtos" class="hidden py-24 bg-dark-800 border-b border-dark-700">
-  <div class="container mx-auto px-6 fade-up">
-    <h2 class="text-center text-xl font-bold text-white mb-16 uppercase tracking-[0.3em] flex flex-col items-center">
-      Cuidados em Casa
-      <span class="w-12 h-px bg-gold mt-6"></span>
-    </h2>
-    <div id="products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"></div>
-  </div>
-</section>
-
-{% if gallery %}
-<!-- SESSÃO GALERIA -->
-<section id="galeria" class="py-24 bg-dark-900 border-y border-dark-700">
-  <div class="container mx-auto px-6 fade-up">
-    <h2 class="text-center text-xl font-bold text-white mb-16 uppercase tracking-[0.3em] flex flex-col items-center">
-      Galeria
-      <span class="w-12 h-px bg-gold mt-6"></span>
-    </h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-1 max-w-5xl mx-auto border border-dark-700 bg-dark-700 p-1 rounded-sm shadow-2xl">
-      {% for p in gallery %}
-      <figure class="relative bg-dark-800 aspect-square overflow-hidden group">
-        <img src="/media/gallery/{{ p.filename }}" alt="{{ p.caption or shop.name }}" loading="lazy" decoding="async" class="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
-        {% if p.caption %}<figcaption class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-dark-900 to-transparent p-3 text-center text-[10px] uppercase tracking-widest text-white">{{ p.caption }}</figcaption>{% endif %}
-      </figure>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-
-<!-- SESSÃO LOCALIZAÇÃO (Boxes Separados) -->
-<section id="local" class="py-32 bg-dark-800">
-  <div class="container mx-auto px-6 max-w-6xl fade-up">
-    <h2 class="text-center text-xl font-bold text-white mb-16 uppercase tracking-[0.3em] flex flex-col items-center">
-      Nossa Localização
-      <span class="w-12 h-px bg-gold mt-6"></span>
-    </h2>
-
-    <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
-
-      <!-- BOX 1: Endereço e Horários (Esquerda) -->
-      <div class="bg-dark-900 p-10 lg:p-14 border border-dark-700 shadow-2xl relative flex flex-col justify-center rounded-xl hover:border-gold/50 transition-colors duration-500">
-        <div class="font-serif text-8xl text-dark-800 absolute top-4 right-4 opacity-30 select-none pointer-events-none">{{ shop.brand }}</div>
-
-        <h3 class="text-2xl font-serif text-gold mb-6">{{ shop.name }}</h3>
-
-        <div class="flex items-start gap-4 mb-8">
-          <svg class="w-6 h-6 text-dark-500 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-          <p class="text-gray-400 text-sm leading-relaxed font-light uppercase tracking-widest" id="address-text">{{ shop.address }}</p>
-        </div>
-
-        <div class="w-full h-px bg-dark-700 mb-8"></div>
-
-        <h4 class="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-4">Horário de Funcionamento</h4>
-        <ul class="space-y-3 text-xs text-gray-500 tracking-widest mb-10">
-          {% for h in hours %}
-          <li class="flex justify-between"><span>{{ h.label }}</span> <span class="{{ 'text-dark-600' if h.closed else 'text-white' }}">{{ h.value }}</span></li>
-          {% else %}
-          <li class="flex justify-between"><span>Consulte-nos</span></li>
-          {% endfor %}
-        </ul>
-
-        <a id="gps" target="_blank" rel="noopener" class="inline-block border border-gold text-gold hover:bg-gold hover:text-black text-center font-bold px-8 py-4 uppercase text-[10px] tracking-widest transition-all duration-300 w-full sm:w-auto">
-          Traçar Rota no GPS
-        </a>
-      </div>
-
-      <!-- BOX 2: Mapa (Direita) -->
-      <div class="h-[400px] lg:h-auto bg-dark-900 border border-dark-700 shadow-2xl relative rounded-xl overflow-hidden group">
-        <div class="absolute inset-0 bg-dark-800 animate-pulse -z-10 flex items-center justify-center text-dark-600 text-xs uppercase tracking-widest">A carregar mapa...</div>
-        <iframe id="mapa-google" title="Mapa da barbearia" class="absolute inset-0 w-full h-full opacity-60 grayscale mix-blend-luminosity group-hover:mix-blend-normal group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 z-10" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-      </div>
-
-    </div>
-  </div>
-</section>
-</main>
-
-{% if shop.wa_link %}
-<a href="{{ shop.wa_link }}?text={{ ('Olá! Gostaria de falar com a ' ~ shop.name ~ '.')|urlencode }}" target="_blank" rel="noopener" aria-label="Falar pelo WhatsApp"
-   class="fixed bottom-5 right-5 z-40 bg-green-500 hover:bg-green-600 text-white rounded-full h-12 px-5 flex items-center gap-2 font-semibold shadow-xl transition-colors">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-  WhatsApp
-</a>
-{% endif %}
-
-<!-- RODAPÉ -->
-<footer class="bg-black py-16 border-t border-dark-700 text-center relative overflow-hidden">
-  <div class="container mx-auto px-6 relative z-10">
-    <div class="font-serif text-5xl text-white mb-6">{{ shop.brand }}</div>
-    <div class="flex flex-wrap justify-center gap-x-6 gap-y-3 mb-8 text-dark-500 uppercase text-[10px] tracking-widest font-semibold">
-      <a href="#" class="hover:text-gold transition-colors">Home</a>
-      <a href="#servicos" class="hover:text-gold transition-colors">Serviços</a>
-      <a href="#equipe" class="hover:text-gold transition-colors">Profissionais</a>
-      {% if gallery %}<a href="#galeria" class="hover:text-gold transition-colors">Galeria</a>{% endif %}
-      <a href="/privacidade" class="hover:text-gold transition-colors">Política de Privacidade</a>
-      {% if shop.instagram_url %}<a href="{{ shop.instagram_url }}" target="_blank" rel="noopener" class="hover:text-gold transition-colors">Instagram</a>{% endif %}
-      <a href="/barbeiro" class="hover:text-gold transition-colors">Área do Barbeiro</a>
-    </div>
-    <p class="text-dark-600 text-[10px] uppercase tracking-widest">&copy; {{ year }} {{ shop.name }}. Todos os direitos reservados.</p>
-  </div>
-</footer>
-
-<!-- MODAL DE AGENDAMENTO (Dark Premium) -->
-<dialog id="dlg" class="bg-transparent p-0 w-full max-w-lg backdrop:bg-black/95 backdrop-blur-md transition-all">
-  <div class="bg-dark-900 border border-dark-700 shadow-2xl relative">
-    <form id="form" class="p-8 space-y-6">
-      <div class="flex justify-between items-center border-b border-dark-700 pb-4 mb-4">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest">Agendar Horário</h3>
-        <button type="button" id="close" aria-label="Fechar" class="text-gray-500 hover:text-gold text-2xl transition-colors">&times;</button>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="col-span-2 sm:col-span-1">
-          <label for="fb" class="block text-[10px] font-bold text-gold uppercase tracking-widest mb-2">Profissional</label>
-          <select id="fb" required class="w-full bg-dark-800 border border-dark-600 text-white text-sm rounded-none focus:border-gold focus:ring-0 p-3 outline-none transition-colors appearance-none"></select>
-        </div>
-        <div class="col-span-2 sm:col-span-1">
-          <label for="fs" class="block text-[10px] font-bold text-gold uppercase tracking-widest mb-2">Serviço</label>
-          <select id="fs" required class="w-full bg-dark-800 border border-dark-600 text-white text-sm rounded-none focus:border-gold focus:ring-0 p-3 outline-none transition-colors appearance-none"></select>
-        </div>
-      </div>
-
-      <div>
-        <label for="fd" class="block text-[10px] font-bold text-gold uppercase tracking-widest mb-2">Data</label>
-        <input id="fd" type="date" required class="w-full bg-dark-800 border border-dark-600 text-white text-sm rounded-none focus:border-gold focus:ring-0 p-3 outline-none transition-colors [color-scheme:dark]">
-      </div>
-
-      <div>
-        <span class="block text-[10px] font-bold text-gold uppercase tracking-widest mb-3">Horários Disponíveis</span>
-        <div id="slots" class="grid grid-cols-4 gap-2" role="radiogroup"></div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 border-t border-dark-700 pt-6 mt-2">
-        <div class="col-span-2 sm:col-span-1">
-          <label for="fn" class="block text-[10px] font-bold text-gold uppercase tracking-widest mb-2">Seu Nome</label>
-          <input id="fn" required maxlength="80" autocomplete="name" placeholder="Ex: João Silva" class="w-full bg-dark-800 border border-dark-600 text-white text-sm rounded-none focus:border-gold focus:ring-0 p-3 outline-none transition-colors">
-        </div>
-        <div class="col-span-2 sm:col-span-1">
-          <label for="fp" class="block text-[10px] font-bold text-gold uppercase tracking-widest mb-2">WhatsApp</label>
-          <input id="fp" required type="tel" inputmode="tel" autocomplete="tel" placeholder="(12) 99999-9999" class="w-full bg-dark-800 border border-dark-600 text-white text-sm rounded-none focus:border-gold focus:ring-0 p-3 outline-none transition-colors">
-        </div>
-      </div>
-
-      <label class="flex items-start gap-3 text-xs text-gray-400 leading-relaxed cursor-pointer">
-        <input id="fc" type="checkbox" required class="mt-0.5 accent-gold">
-        <span>Li e aceito a <a href="/privacidade" target="_blank" rel="noopener" class="underline text-gold hover:text-white">Política de Privacidade</a> e autorizo o envio da confirmação e dos lembretes do meu agendamento por WhatsApp.</span>
-      </label>
-      <input id="fw" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;width:0;opacity:0">
-
-      <p id="err" class="text-red-500 text-xs font-semibold text-center min-h-[1rem]" role="alert"></p>
-
-      <button type="submit" class="w-full bg-gold hover:bg-gold-hover text-black font-bold py-4 uppercase text-xs tracking-[0.2em] transition-colors mt-2">
-        Confirmar Agendamento
-      </button>
-    </form>
-
-    <div id="done" class="p-12 text-center space-y-6 hidden">
-      <div class="w-16 h-16 border-2 border-gold rounded-full flex items-center justify-center mx-auto mb-6 text-gold">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"></path></svg>
-      </div>
-      <h3 class="text-xl font-bold text-white uppercase tracking-widest">Agendado com Sucesso!</h3>
-      <p class="text-gray-400 text-sm">Você receberá a confirmação e os lembretes no seu WhatsApp.</p>
-      <div id="managebox" class="hidden border border-dark-600 bg-dark-800 p-4 text-left text-xs leading-relaxed">
-        <p class="font-bold text-white uppercase tracking-widest text-[10px] mb-2">Precisa desmarcar ou remarcar?</p>
-        <p class="text-gray-400 mb-2">Use o seu link pessoal (também vai na mensagem do WhatsApp):</p>
-        <a id="manage" class="text-gold underline break-all hover:text-white"></a>
-      </div>
-      <div class="space-y-4 pt-8">
-        <a id="gcal" target="_blank" rel="noopener" class="block w-full border border-gold bg-gold text-black hover:bg-gold-hover font-bold py-3 uppercase text-[10px] tracking-widest transition-colors">Adicionar ao Calendário</a>
-        <button id="skip" type="button" class="w-full border border-dark-600 text-gray-400 hover:text-white hover:border-white font-bold py-3 uppercase text-[10px] tracking-widest transition-colors">Fechar Janela</button>
-      </div>
-    </div>
-  </div>
-</dialog>
-
+{% raw %}
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    const $ = s => document.querySelector(s);
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = n => Number(n || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+const hoje = () => new Date().toLocaleDateString('en-CA', {timeZone: 'America/Sao_Paulo'});
+const fdata = iso => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+const FORMAS = {dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito'};
+const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+const S = {day: hoje(), month: hoje().slice(0, 7), tab: 'agenda', noForma: false, tx: [], prod: [], barbers: null, links: {}};
+const view = $('#view');
 
-    // --- LÓGICA DE ANIMAÇÕES DE SCROLL ---
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-      }, { threshold: 0.1 });
-      document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
-    } else {
-      document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
-    }
+// ------------------------------------------------------------ utilidades
+let toastT;
+function toast(msg, err) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => t.className = '', err ? 4500 : 2200);
+}
+async function api(url, body) {
+  const r = await fetch(url, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (r.status === 401) { location.href = '/entrar?next=/admin'; throw new Error('Sessão expirada'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Erro inesperado.');
+  return d;
+}
+// executa uma ação, avisa o resultado e recarrega a aba
+async function run(fn, okMsg) {
+  try { await fn(); if (okMsg) toast(okMsg); await show(S.tab, true); }
+  catch (e) { toast(e.message, true); }
+}
+const options = (pairs, sel) => pairs.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(sel) ? ' selected' : ''}>${esc(l)}</option>`).join('');
+const formaOpts = (sel, vazio) => options((vazio ? [['', vazio]] : []).concat(Object.entries(FORMAS)), sel);
+async function barbers() { return S.barbers || (S.barbers = await api('/api/admin/barbers')); }
 
-    // --- MENU MOBILE ---
-    const btnMenu = $('#mobile-btn'), menuDiv = $('#mobile-menu');
-    let menuOpen = false;
-    const setMenu = open => {
-      menuOpen = open;
-      if (open) {
-        menuDiv.classList.remove('hidden'); menuDiv.classList.add('flex');
-        setTimeout(() => menuDiv.classList.remove('opacity-0'), 10);
-      } else {
-        menuDiv.classList.add('opacity-0');
-        setTimeout(() => { menuDiv.classList.add('hidden'); menuDiv.classList.remove('flex'); }, 300);
-      }
+// diálogo de formulário genérico: devolve os valores ou null (cancelou)
+function ask({title, fields, values = {}, ok = 'Salvar'}) {
+  return new Promise(resolve => {
+    const dlg = $('#dlg'), f = $('#dlgform'); let done = false;
+    $('#dlgtitle').textContent = title;
+    f.innerHTML = fields.map(fd => {
+      const v = values[fd.k] ?? fd.def ?? '', req = fd.req ? ' required' : '';
+      if (fd.type === 'select') return `<label>${esc(fd.label)}<select name="${fd.k}"${req}>${options(fd.opts, v)}</select></label>`;
+      if (fd.type === 'check') return `<label class="chk"><input type="checkbox" name="${fd.k}"${v === true || v === 'sim' ? ' checked' : ''}> ${esc(fd.label)}</label>`;
+      const ex = fd.type === 'number' ? ` inputmode="decimal" step="${fd.step || '0.01'}"${fd.min !== undefined ? ` min="${fd.min}"` : ''}` : ` maxlength="${fd.max || 120}"`;
+      return `<label>${esc(fd.label)}<input type="${fd.type === 'number' ? 'number' : fd.type || 'text'}" name="${fd.k}" value="${esc(v)}"${req}${ex}></label>`;
+    }).join('') + `<div class="row end"><button type="button" class="btn ghost" id="dlgx">Cancelar</button><button class="btn">${esc(ok)}</button></div>`;
+    const finish = val => { if (!done) { done = true; resolve(val); } };
+    f.onsubmit = e => {
+      e.preventDefault();
+      const out = {};
+      fields.forEach(fd => { const el = f.elements[fd.k]; out[fd.k] = fd.type === 'check' ? el.checked : el.value; });
+      finish(out); dlg.close();
     };
-    btnMenu.addEventListener('click', () => setMenu(!menuOpen));
-    document.querySelectorAll('.mobile-link').forEach(link => link.addEventListener('click', () => setMenu(false)));
+    $('#dlgx').onclick = () => dlg.close();
+    dlg.onclose = () => finish(null);
+    dlg.showModal();
+    const first = f.querySelector('input,select'); if (first) first.focus();
+  });
+}
 
-    // --- CONFIGURAÇÃO DO MAPA ---
-    try {
-        const q = encodeURIComponent({{ shop.address|tojson }});
-        const mapEl = $('#mapa-google');
-        if (mapEl) mapEl.src = "https://maps.google.com/maps?q=" + q + "&t=m&z=15&output=embed&iwloc=near";
-        const gpsEl = $('#gps');
-        if (gpsEl) gpsEl.href = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "https://maps.apple.com/?daddr=" + q + "&dirflg=d" : "https://www.google.com/maps/dir/?api=1&destination=" + q + "&travelmode=driving";
-    } catch(e) { console.error(e); }
+// ------------------------------------------------------------ navegação
+async function show(tab, quiet) {
+  S.tab = tab; history.replaceState(null, '', '#' + tab);
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  if (!quiet) view.innerHTML = '<p class="muted">Carregando…</p>';
+  try { await LOAD[tab](); }
+  catch (e) { view.innerHTML = `<div class="card"><b>Não foi possível carregar.</b><p class="muted">${esc(e.message)}</p><button class="btn" data-act="retry">Tentar de novo</button></div>`; }
+}
+$('#nav').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) show(b.dataset.tab); };
 
-    // --- ÍCONES DINÂMICOS PARA SERVIÇOS ---
-    const getServiceIcon = (name) => {
-        const n = name.toLowerCase();
-        // Combo Corte & Barba (Estrela)
-        if (n.includes('corte') && n.includes('barba')) return `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>`;
-        // Corte / Cabelo (Tesouras)
-        if (n.includes('corte') || n.includes('cabelo')) return `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"></path></svg>`;
-        // Barba (Ícone de utilizador/rosto)
-        if (n.includes('barba')) return `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>`;
-        // Acabamento / Outros (Fagulhas/Brilho)
-        return `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>`;
-    };
+// ------------------------------------------------------------ AGENDA
+const STATUS = {agendado: ['Agendado', ''], concluido: ['Concluído', 'ok'], faltou: ['Faltou', 'bad']};
+async function loadAgenda() {
+  const list = await api('/api/admin/appointments?day=' + S.day);
+  const dt = new Date(S.day + 'T12:00:00'), tit = dt.toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: 'long'});
+  const total = list.filter(a => a.status !== 'faltou').reduce((s, a) => s + a.preco, 0);
+  view.innerHTML = `<div class="bar">
+      <button class="btn ghost" data-act="day" data-n="-1" aria-label="Dia anterior">‹</button>
+      <input type="date" id="dayin" value="${esc(S.day)}" aria-label="Dia">
+      <button class="btn ghost" data-act="day" data-n="1" aria-label="Próximo dia">›</button>
+      <button class="btn ghost" data-act="day" data-n="0">Hoje</button></div>
+    <h2 style="text-transform:capitalize">${esc(tit)} <span class="muted" style="font-weight:400;font-size:14px">· ${list.length} atendimento(s) · ${brl(total)}</span></h2>
+    ${list.map(a => {
+      const [lb, cl] = STATUS[a.status] || [a.status, ''], ph = String(a.telefone || '').replace(/\D/g, '');
+      return `<div class="card appt"><div class="t">${esc(a.hora)}<div class="muted" style="font-weight:400;font-size:12px">até ${esc(a.fim)}</div></div>
+        <div class="i"><b>${esc(a.cliente)}</b> <span class="pill ${cl}">${lb}</span><br>
+        <span class="muted">${esc(a.servico)} · ${esc(a.barbeiro)} · ${brl(a.preco)}</span><br>
+        ${ph ? `<a class="lnk" style="padding-left:0" href="https://wa.me/55${ph}" target="_blank" rel="noopener">WhatsApp ${esc(ph)}</a>` : ''}</div>
+        ${a.status === 'agendado' ? `<div class="row">
+          <button class="btn sm" data-act="done" data-code="${esc(a.codigo)}" data-preco="${a.preco}">Concluir</button>
+          <button class="btn sm ghost" data-act="miss" data-code="${esc(a.codigo)}">Faltou</button>
+          <button class="btn sm red" data-act="cancel" data-code="${esc(a.codigo)}">Cancelar</button></div>` : ''}</div>`;
+    }).join('') || '<p class="muted">Nenhum agendamento neste dia.</p>'}
+    <p class="muted" style="font-size:13px">Eventos criados à mão no Google Agenda bloqueiam o horário no site, mas não aparecem aqui.</p>`;
+}
 
-    // --- CARREGAMENTO DE DADOS ---
-    const brl = v => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    // colunas/largura da equipe conforme o número de profissionais (evita quadrados vazios)
-    const COLS = {1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3', 4: 'md:grid-cols-4'};
-    const WIDTH = {1: 'max-w-xs', 2: 'max-w-xl', 3: 'max-w-3xl', 4: 'max-w-5xl'};
+// ------------------------------------------------------------ RESUMO
+async function loadResumo() {
+  const d = await api('/api/admin/summary?month=' + S.month), max = Math.max(1, ...d.por_dia.map(x => x.total));
+  const dias = new Date(+S.month.slice(0, 4), +S.month.slice(5), 0).getDate(), porDia = Object.fromEntries(d.por_dia.map(x => [x.dia, x.total]));
+  view.innerHTML = `<div class="bar"><input type="month" id="monthin" value="${esc(S.month)}" aria-label="Mês"></div>
+    ${d.sem_forma ? `<div class="alert"><span><b>${d.sem_forma}</b> receita(s) sem forma de pagamento.</span><button class="btn sm" data-act="semforma">Classificar agora</button></div>` : ''}
+    <div class="grid">
+      <div class="card kpi"><div class="l">Receitas</div><div class="v pos">${brl(d.receitas)}</div></div>
+      <div class="card kpi"><div class="l">Despesas</div><div class="v neg">${brl(d.despesas)}</div></div>
+      <div class="card kpi"><div class="l">Saldo</div><div class="v ${d.saldo < 0 ? 'neg' : ''}">${brl(d.saldo)}</div></div>
+      <div class="card kpi"><div class="l">Atendimentos</div><div class="v">${d.atendimentos}</div></div>
+      <div class="card kpi"><div class="l">Ticket médio</div><div class="v">${brl(d.ticket_medio)}</div></div></div>
+    <h2>Receita por dia</h2><div class="card"><div class="bars" role="img" aria-label="Receita por dia do mês">
+      ${Array.from({length: dias}, (_, i) => `<div title="Dia ${i + 1}: ${brl(porDia[i + 1] || 0)}" style="height:${Math.round((porDia[i + 1] || 0) / max * 100)}%"></div>`).join('')}</div>
+      <div class="axis"><span>1</span><span>${dias}</span></div></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <div><h2>Por forma de pagamento</h2><div class="tbl"><table style="min-width:0"><tbody>
+        ${Object.entries(d.por_forma).map(([k, v]) => `<tr><td>${esc(FORMAS[k] || 'Sem forma informada')}</td><td class="n">${brl(v)}</td></tr>`).join('') || '<tr><td class="muted">Sem receitas neste mês.</td></tr>'}</tbody></table></div></div>
+      <div><h2>Por barbeiro</h2><div class="tbl"><table style="min-width:0"><tbody>
+        ${d.por_barbeiro.map(b => `<tr><td>${esc(b.nome)}</td><td class="n">${brl(b.total)}</td></tr>`).join('') || '<tr><td class="muted">Sem receitas neste mês.</td></tr>'}</tbody></table></div></div></div>`;
+}
 
-    fetch('/api/public').then(r => r.json()).then(d => {
+// ------------------------------------------------------------ LANÇAMENTOS
+async function loadLanc() {
+  S.tx = await api('/api/admin/transactions?month=' + S.month);
+  const rows = S.noForma ? S.tx.filter(t => t.tipo === 'receita' && !FORMAS[t.forma_pgto]) : S.tx;
+  view.innerHTML = `<div class="bar"><input type="month" id="monthin" value="${esc(S.month)}" aria-label="Mês">
+      <button class="btn" data-act="newtx">+ Novo lançamento</button>
+      <label class="chk" style="margin:0"><input type="checkbox" id="nofi"${S.noForma ? ' checked' : ''}> só sem forma de pagamento</label></div>
+    <div class="tbl"><table><thead><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="n">Valor</th><th></th></tr></thead><tbody>
+    ${rows.map(t => `<tr><td>${fdata(t.data)}</td><td>${esc(t.descricao)}<div class="muted" style="font-size:12px">${esc(t.categoria)}${t.barbeiro ? ' · ' + esc(t.barbeiro) : ''}</div></td>
+      <td>${t.tipo === 'despesa' ? '<span class="pill bad">despesa</span>' : FORMAS[t.forma_pgto] ? esc(FORMAS[t.forma_pgto]) : '<span class="pill warn">classificar</span>'}</td>
+      <td class="n ${t.tipo === 'despesa' ? 'neg' : 'pos'}">${t.tipo === 'despesa' ? '−' : ''}${brl(t.valor)}</td>
+      <td class="n"><button class="btn sm ghost" data-act="edittx" data-id="${esc(t.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada por aqui.</td></tr>'}
+    </tbody></table></div>
+    <p class="muted" style="font-size:13px">Atendimentos concluídos entram sozinhos. Para apagar um lançamento, use a planilha financeira.</p>`;
+}
+async function newTx() {
+  const bs = await barbers();
+  const v = await ask({title: 'Novo lançamento', ok: 'Lançar', values: {data: hoje(), tipo: 'receita', categoria: 'servico'}, fields: [
+    {k: 'tipo', label: 'Tipo', type: 'select', opts: [['receita', 'Receita'], ['despesa', 'Despesa']]},
+    {k: 'descricao', label: 'Descrição', req: true}, {k: 'valor', label: 'Valor (R$)', type: 'number', req: true, min: 0.01},
+    {k: 'data', label: 'Data', type: 'date', req: true},
+    {k: 'forma_pgto', label: 'Forma de pagamento', type: 'select', opts: [['', '—']].concat(Object.entries(FORMAS))},
+    {k: 'categoria', label: 'Categoria (servico, produto, aluguel…)', max: 40},
+    {k: 'barbeiro', label: 'Barbeiro (opcional)', type: 'select', opts: [['', '—']].concat(bs.filter(b => b.ativo).map(b => [b.nome, b.nome]))}]});
+  if (v) run(() => api('/api/admin/transactions', v), 'Lançamento salvo');
+}
+async function editTx(id) {
+  const t = S.tx.find(x => x.id === id); if (!t) return;
+  const v = await ask({title: 'Editar lançamento', values: t, fields: [
+    {k: 'descricao', label: 'Descrição', req: true}, {k: 'valor', label: 'Valor (R$)', type: 'number', req: true, min: 0},
+    ...(t.tipo === 'receita' ? [{k: 'forma_pgto', label: 'Forma de pagamento', type: 'select', opts: [['', '—']].concat(Object.entries(FORMAS))}] : []),
+    {k: 'categoria', label: 'Categoria', max: 40}]});
+  if (v) run(() => api('/api/admin/transactions/' + encodeURIComponent(id), v), 'Lançamento atualizado');
+}
 
-        // Renderizar Serviços com Ícones Dinâmicos
-        $('#services').innerHTML = d.services.map(s => `
-            <div class="bg-dark-900 border border-dark-700 p-8 flex flex-col items-center text-center hover:border-gold transition-all duration-300 transform hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] group rounded-xl">
-                <div class="mb-6 text-dark-500 group-hover:text-gold transition-colors duration-500 transform group-hover:scale-110">
-                    ${getServiceIcon(s.name)}
-                </div>
-                <h3 class="text-white font-bold uppercase tracking-[0.2em] text-sm mb-3">${esc(s.name)}</h3>
-                <p class="text-gray-500 text-xs mb-3 h-10 overflow-hidden leading-relaxed font-light">${esc(s.description||'')}</p>
-                <p class="text-gray-600 text-[10px] uppercase tracking-widest mb-3">${s.minutes} min</p>
-                <p class="text-gold text-2xl font-serif mb-8">${brl(s.price)}</p>
-                <button data-open-booking data-service="${s.id}" class="mt-auto border border-dark-600 text-gray-400 group-hover:border-gold group-hover:text-gold uppercase text-[10px] tracking-[0.2em] px-6 py-3 transition-colors w-full font-semibold">
-                    Agendar
-                </button>
-            </div>`).join('');
+// ------------------------------------------------------------ ESTOQUE
+async function loadEstoque() {
+  S.prod = await api('/api/admin/products');
+  const baixo = S.prod.filter(p => p.ativo && p.baixo).length;
+  view.innerHTML = `<div class="bar"><button class="btn" data-act="newprod">+ Novo produto</button></div>
+    ${baixo ? `<div class="alert"><b>${baixo}</b> produto(s) com estoque no mínimo ou abaixo.</div>` : ''}
+    <div class="tbl"><table><thead><tr><th>Produto</th><th class="n">Preço</th><th class="n">Estoque</th><th></th></tr></thead><tbody>
+    ${S.prod.map(p => `<tr style="${p.ativo ? '' : 'opacity:.5'}"><td>${esc(p.nome)}${p.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">mínimo ${p.estoque_minimo}</div></td>
+      <td class="n">${brl(p.preco)}</td><td class="n"><span class="pill ${p.baixo ? 'bad' : 'ok'}">${p.estoque}</span></td>
+      <td class="n"><div class="row end">
+        <button class="btn sm" data-act="sell" data-id="${esc(p.id)}">Venda</button>
+        <button class="btn sm ghost" data-act="mov" data-t="entrada" data-id="${esc(p.id)}">Entrada</button>
+        <button class="btn sm ghost" data-act="mov" data-t="saida" data-id="${esc(p.id)}">Saída</button>
+        <button class="btn sm ghost" data-act="mov" data-t="ajuste" data-id="${esc(p.id)}">Ajuste</button>
+        <button class="btn sm ghost" data-act="editprod" data-id="${esc(p.id)}">Editar</button></div></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nenhum produto cadastrado.</td></tr>'}
+    </tbody></table></div>
+    <p class="muted" style="font-size:13px">O estoque nunca é digitado direto: ele é calculado pelas movimentações (entradas − saídas ± ajustes). Venda baixa o estoque e lança a receita.</p>`;
+}
+const prodFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'preco', label: 'Preço (R$)', type: 'number', req: true, min: 0},
+  {k: 'estoque_minimo', label: 'Estoque mínimo (alerta)', type: 'number', step: '1', min: 0}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
 
-        // Renderizar Barbeiros
-        const n = d.barbers.length, k = Math.min(n, 4);
-        if (!n) $('#equipe').classList.add('hidden');
-        $('#barbers').className = `grid grid-cols-2 ${COLS[k] || COLS[4]} gap-1 ${WIDTH[k] || WIDTH[4]} mx-auto border border-dark-700 bg-dark-700 p-1 rounded-sm shadow-2xl`;
-        $('#barbers').innerHTML = d.barbers.map((b, i) => `
-            <div class="relative bg-dark-800 aspect-square group overflow-hidden cursor-pointer ${n % 2 && i === n - 1 ? 'col-span-2 md:col-span-1' : ''}">
-                <div class="absolute inset-0 flex items-center justify-center font-serif text-6xl text-dark-700 group-hover:scale-110 transition-transform duration-700 select-none">
-                    ${esc(b.name.split(' ').map(x=>x[0]).slice(0,2).join(''))}
-                </div>
-                <div class="absolute inset-0 bg-black/60 group-hover:bg-transparent transition-colors duration-500"></div>
-                <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-dark-900 to-transparent p-4 translate-y-2 group-hover:translate-y-0 transition-transform text-center">
-                    <h3 class="text-white font-bold uppercase tracking-widest text-sm">${esc(b.name)}</h3>
-                    <p class="text-gold text-[10px] uppercase tracking-widest mt-1">${esc(b.role||'Especialista')}</p>
-                </div>
-            </div>`).join('');
+// ------------------------------------------------------------ CADASTROS
+async function loadCad() {
+  S.barbers = null;
+  const [sv, bs] = await Promise.all([api('/api/admin/services'), barbers()]); S.serv = sv;
+  view.innerHTML = `<h2>Serviços <button class="btn sm" data-act="newserv" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Serviço</th><th class="n">Duração</th><th class="n">Preço</th><th></th></tr></thead><tbody>
+    ${sv.map(s => `<tr style="${s.ativo ? '' : 'opacity:.5'}"><td>${esc(s.nome)}${s.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(s.descricao)}</div></td><td class="n">${s.minutos} min</td><td class="n">${brl(s.preco)}</td>
+      <td class="n"><button class="btn sm ghost" data-act="editserv" data-id="${esc(s.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nenhum serviço.</td></tr>'}</tbody></table></div>
+    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Nome</th><th>Agenda própria</th><th></th></tr></thead><tbody>
+    ${bs.map(b => `<tr style="${b.ativo ? '' : 'opacity:.5'}"><td>${esc(b.nome)}${b.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(b.funcao)}</div></td>
+      <td>${b.calendario ? '<span class="pill ok">sim</span>' : '<span class="muted">usa a agenda padrão</span>'}</td>
+      <td class="n"><button class="btn sm ghost" data-act="editbarb" data-id="${esc(b.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>
+    <p class="muted" style="font-size:13px">Itens inativos somem do site, mas o histórico continua. Antes de inativar um barbeiro, confira se ele não tem horários marcados.</p>`;
+}
+const servFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'descricao', label: 'Descrição', max: 160},
+  {k: 'minutos', label: 'Duração (minutos)', type: 'number', step: '5', min: 5, req: true}, {k: 'preco', label: 'Preço (R$)', type: 'number', min: 0, req: true},
+  {k: 'ativo', label: 'Ativo no site', type: 'check'}];
+const barbFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'funcao', label: 'Função (ex.: Barbeiro)', max: 60},
+  {k: 'calendario', label: 'ID da agenda do barbeiro (vazio = agenda padrão)', max: 200}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
 
-        // Renderizar Produtos (seção só aparece se houver produtos)
-        if (d.products.length) {
-            $('#produtos').classList.remove('hidden');
-            ['#nav-produtos', '#nav-produtos-m'].forEach(s => $(s).classList.remove('hidden'));
-            $('#products').innerHTML = d.products.map(p => `
-                <div class="bg-dark-900 border border-dark-700 p-8 flex flex-col items-center text-center hover:border-gold transition-all duration-300 transform hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] rounded-xl">
-                    <h3 class="text-white font-bold uppercase tracking-[0.2em] text-sm mb-4">${esc(p.name)}</h3>
-                    <p class="text-gold text-2xl font-serif mb-6">${brl(p.price)}</p>
-                    <span class="mt-auto text-[10px] font-semibold uppercase tracking-widest flex items-center gap-2 ${p.stock>0?'text-green-500':'text-red-500'}">
-                        <span class="w-2 h-2 rounded-full ${p.stock>0?'bg-green-500':'bg-red-500'}"></span>
-                        ${p.stock>0?'Disponível':'Esgotado'}
-                    </span>
-                </div>`).join('');
-        }
+// ------------------------------------------------------------ HORÁRIOS E FOLGAS
+async function loadHorarios() {
+  const bs = await barbers(), b = S.hb || '*';
+  const [hs, folgas] = await Promise.all([api('/api/admin/hours?barber=' + encodeURIComponent(b)), api('/api/admin/timeoff')]);
+  const nome = id => id === '*' ? 'Todos' : (bs.find(x => x.id === id) || {nome: id}).nome;
+  view.innerHTML = `<h2>Expediente semanal</h2>
+    <div class="bar"><select id="hb" aria-label="Barbeiro">${options([['*', 'Horário geral (todos)']].concat(bs.filter(x => x.ativo).map(x => [x.id, x.nome])), b)}</select></div>
+    <div class="tbl hrs"><table><thead><tr><th>Dia</th><th>Abre</th><th>Fecha</th><th>Almoço de</th><th>até</th></tr></thead><tbody>
+    ${hs.map((h, i) => `<tr><td>${DIAS[i]}</td>${['abre', 'fecha', 'almoco_ini', 'almoco_fim'].map(k => `<td><input type="time" data-i="${i}" data-k="${k}" value="${esc(h[k])}" aria-label="${DIAS[i]} ${k}"></td>`).join('')}</tr>`).join('')}
+    </tbody></table></div>
+    <p class="muted" style="font-size:13px">Deixe “abre” e “fecha” vazios para o dia ficar fechado. Um barbeiro com horário próprio ignora o horário geral.</p>
+    <button class="btn" data-act="savehours">Salvar horários</button>
+    <h2>Folgas, feriados e bloqueios <button class="btn sm" data-act="newoff" style="margin-left:8px">+ Nova</button></h2>
+    <div class="tbl"><table><thead><tr><th>Data</th><th>Quem</th><th>Período</th><th>Motivo</th><th></th></tr></thead><tbody>
+    ${folgas.map(f => `<tr><td>${fdata(f.data)}/${f.data.slice(0, 4)}</td><td>${esc(nome(f.barbeiro))}</td><td>${f.inicio ? esc(f.inicio) + '–' + esc(f.fim) : 'dia todo'}</td><td>${esc(f.motivo)}</td>
+      <td class="n"><button class="btn sm red" data-act="deloff" data-row="${f.row}" data-d="${esc(f.data)}">Remover</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma folga futura.</td></tr>'}</tbody></table></div>`;
+}
 
-        $('#fb').innerHTML = '<option value="" disabled selected>ESCOLHER...</option>' + d.barbers.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
-        $('#fs').innerHTML = '<option value="" disabled selected>ESCOLHER...</option>' + d.services.map(s => `<option value="${s.id}">${esc(s.name)} – ${brl(s.price)} (${s.minutes} min)</option>`).join('');
-    }).catch(e => console.error(e));
+// ------------------------------------------------------------ SITE
+async function loadSite() {
+  const c = await api('/api/admin/config');
+  view.innerHTML = `<h2>Dados exibidos no site</h2><form class="card" id="siteform">
+    <label>Nome da barbearia<input name="nome" value="${esc(c.nome)}" maxlength="120" required></label>
+    <div class="grid"><label>Nome curto (cabeçalho)<input name="nome_curto" value="${esc(c.nome_curto)}" maxlength="40"></label>
+    <label>Marca do logo (até 6 letras)<input name="marca" value="${esc(c.marca)}" maxlength="6"></label></div>
+    <label>Endereço<input name="endereco" value="${esc(c.endereco)}" maxlength="200"></label>
+    <div class="grid"><label>WhatsApp (com DDD)<input name="whatsapp" value="${esc(c.whatsapp)}" inputmode="tel" maxlength="20"></label>
+    <label>Instagram (sem @)<input name="instagram" value="${esc(c.instagram)}" maxlength="60"></label></div>
+    <label>Descrição<textarea name="descricao" rows="2" maxlength="300">${esc(c.descricao)}</textarea></label>
+    <label>Intervalo entre horários (minutos)<input name="intervalo_min" type="number" min="5" max="120" step="5" value="${esc(c.intervalo_min)}"></label>
+    <button class="btn">Salvar</button></form>
+    <p class="muted" style="font-size:13px">As mudanças aparecem no site em até 1 minuto.</p>`;
+}
 
-    // --- MODAL & FORMULÁRIO ---
-    const modal = $('#dlg'), form = $('#form'), divDone = $('#done'), inputData = $('#fd'), boxSlots = $('#slots');
-    let chosenTime = null, openedAt = Date.now();
+// ------------------------------------------------------------ USUÁRIOS
+async function loadUsuarios() {
+  S.users = await api('/api/admin/users');
+  view.innerHTML = `<div class="bar"><input type="search" id="qusers" placeholder="Buscar por nome, e-mail ou telefone" style="flex:1;min-width:200px" aria-label="Buscar usuário"></div>
+    <div id="ulist"></div>
+    <p class="muted" style="font-size:13px"><b>Cliente</b> vê só a própria agenda e histórico. <b>Barbeiro</b> acessa este painel inteiro, inclusive o financeiro e esta tela. Dê esse acesso só a quem é da equipe. Quem se cadastra no site entra como cliente.</p>`;
+  renderUsuarios();
+}
+function renderUsuarios() {
+  const q = ($('#qusers') ? $('#qusers').value : '').trim().toLowerCase(), digitos = q.replace(/\D/g, '');
+  const l = S.users.filter(u => !q || (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (digitos && (u.telefone || '').includes(digitos)));
+  $('#ulist').innerHTML = l.map(u => `<div class="card appt" style="${u.ativo ? '' : 'opacity:.6'}">
+      <div class="i"><b>${esc(u.nome)}</b> ${u.papel === 'barbeiro' ? '<span class="pill warn">barbeiro</span>' : '<span class="pill">cliente</span>'}${u.ativo ? '' : ' <span class="pill bad">desativado</span>'}${u.voce ? ' <span class="pill ok">você</span>' : ''}<br>
+        <span class="muted">${esc(u.telefone)}${u.email ? ' · ' + esc(u.email) : ''}${u.criado_em ? ' · desde ' + esc(u.criado_em.split('-').reverse().join('/')) : ''}</span></div>
+      ${u.voce ? '' : `<div class="row">
+        <button class="btn sm ghost" data-act="u-papel" data-id="${esc(u.id)}" data-p="${u.papel === 'barbeiro' ? 'cliente' : 'barbeiro'}">${u.papel === 'barbeiro' ? 'Tornar cliente' : 'Tornar barbeiro'}</button>
+        <button class="btn sm ghost" data-act="u-senha" data-id="${esc(u.id)}">Nova senha</button>
+        <button class="btn sm ${u.ativo ? 'red' : ''}" data-act="u-ativo" data-id="${esc(u.id)}" data-v="${u.ativo ? '0' : '1'}">${u.ativo ? 'Desativar' : 'Reativar'}</button></div>`}</div>`).join('') || '<p class="muted">Nenhum usuário encontrado.</p>';
+}
 
-    document.body.addEventListener('click', e => {
-        const opener = e.target.closest('[data-open-booking]');
-        if (!opener) return;
-        form.classList.remove('hidden'); divDone.classList.add('hidden'); $('#managebox').classList.add('hidden');
-        const t = new Date(); inputData.min = inputData.value = t.toLocaleDateString('en-CA');
-        if (opener.dataset.service) $('#fs').value = opener.dataset.service;  // "Agendar" no cartão já escolhe o serviço
-        openedAt = Date.now();
-        modal.showModal();
-    });
+const LOAD = {usuarios: loadUsuarios, agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
 
-    const fecharModal = () => { modal.close(); form.reset(); boxSlots.innerHTML = ''; chosenTime = null; };
-    $('#close').addEventListener('click', fecharModal);
-    $('#skip').addEventListener('click', fecharModal);
-
-    async function loadSlots() {
-        chosenTime = null; boxSlots.innerHTML = '';
-        const fb = $('#fb').value, fs = $('#fs').value, fd = $('#fd').value;
-        if (!fd || !fb || !fs) return;
-        boxSlots.innerHTML = '<p class="col-span-4 text-[10px] uppercase tracking-widest text-dark-500 text-center py-2">Procurando...</p>';
-        try {
-            const r = await fetch(`/api/slots?barber=${fb}&service=${fs}&date=${fd}`);
-            const list = await r.json();
-            if (!r.ok || !Array.isArray(list)) throw new Error('slots');
-            boxSlots.innerHTML = list.length ? list.map(t => `<button type="button" data-time="${t}" class="border border-dark-600 bg-dark-800 hover:bg-dark-700 text-gray-300 py-3 text-xs tracking-widest font-semibold focus:outline-none transition-colors">${t}</button>`).join('') : '<p class="col-span-4 text-[10px] font-bold text-gold uppercase tracking-widest text-center py-2">Esgotado.</p>';
-        } catch(e) { boxSlots.innerHTML = '<p class="col-span-4 text-xs text-red-500 text-center">Erro de rede.</p>'; }
-    }
-
-    ['fb','fs','fd'].forEach(id => $('#' + id).addEventListener('change', loadSlots));
-
-    boxSlots.addEventListener('click', e => {
-        const b = e.target.closest('button[data-time]'); if (!b) return;
-        chosenTime = b.dataset.time;
-        document.querySelectorAll('#slots button').forEach(x => {
-            x.className = x === b ? "border border-gold bg-gold text-black py-3 text-xs tracking-widest font-bold focus:outline-none transition-colors" : "border border-dark-600 bg-dark-800 hover:bg-dark-700 text-gray-300 py-3 text-xs tracking-widest font-semibold focus:outline-none transition-colors";
-        });
-    });
-
-    form.addEventListener('submit', async e => {
-        e.preventDefault(); const err = $('#err'); err.textContent = '';
-        if (!chosenTime) { err.textContent = 'SELECIONE UM HORÁRIO.'; return; }
-        const btn = e.target.querySelector('button[type="submit"]'); const txt = btn.textContent;
-        btn.textContent = 'PROCESSANDO...'; btn.disabled = true;
-        try {
-            const r = await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ barber: $('#fb').value, service: $('#fs').value, date: $('#fd').value, time: chosenTime, name: $('#fn').value, phone: $('#fp').value,
-                                       website: $('#fw').value, consent: $('#fc').checked, elapsed: Date.now() - openedAt })
-            });
-            const j = await r.json();
-            if (!r.ok) { err.textContent = (j.error || 'Erro').toUpperCase(); loadSlots(); }
-            else {
-                $('#gcal').href = j.google_link;
-                if (j.manage_url) { $('#manage').href = j.manage_url; $('#manage').textContent = j.manage_url; $('#managebox').classList.remove('hidden'); }
-                form.classList.add('hidden'); divDone.classList.remove('hidden');
-            }
-        } catch(e) { err.textContent = "FALHA DE COMUNICAÇÃO."; }
-        btn.textContent = txt; btn.disabled = false;
-    });
+// ------------------------------------------------------------ eventos
+view.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const d = b.dataset, act = d.act;
+  if (act === 'retry') return show(S.tab);
+  if (act === 'day') { const dt = new Date(S.day + 'T12:00:00'); if (+d.n) dt.setDate(dt.getDate() + +d.n); else return (S.day = hoje(), show('agenda')); S.day = dt.toLocaleDateString('en-CA'); return show('agenda'); }
+  if (act === 'done') {
+    const v = await ask({title: 'Concluir atendimento', ok: 'Concluir', values: {method: 'pix', discount: '', tip: ''}, fields: [
+      {k: 'method', label: 'Forma de pagamento', type: 'select', req: true, opts: Object.entries(FORMAS)},
+      {k: 'discount', label: `Desconto (R$) — serviço: ${brl(d.preco)}`, type: 'number', min: 0},
+      {k: 'tip', label: 'Gorjeta (R$), entra à parte', type: 'number', min: 0}]});
+    if (v) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'concluido', ...v}), 'Atendimento concluído');
+  }
+  if (act === 'miss' && confirm('Marcar que o cliente faltou? O horário volta a ficar livre.')) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'faltou'}), 'Marcado como faltou');
+  if (act === 'cancel' && confirm('Cancelar este agendamento? O evento será apagado da agenda.')) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'cancelado'}), 'Agendamento cancelado');
+  if (act === 'semforma') { S.noForma = true; return show('lanc'); }
+  if (act === 'u-papel' && confirm(d.p === 'barbeiro' ? 'Dar acesso de BARBEIRO a este usuário? Ele poderá ver o painel inteiro, inclusive o financeiro.' : 'Voltar este usuário para cliente? Ele perde o acesso ao painel.'))
+    return run(() => api('/api/admin/users/' + encodeURIComponent(d.id), {papel: d.p}), 'Nível de acesso atualizado');
+  if (act === 'u-ativo' && confirm(d.v === '1' ? 'Reativar esta conta?' : 'Desativar esta conta? A pessoa sai do site na hora e não consegue entrar nem agendar.'))
+    return run(() => api('/api/admin/users/' + encodeURIComponent(d.id), {ativo: d.v === '1'}), d.v === '1' ? 'Conta reativada' : 'Conta desativada');
+  if (act === 'u-senha' && confirm('Gerar uma senha temporária? A senha atual deixa de funcionar e a pessoa sai dos aparelhos conectados.')) {
+    try { const r = await api('/api/admin/users/' + encodeURIComponent(d.id) + '/senha', {}); prompt('Senha temporária (copie e envie à pessoa; ela pode trocar em "Minha conta"):', r.senha); }
+    catch (err) { toast(err.message, true); }
+    return;
+  }
+  if (act === 'newtx') return newTx();
+  if (act === 'edittx') return editTx(d.id);
+  if (act === 'newprod') { const v = await ask({title: 'Novo produto', fields: prodFields, values: {ativo: true, estoque_minimo: 3}}); if (v) run(() => api('/api/admin/products', v), 'Produto criado'); }
+  if (act === 'editprod') { const p = S.prod.find(x => x.id === d.id), v = await ask({title: 'Editar produto', fields: prodFields, values: {...p, ativo: p.ativo}}); if (v) run(() => api('/api/admin/products', {...v, id: d.id}), 'Produto atualizado'); }
+  if (act === 'mov') {
+    const p = S.prod.find(x => x.id === d.id), nomeT = {entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste'}[d.t];
+    const v = await ask({title: `${nomeT} · ${p.nome}`, fields: [
+      {k: 'quantidade', label: d.t === 'ajuste' ? 'Quantidade (pode ser negativa)' : 'Quantidade', type: 'number', step: '1', req: true, ...(d.t === 'ajuste' ? {} : {min: 1})},
+      {k: 'motivo', label: 'Motivo (opcional)', max: 80}]});
+    if (v) run(() => api('/api/admin/stock', {product: d.id, tipo: d.t, ...v}), 'Estoque atualizado');
+  }
+  if (act === 'sell') {
+    const p = S.prod.find(x => x.id === d.id), bs = await barbers();
+    const v = await ask({title: `Venda · ${p.nome} (${brl(p.preco)})`, ok: 'Vender', values: {quantidade: 1, method: 'pix'}, fields: [
+      {k: 'quantidade', label: 'Quantidade', type: 'number', step: '1', min: 1, req: true},
+      {k: 'method', label: 'Forma de pagamento', type: 'select', opts: Object.entries(FORMAS)},
+      {k: 'barbeiro', label: 'Vendido por (opcional)', type: 'select', opts: [['', '—']].concat(bs.filter(x => x.ativo).map(x => [x.nome, x.nome]))}]});
+    if (v) run(() => api('/api/admin/sales', {product: d.id, ...v}), 'Venda registrada');
+  }
+  if (act === 'newserv') { const v = await ask({title: 'Novo serviço', fields: servFields, values: {ativo: true, minutos: 30}}); if (v) run(() => api('/api/admin/services', v), 'Serviço criado'); }
+  if (act === 'editserv') { const s = S.serv.find(x => x.id === d.id), v = await ask({title: 'Editar serviço', fields: servFields, values: s}); if (v) run(() => api('/api/admin/services', {...v, id: d.id}), 'Serviço atualizado'); }
+  if (act === 'newbarb') { const v = await ask({title: 'Novo barbeiro', fields: barbFields, values: {ativo: true}}); if (v) run(() => api('/api/admin/barbers', v), 'Barbeiro criado'); }
+  if (act === 'editbarb') { const x = (await barbers()).find(y => y.id === d.id), v = await ask({title: 'Editar barbeiro', fields: barbFields, values: x}); if (v) run(() => api('/api/admin/barbers', {...v, id: d.id}), 'Barbeiro atualizado'); }
+  if (act === 'savehours') {
+    const days = Array.from({length: 7}, () => ({}));
+    view.querySelectorAll('.hrs input').forEach(i => days[+i.dataset.i][i.dataset.k] = i.value);
+    run(() => api('/api/admin/hours', {barber: S.hb || '*', days}), 'Horários salvos');
+  }
+  if (act === 'newoff') {
+    const bs = await barbers();
+    const v = await ask({title: 'Nova folga / bloqueio', fields: [
+      {k: 'barbeiro', label: 'Quem', type: 'select', opts: [['*', 'Todos (feriado, férias coletivas)']].concat(bs.filter(x => x.ativo).map(x => [x.id, x.nome]))},
+      {k: 'data', label: 'Data', type: 'date', req: true}, {k: 'inicio', label: 'Das (vazio = dia todo)', type: 'time'}, {k: 'fim', label: 'Até', type: 'time'},
+      {k: 'motivo', label: 'Motivo', max: 80}]});
+    if (v) run(() => api('/api/admin/timeoff', v), 'Folga cadastrada');
+  }
+  if (act === 'deloff' && confirm('Remover esta folga? O horário volta a ser oferecido no site.')) run(() => api('/api/admin/timeoff/delete', {row: +d.row, data: d.d}), 'Folga removida');
 });
+view.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'qusers') return;
+  if (t.id === 'dayin' && t.value) { S.day = t.value; show('agenda'); }
+  if (t.id === 'monthin' && t.value) { S.month = t.value; show(S.tab); }
+  if (t.id === 'nofi') { S.noForma = t.checked; show('lanc'); }
+  if (t.id === 'hb') { S.hb = t.value; show('horarios'); }
+});
+view.addEventListener('input', e => { if (e.target.id === 'qusers') renderUsuarios(); });
+view.addEventListener('submit', e => {
+  if (e.target.id !== 'siteform') return;
+  e.preventDefault();
+  run(() => api('/api/admin/config', Object.fromEntries(new FormData(e.target))), 'Dados do site salvos');
+});
+
+// ------------------------------------------------------------ início
+(async () => {
+  try {
+    S.links = await api('/api/admin/links');
+    [['l-fin', 'financeiro'], ['l-est', 'estoque'], ['l-age', 'agenda']].forEach(([id, k]) => { if (S.links[k]) { const a = $('#' + id); a.href = S.links[k]; a.hidden = false; } });
+  } catch (e) { /* atalhos são opcionais */ }
+  const t = location.hash.slice(1);
+  show(LOAD[t] ? t : 'agenda');
+})();
 </script>
+{% endraw %}
 </body>
 </html>
