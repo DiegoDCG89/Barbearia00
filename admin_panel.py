@@ -17,7 +17,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import jsonify, redirect, render_template, request, session
+from flask import jsonify, redirect, render_template, request
 
 log = logging.getLogger("barbearia.admin")
 
@@ -47,8 +47,11 @@ def register(app, core):
         """Exige login, JSON nos POST (bloqueia formulários de outros sites) e trata erros."""
         @wraps(fn)
         def wrapper(*a, **kw):
-            if not session.get("admin_logado"):
+            u = core.usuario_atual()
+            if not u:
                 return jsonify(error="Sessão expirada. Entre de novo."), 401
+            if u["papel"] != "barbeiro":
+                return jsonify(error="Acesso restrito aos barbeiros."), 403
             if request.method == "POST" and not request.is_json:
                 return jsonify(error="Requisição inválida."), 415
             try:
@@ -155,9 +158,16 @@ def register(app, core):
     # ------------------------------------------------------------------ página e atalhos
     @app.route("/admin")
     def admin_panel():
-        if not session.get("admin_logado"):
-            return redirect("/login")
-        return render_template("admin.html", shop=core.shop())
+        u = core.usuario_atual()
+        if not u:
+            return redirect("/entrar?next=/admin")
+        if u["papel"] != "barbeiro":
+            return ('<meta name="viewport" content="width=device-width,initial-scale=1">'
+                    '<body style="font-family:system-ui;background:#0a0a0a;color:#eee;text-align:center;padding:15vh 20px">'
+                    '<h2>Acesso restrito aos barbeiros</h2><p>Sua conta é de cliente.</p>'
+                    '<p><a style="color:#c19b6c" href="/minha-conta">Minha conta</a> · '
+                    '<a style="color:#c19b6c" href="/">Voltar ao site</a></p></body>'), 403
+        return render_template("admin.html", shop=core.shop(), eu=u)
 
     @route("/api/admin/links")
     def links():
