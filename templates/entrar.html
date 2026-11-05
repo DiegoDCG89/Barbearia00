@@ -4,78 +4,60 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#090706">
 <title>Entrar · {{ shop.name }}</title>
-<style>
-:root{--bg:#0a0a0a;--card:#111;--card2:#1a1a1a;--line:#2a2a2a;--gold:#c19b6c;--gold-h:#a8865b;--ink:#f2efe9;--mute:#9a958b;--bad:#ff8a80}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
-header{padding:18px 24px;border-bottom:1px solid var(--line)}
-.brand{font:700 30px/1 Georgia,"Playfair Display",serif;color:var(--ink);text-decoration:none;letter-spacing:-.02em}
-.brand:hover{color:var(--gold)}
-main{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px 16px}
-.card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);padding:28px}
-h1{margin:0 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.2em}
-.sub{margin:0 0 20px;color:var(--mute);font-size:13px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);margin-bottom:22px}
-.tabs button{background:none;border:0;color:var(--mute);font:600 11px/1 inherit;letter-spacing:.18em;text-transform:uppercase;padding:13px 8px;cursor:pointer}
-.tabs button[aria-selected=true]{background:var(--gold);color:#000}
-label{display:block;font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.18em;margin:0 0 6px}
-.f{margin-bottom:16px}
-input[type=text],input[type=email],input[type=tel],input[type=password]{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--ink);font:inherit;padding:12px;border-radius:0}
-input:focus{outline:none;border-color:var(--gold)}
-.pw{position:relative}
-.pw button{position:absolute;right:0;top:0;height:100%;background:none;border:0;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:0 12px;cursor:pointer}
-.hint{font-size:12px;color:var(--mute);margin:6px 0 0}
-.chk{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--mute);line-height:1.5;margin-bottom:16px}
-.chk input{margin-top:3px;accent-color:var(--gold)}
-.chk a,.foot a{color:var(--gold)}
-.btn{width:100%;background:var(--gold);color:#000;border:0;font:700 12px/1 inherit;letter-spacing:.2em;text-transform:uppercase;padding:16px;cursor:pointer}
-.btn:hover{background:var(--gold-h)}
-.btn:disabled{opacity:.6;cursor:wait}
-.err{min-height:18px;margin:0 0 10px;color:var(--bad);font-size:12px;font-weight:600;text-align:center}
-.foot{max-width:420px;text-align:center;color:var(--mute);font-size:12px;margin-top:18px}
-.hp{position:absolute;left:-9999px;height:0;width:0;opacity:0}
-[hidden]{display:none!important}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='noir.css') }}?v=1">
 </head>
 <body>
-<header><a class="brand" href="/">{{ shop.brand }}</a></header>
-<main>
-  <div class="card">
-    <h1>Sua conta</h1>
-    <p class="sub">Para agendar um horário, entre ou crie sua conta (leva menos de um minuto).</p>
+<header class="nav">
+  <div class="nav-in">
+    <a class="logo" href="/" aria-label="{{ shop.name }}">{% include '_logo.html' %}</a>
+    <div class="nav-right"><a href="/">Voltar ao site</a></div>
+  </div>
+</header>
+
+<main class="page">
+  <span class="kicker">Sua conta</span>
+  <h1>Acesse para agendar</h1>
+  <p class="sub">Para agendar um horário, entre ou crie sua conta (leva menos de um minuto).</p>
+
+  <div class="panel">
     <div class="tabs" role="tablist">
       <button type="button" id="t-in" role="tab" aria-selected="true">Entrar</button>
       <button type="button" id="t-up" role="tab" aria-selected="false">Criar conta</button>
     </div>
 
     <form id="f-in" novalidate>
-      <div class="f"><label for="li">E-mail ou telefone</label>
-        <input id="li" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required maxlength="120"></div>
-      <div class="f"><label for="ls">Senha</label>
-        <div class="pw"><input id="ls" name="senha" type="password" autocomplete="current-password" required maxlength="128"><button type="button" data-eye="ls">mostrar</button></div></div>
+      <div class="field"><label class="lbl" for="li">E-mail ou telefone</label>
+        <input class="inp" id="li" name="login" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required maxlength="120"></div>
+      <div class="field"><label class="lbl" for="ls">Senha</label>
+        <div class="pw"><input class="inp" id="ls" name="senha" type="password" autocomplete="current-password" required maxlength="128"><button type="button" data-eye="ls">mostrar</button></div></div>
       <p class="err" id="e-in" role="alert"></p>
-      <button class="btn" type="submit">Entrar</button>
+      <button class="btn btn-gold btn-block" type="submit">Entrar</button>
     </form>
 
     <form id="f-up" hidden novalidate>
-      <div class="f"><label for="un">Nome</label>
-        <input id="un" type="text" autocomplete="name" required maxlength="80" placeholder="Ex.: João Silva"></div>
-      <div class="f"><label for="ut">WhatsApp (com DDD)</label>
-        <input id="ut" type="tel" inputmode="tel" autocomplete="tel" required placeholder="(12) 99999-9999"></div>
-      <div class="f"><label for="ue">E-mail <span style="text-transform:none;letter-spacing:0;color:var(--mute)">(opcional)</span></label>
-        <input id="ue" type="email" autocomplete="email" maxlength="120" placeholder="voce@exemplo.com">
+      <div class="field"><label class="lbl" for="un">Nome</label>
+        <input class="inp" id="un" type="text" autocomplete="name" required maxlength="80" placeholder="Ex.: João Silva"></div>
+      <div class="field"><label class="lbl" for="ut">WhatsApp (com DDD)</label>
+        <input class="inp" id="ut" type="tel" inputmode="tel" autocomplete="tel" required placeholder="(12) 99999-9999"></div>
+      <div class="field"><label class="lbl" for="ue">E-mail <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">(opcional)</span></label>
+        <input class="inp" id="ue" type="email" autocomplete="email" maxlength="120" placeholder="voce@exemplo.com">
         <p class="hint">Você poderá entrar com o e-mail ou com o telefone.</p></div>
-      <div class="f"><label for="us">Crie uma senha</label>
-        <div class="pw"><input id="us" type="password" autocomplete="new-password" required minlength="8" maxlength="128"><button type="button" data-eye="us">mostrar</button></div>
+      <div class="field"><label class="lbl" for="us">Crie uma senha</label>
+        <div class="pw"><input class="inp" id="us" type="password" autocomplete="new-password" required minlength="8" maxlength="128"><button type="button" data-eye="us">mostrar</button></div>
         <p class="hint">Mínimo de 8 caracteres.</p></div>
       <label class="chk"><input id="uc" type="checkbox"><span>Li e aceito a <a href="/privacidade" target="_blank" rel="noopener">Política de Privacidade</a> e autorizo o uso dos meus dados para agendar e gerenciar meus horários.</span></label>
       <input class="hp" id="uw" tabindex="-1" autocomplete="off" aria-hidden="true">
       <p class="err" id="e-up" role="alert"></p>
-      <button class="btn" type="submit">Criar conta</button>
+      <button class="btn btn-gold btn-block" type="submit">Criar conta</button>
     </form>
   </div>
-  <p class="foot">Esqueceu a senha? {% if shop.wa_link %}<a href="{{ shop.wa_link }}" target="_blank" rel="noopener">Chame a barbearia no WhatsApp</a>{% else %}Fale com a barbearia{% endif %} para redefinir.<br><a href="/">← Voltar ao site</a></p>
+
+  <p class="muted" style="margin-top:1.5rem;text-align:center;font-size:.8rem">Esqueceu a senha? {% if shop.wa_link %}<a class="link" href="{{ shop.wa_link }}" target="_blank" rel="noopener">Chame a barbearia no WhatsApp</a>{% else %}Fale com a barbearia{% endif %} para redefinir.</p>
 </main>
 <script>const NEXT = {{ next|tojson }}, CRIAR = {{ criar|tojson }};</script>
 {% raw %}
