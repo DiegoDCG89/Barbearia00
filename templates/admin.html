@@ -3,76 +3,96 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090706">
 <meta name="robots" content="noindex, nofollow">
 <title>Painel · {{ shop.name }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f5f4f1;--card:#fff;--ink:#1c1b19;--mute:#6b675f;--line:#e4e1da;--gold:#b08650;--gold-d:#8f6a3a;--ok:#1f7a4d;--okbg:#e3f3ea;--bad:#b3261e;--badbg:#fbe7e5;--warn:#8a5a00;--warnbg:#fdf0d5;--r:12px}
-@media (prefers-color-scheme:dark){:root{--bg:#121110;--card:#1b1a18;--ink:#efece6;--mute:#a09b90;--line:#2e2c28;--gold:#c9a06a;--gold-d:#d8b17c;--ok:#5fd29a;--okbg:#14301f;--bad:#ff8a80;--badbg:#3a1815;--warn:#f2c66d;--warnbg:#3a2d10}}
+/* Painel — mesma identidade do site (Noir): fundo quase preto quente, dourado, Cormorant + Manrope */
+:root{color-scheme:dark;--bg:#090706;--card:#110f0d;--ink:#ede7dd;--mute:#938b7f;--line:#2d2823;--gold:#d7a85b;--gold-d:#af7940;
+--grad:linear-gradient(120deg,#af7940,#efcc83,#bd853f);--on-gold:#090706;--sec:#1b1715;
+--ok:#6fd3a0;--okbg:rgba(111,211,160,.1);--bad:#ff8a80;--badbg:rgba(222,60,55,.13);--warn:#d7a85b;--warnbg:rgba(215,168,91,.1);--r:4px;
+--display:"Cormorant Garamond",Georgia,serif;--sans:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-.top{max-width:1000px;margin:auto;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.brand{font-weight:700;letter-spacing:.02em}
-.brand small{color:var(--mute);font-weight:500}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+::selection{background:var(--gold);color:var(--on-gold)}
+header{background:rgba(9,7,6,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{max-width:1000px;margin:auto;padding:12px 14px 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:1.65rem;line-height:1;letter-spacing:.02em}
+.brand small{font-family:var(--sans);font-size:.65rem;color:var(--mute);font-weight:500;letter-spacing:.3em;text-transform:uppercase;margin-left:.4rem}
 .sp{flex:1}
-.lnk{font-size:13px;color:var(--mute);text-decoration:none;padding:4px 6px;border-radius:6px}
-.lnk:hover{color:var(--ink);background:var(--bg)}
-nav{max-width:1000px;margin:auto;display:flex;gap:4px;overflow-x:auto;padding:0 10px 8px;scrollbar-width:none}
-nav button{border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
-nav button.on{background:var(--ink);color:var(--bg)}
-main{max-width:1000px;margin:auto;padding:16px 14px 60px}
-h2{font-size:18px;margin:22px 0 10px}
+.lnk{font-size:11px;color:var(--mute);text-decoration:none;padding:4px 6px;text-transform:uppercase;letter-spacing:.2em;transition:color .2s}
+.lnk:hover{color:var(--gold)}
+nav{max-width:1000px;margin:auto;display:flex;gap:2px;overflow-x:auto;padding:0 10px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{border:0;border-bottom:2px solid transparent;background:none;color:var(--mute);font:700 11px/1 var(--sans);text-transform:uppercase;letter-spacing:.22em;padding:14px 12px;cursor:pointer;white-space:nowrap;transition:color .2s}
+nav button:hover{color:var(--gold)}
+nav button.on{color:var(--gold);border-bottom-color:var(--gold)}
+main{max-width:1000px;margin:auto;padding:22px 14px 70px}
+h2{font-family:var(--display);font-weight:400;font-size:2rem;line-height:1.1;margin:30px 0 14px}
 h2:first-child{margin-top:4px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+h3{font-family:var(--display);font-weight:400;font-size:1.6rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px}
 .grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.kpi .v{font-size:22px;font-weight:700}
-.kpi .l{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
-.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.kpi .v{font-family:var(--display);font-size:2.2rem;font-weight:400;line-height:1.1;margin-top:2px}
+.kpi .l{font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.25em;font-weight:700}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .end{justify-content:flex-end}
-.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:inherit;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer}
+.btn{border:1px solid transparent;background:var(--grad);color:var(--on-gold);font:700 11px/1 var(--sans);text-transform:uppercase;letter-spacing:.2em;padding:12px 18px;border-radius:0;cursor:pointer;transition:transform .2s,border-color .2s,color .2s,background .2s}
+.btn:hover{transform:translateY(-1px)}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
-.btn.sm{padding:5px 10px;font-size:13px}
-.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}
-.btn.red{background:transparent;color:var(--bad);border-color:var(--bad)}
-.btn:disabled{opacity:.5;cursor:wait}
-input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:100%}
-input:focus,select:focus,textarea:focus,.btn:focus-visible,nav button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
-label{display:block;font-size:13px;color:var(--mute);margin-bottom:10px}
-label input,label select,label textarea{display:block;width:100%;margin-top:3px;color:var(--ink)}
-label.chk{display:flex;gap:8px;align-items:center}
-label.chk input{width:auto;margin:0}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn.sm{padding:9px 12px;font-size:10px;letter-spacing:.16em}
+.btn.gold{background:var(--grad);color:var(--on-gold)}
+.btn.red{background:transparent;color:var(--bad);border-color:rgba(255,138,128,.5)}
+.btn.red:hover{background:var(--badbg)}
+.btn:disabled{opacity:.5;cursor:wait;transform:none}
+input,select,textarea{font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;max-width:100%;color-scheme:dark;transition:border-color .2s}
+select option{background:var(--card);color:var(--ink)}
+input::placeholder{color:var(--mute);opacity:.7}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.btn:focus-visible,nav button:focus-visible,.lnk:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:var(--gold);margin-bottom:12px}
+label input,label select,label textarea{display:block;width:100%;margin-top:6px;color:var(--ink);text-transform:none;letter-spacing:normal;font-weight:400}
+label.chk{display:flex;gap:8px;align-items:center;color:var(--mute);text-transform:none;letter-spacing:normal;font-size:13px;font-weight:500}
+label.chk input{width:auto;margin:0;accent-color:var(--gold)}
 .muted{color:var(--mute)}
-.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--mute)}
-.pill.ok{background:var(--okbg);color:var(--ok)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.warn{background:var(--warnbg);color:var(--warn)}
+.pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:0;border:1px solid var(--line);background:transparent;color:var(--mute);vertical-align:middle}
+.pill.ok{border-color:var(--ok);color:var(--ok);background:var(--okbg)}.pill.bad{border-color:var(--bad);color:var(--bad);background:var(--badbg)}.pill.warn{border-color:var(--gold);color:var(--gold);background:var(--warnbg)}
 .appt{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
-.appt .t{font-weight:700;font-size:17px;min-width:92px}
+.appt .t{font-family:var(--display);font-weight:400;font-size:1.9rem;line-height:1;color:var(--gold);min-width:92px}
 .appt .i{flex:1;min-width:180px}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
 table{border-collapse:collapse;width:100%;min-width:560px}
-th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);background:var(--bg)}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.22em;color:var(--mute);background:var(--sec);font-weight:700}
 tr:last-child td{border-bottom:0}
+tbody tr{transition:background .2s}
+tbody tr:hover{background:rgba(255,255,255,.02)}
 td.n,th.n{text-align:right;white-space:nowrap}
 .pos{color:var(--ok)}.neg{color:var(--bad)}
 .bars{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:8px}
-.bars div{flex:1;background:var(--gold);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.bars div{flex:1;background:var(--grad);border-radius:0;min-height:2px;opacity:.8}
 .bars div:hover{opacity:1}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
-.alert{background:var(--warnbg);color:var(--warn);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:18px;width:min(440px,calc(100vw - 24px))}
-dialog::backdrop{background:rgba(0,0,0,.45)}
-dialog h3{margin:0 0 12px}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
-#toast.show{opacity:1}#toast.err{background:var(--bad);color:#fff}
+.alert{background:var(--warnbg);color:var(--warn);border:1px solid rgba(215,168,91,.35);border-radius:var(--r);padding:11px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);padding:22px;width:min(440px,calc(100vw - 24px));box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(9,7,6,.85);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+dialog h3{margin:0 0 14px;font-size:1.9rem;font-weight:300;line-height:1}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--grad);color:var(--on-gold);padding:12px 18px;border-radius:0;font:700 12px/1.3 var(--sans);letter-spacing:.08em;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
+#toast.show{opacity:1}#toast.err{background:#de3c37;color:#fff}
 .hrs input[type=time]{width:100%;min-width:92px}
-@media (max-width:560px){.top{gap:6px}.kpi .v{font-size:19px}}
+@media (prefers-reduced-motion:reduce){.btn,.btn:hover,#toast{transition:none;transform:none}}
+@media (max-width:560px){.top{gap:6px}.kpi .v{font-size:1.9rem}h2{font-size:1.7rem}}
 </style>
 </head>
 <body>
 <header>
   <div class="top">
-    <div class="brand">{{ shop.name }} <small>· painel</small></div>
+    <div class="brand">{% include '_logo.html' %} <small>· painel</small></div>
     <div class="sp"></div>
     <span class="muted" style="font-size:13px">{{ eu.nome }}</span>
     <a class="lnk" href="/minha-conta">Minha conta</a>
