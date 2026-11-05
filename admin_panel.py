@@ -163,10 +163,11 @@ def register(app, core):
             return redirect("/entrar?next=/admin")
         if u["papel"] != "barbeiro":
             return ('<meta name="viewport" content="width=device-width,initial-scale=1">'
-                    '<body style="font-family:system-ui;background:#0a0a0a;color:#eee;text-align:center;padding:15vh 20px">'
-                    '<h2>Acesso restrito aos barbeiros</h2><p>Sua conta é de cliente.</p>'
-                    '<p><a style="color:#c19b6c" href="/minha-conta">Minha conta</a> · '
-                    '<a style="color:#c19b6c" href="/">Voltar ao site</a></p></body>'), 403
+                    '<body style="font-family:Manrope,system-ui,sans-serif;background:#090706;color:#ede7dd;text-align:center;padding:15vh 20px">'
+                    '<h2 style="font:300 2.6rem Georgia,serif;margin:0 0 .5rem">Acesso restrito aos barbeiros</h2>'
+                    '<p style="color:#938b7f">Sua conta é de cliente.</p>'
+                    '<p><a style="color:#d7a85b" href="/minha-conta">Minha conta</a> · '
+                    '<a style="color:#d7a85b" href="/">Voltar ao site</a></p></body>'), 403
         return render_template("admin.html", shop=core.shop(), eu=u)
 
     @route("/api/admin/links")
