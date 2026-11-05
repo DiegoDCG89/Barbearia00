@@ -1,0 +1,2 @@
+{%- set _p = (shop.name or 'Barbearia').split(' ', 1) -%}
+{%- if _p|length > 1 -%}{{ _p[0] }} <span class="text-gold-gradient italic">{{ _p[1] }}</span>{%- else -%}<span class="text-gold-gradient italic">{{ _p[0] }}</span>{%- endif -%}
