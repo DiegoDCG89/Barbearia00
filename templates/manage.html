@@ -4,17 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#090706">
 <title>Meu agendamento – {{ shop.name }}</title>
-{% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='noir.css') }}?v=1">
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen">
-<header class="bg-gray-900 text-white px-4 py-4 text-center">
-  <a href="/" class="font-bold tracking-wide">{{ shop.name }}</a>
+<body>
+<header class="nav">
+  <div class="nav-in">
+    <a href="/" class="logo" aria-label="{{ shop.name }}">{% include '_logo.html' %}</a>
+    <div class="nav-right"><a href="/">Voltar ao site</a></div>
+  </div>
 </header>
 
-<main class="max-w-md mx-auto p-4 space-y-4">
-  <h1 class="text-xl font-bold text-gray-900 pt-2">Meu agendamento</h1>
-  <div id="state" class="bg-white rounded-2xl shadow p-5 text-gray-500">Carregando…</div>
+<main class="page">
+  <span class="kicker">Meu agendamento</span>
+  <h1>Seu horário</h1>
+  <p class="sub">Veja os detalhes, remarque ou cancele.</p>
+  <div id="state" class="panel muted">Carregando…</div>
 </main>
 
 <script>
@@ -24,7 +33,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const WD = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 const when = s => { const [d, t] = s.split(' '); const x = new Date(d + 'T12:00:00'); return `${WD[x.getDay()]}, ${d.split('-').reverse().slice(0, 2).join('/')} às ${t}`; };
 const ymd = d => d.toLocaleDateString('en-CA');
-const show = html => { $('#state').className = 'bg-white rounded-2xl shadow p-5 space-y-4'; $('#state').innerHTML = html; };
+const show = html => { $('#state').className = 'panel stack'; $('#state').innerHTML = html; };
 async function call(path, body) {
   const r = await fetch('/api/manage/' + T + path, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
   return {ok: r.ok, status: r.status, j: await r.json().catch(() => ({}))};
@@ -33,38 +42,38 @@ async function call(path, body) {
 let info = null, chosen = null;
 async function load() {
   const r = await call('');
-  if (!r.ok) { show(`<p class="text-red-600 font-medium">${esc(r.j.error || 'Não foi possível abrir este agendamento.')}</p><a href="/" class="block text-center text-blue-700 underline">Ir para o site</a>`); return; }
+  if (!r.ok) { show(`<div class="alert bad">${esc(r.j.error || 'Não foi possível abrir este agendamento.')}</div><a href="/" class="btn btn-line btn-block btn-sm">Ir para o site</a>`); return; }
   info = r.j; render();
 }
 function render(msg) {
   const i = info, active = i.status === 'agendado';
-  let h = msg ? `<p class="bg-green-50 border border-green-200 text-green-800 rounded-xl p-3 text-sm font-medium">${esc(msg)}</p>` : '';
-  h += `<div class="space-y-1">
-      <p class="text-sm text-gray-500">Olá, ${esc(i.client)}</p>
-      <p class="text-lg font-bold text-gray-900">${esc(i.service)} com ${esc(i.barber)}</p>
-      <p class="${active ? 'text-gray-900' : 'text-gray-400 line-through'} font-medium">${esc(when(i.start_at))}</p>
-      <p class="text-sm text-gray-500">${esc(i.address)}</p>
-      ${i.status === 'cancelado' ? '<p class="inline-block bg-red-100 text-red-700 text-xs font-bold rounded-full px-3 py-1">Cancelado</p>' : ''}
+  let h = msg ? `<div class="alert ok">${esc(msg)}</div>` : '';
+  h += `<div class="stack" style="margin-top:0">
+      <p class="kicker" style="letter-spacing:.3em">Olá, ${esc(i.client)}</p>
+      <p class="display" style="font-size:2.1rem;line-height:1.1">${esc(i.service)} <span class="muted">com</span> ${esc(i.barber)}</p>
+      <p style="${active ? 'color:var(--primary);font-weight:700' : 'color:var(--muted-fg);text-decoration:line-through'}">${esc(when(i.start_at))}</p>
+      <p class="muted" style="font-size:.85rem">${esc(i.address)}</p>
+      ${i.status === 'cancelado' ? '<p><span class="pill bad">Cancelado</span></p>' : ''}
     </div>`;
   if (i.can_change) {
-    h += `<div class="space-y-3 pt-2 border-t border-gray-100">
-        <button id="bres" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition-colors">Remarcar horário</button>
-        <button id="bcan" class="w-full bg-white border border-red-300 text-red-600 hover:bg-red-50 font-bold py-3 rounded-xl transition-colors">Cancelar agendamento</button>
-        <p class="text-xs text-gray-500 text-center">Alterações são possíveis até ${i.deadline_hours}h antes do horário. Você ainda pode remarcar ${i.reschedules_left} vez(es).</p>
+    h += `<div class="stack" style="border-top:1px solid var(--border);padding-top:1.25rem">
+        <button id="bres" class="btn btn-gold btn-block">Remarcar horário</button>
+        <button id="bcan" class="btn btn-danger btn-block">Cancelar agendamento</button>
+        <p class="muted" style="font-size:.75rem;text-align:center">Alterações são possíveis até ${i.deadline_hours}h antes do horário. Você ainda pode remarcar ${i.reschedules_left} vez(es).</p>
       </div>
-      <div id="resched" class="hidden space-y-3 pt-2 border-t border-gray-100">
-        <label class="block text-sm font-semibold text-gray-700">Nova data
-          <input id="nd" type="date" class="mt-1 w-full border border-gray-300 rounded-xl p-3"></label>
-        <div id="slots" class="grid grid-cols-4 gap-2"></div>
-        <p id="smsg" class="text-sm text-gray-500"></p>
-        <button id="bok" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors">Confirmar novo horário</button>
+      <div id="resched" class="hidden stack" style="border-top:1px solid var(--border);padding-top:1.25rem">
+        <label class="lbl" for="nd">Nova data</label>
+        <input id="nd" type="date" class="inp">
+        <div id="slots" class="slots"></div>
+        <p id="smsg" class="muted" style="font-size:.85rem"></p>
+        <button id="bok" disabled class="btn btn-gold btn-block">Confirmar novo horário</button>
       </div>`;
   } else {
-    h += `<p class="bg-amber-50 border border-amber-200 text-amber-900 text-sm rounded-xl p-3">${esc(i.reason)}</p>`;
+    h += `<div class="alert warn">${esc(i.reason)}</div>`;
   }
-  if (i.has_phone) h += i.optout ? '<p class="text-xs text-gray-500 text-center">Você não recebe mais mensagens automáticas da barbearia.</p>'
-    : '<button id="bopt" class="block mx-auto text-xs text-gray-500 underline">Parar de receber mensagens automáticas</button>';
-  h += '<a href="/" class="block text-center text-blue-700 underline text-sm pt-2">Voltar ao site</a> <a href="/privacidade" class="block text-center text-gray-500 underline text-xs">Política de Privacidade</a>';
+  if (i.has_phone) h += i.optout ? '<p class="muted" style="font-size:.75rem;text-align:center">Você não recebe mais mensagens automáticas da barbearia.</p>'
+    : '<p style="text-align:center"><button id="bopt" class="link-btn" style="letter-spacing:.15em;text-transform:none;font-weight:500;font-size:.75rem;color:var(--muted-fg);text-decoration:underline">Parar de receber mensagens automáticas</button></p>';
+  h += '<p style="text-align:center;font-size:.75rem" class="muted"><a href="/" class="link">Voltar ao site</a> &nbsp;&middot;&nbsp; <a href="/privacidade" class="link" style="color:var(--muted-fg)">Política de Privacidade</a></p>';
   show(h);
   if (i.can_change) wire();
   const bo = $('#bopt');
@@ -91,12 +100,12 @@ function wire() {
     const r = await call('/slots?date=' + nd.value);
     if (!r.ok) { $('#smsg').textContent = r.j.error || 'Erro ao buscar horários.'; return; }
     $('#smsg').textContent = r.j.length ? 'Escolha um horário:' : 'Sem horários livres nesse dia. Tente outra data.';
-    $('#slots').innerHTML = r.j.map(t => `<button type="button" data-t="${t}" class="border border-gray-300 bg-white hover:border-gray-900 rounded-lg py-2 text-sm font-semibold">${t}</button>`).join('');
+    $('#slots').innerHTML = r.j.map(t => `<button type="button" data-t="${t}" class="slot">${t}</button>`).join('');
   };
   $('#slots').onclick = e => {
     const b = e.target.closest('button[data-t]'); if (!b) return;
     chosen = b.dataset.t; $('#bok').disabled = false;
-    document.querySelectorAll('#slots button').forEach(x => { const on = x === b; x.classList.toggle('bg-gray-900', on); x.classList.toggle('text-white', on); x.classList.toggle('bg-white', !on); });
+    document.querySelectorAll('#slots button').forEach(x => x.classList.toggle('on', x === b));
   };
   $('#bok').onclick = async () => {
     if (!chosen) return; $('#bok').disabled = true;
