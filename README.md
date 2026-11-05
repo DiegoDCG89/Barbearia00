@@ -28,7 +28,9 @@ Sem banco de dados próprio: tudo mora no Google.
 - `contas.py` cadastro, login, níveis de acesso, minha conta e gestão de usuários
 - `sheets.py` acesso às planilhas · `agenda.py` acesso ao Google Agenda
 - `templates/admin.html` painel (CSS/JS próprios) · `templates/entrar.html`, `conta.html` contas · `templates/index.html`, `manage.html`, `privacy.html` site
-- `vercel.json` rota + cron diário · `deploy/build-css.sh` regera `static/tailwind.css` (só o site público usa)
+- `vercel.json` rota + cron diário
+- `static/noir.css` identidade visual de todo o site (CSS puro, sem build; fontes Cormorant Garamond + Manrope via Google Fonts) · `templates/_logo.html` logo (1ª palavra do nome normal, o resto em dourado itálico)
+- `static/tailwind.css`, `tailwind.config.js` e `deploy/build-css.sh` **não são mais usados** pelas páginas; podem ser apagados
 
 ## Configuração (Vercel → Settings → Environment Variables)
 Veja `.env.example`. Obrigatórias: `SHEET_FINANCEIRO_ID`, `SHEET_ESTOQUE_ID`, `CALENDAR_ID`, `GOOGLE_SA_JSON`,
