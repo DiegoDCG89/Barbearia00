@@ -3,27 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#090706">
 <title>Política de Privacidade – {{ shop.name }}</title>
-{% if css_url %}<link rel="stylesheet" href="{{ css_url }}">{% else %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='noir.css') }}?v=1">
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body>
 <!-- Texto-base de política de privacidade (LGPD). Revise com um profissional antes de divulgar e ajuste ao que a barbearia realmente faz. -->
-<header class="bg-gray-900 text-white px-4 py-4 text-center"><a href="/" class="font-bold tracking-wide">{{ shop.name }}</a></header>
-<main class="max-w-2xl mx-auto p-5 space-y-6 leading-relaxed">
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">Política de Privacidade</h1>
-    <p class="text-sm text-gray-500">Versão {{ version }}</p>
+<header class="nav">
+  <div class="nav-in">
+    <a href="/" class="logo" aria-label="{{ shop.name }}">{% include '_logo.html' %}</a>
+    <div class="nav-right"><a href="/">Voltar ao site</a></div>
   </div>
+</header>
 
-  <section class="space-y-2">
-    <h2 class="text-lg font-bold text-gray-900">1. Quem somos</h2>
+<main class="page wide">
+  <span class="kicker">LGPD</span>
+  <h1>Política de Privacidade</h1>
+  <p class="sub">Versão {{ version }}</p>
+  <div class="prose">
+
+  <section>
+    <h2>1. Quem somos</h2>
     <p>{{ shop.name }}, {{ shop.address }}, é a responsável pelo tratamento dos seus dados pessoais (controladora).
     {% if contact %}Contato para assuntos de privacidade: <b>{{ contact }}</b>.{% else %}Para assuntos de privacidade, fale conosco pelo WhatsApp ou presencialmente na barbearia.{% endif %}</p>
   </section>
 
-  <section class="space-y-2">
-    <h2 class="text-lg font-bold text-gray-900">2. Quais dados coletamos</h2>
-    <ul class="list-disc pl-6 space-y-1">
+  <section>
+    <h2>2. Quais dados coletamos</h2>
+    <ul>
       <li>Nome, número de WhatsApp e, se você quiser, e-mail informados ao criar sua conta;</li>
       <li>Sua senha de acesso, guardada apenas de forma criptografada (a barbearia não consegue ver a sua senha);</li>
       <li>Serviço, barbeiro, data e hora dos seus agendamentos e o histórico de atendimentos;</li>
@@ -33,22 +43,22 @@
     <p>Não pedimos CPF, endereço nem localização, e este site não usa cookies de rastreamento nem publicidade.</p>
   </section>
 
-  <section class="space-y-2">
-    <h2 class="text-lg font-bold text-gray-900">3. Para que usamos e em que base legal</h2>
-    <ul class="list-disc pl-6 space-y-1">
+  <section>
+    <h2>3. Para que usamos e em que base legal</h2>
+    <ul>
       <li><b>Realizar e gerenciar seu agendamento</b> (execução do serviço que você solicitou);</li>
       <li><b>Enviar confirmação, lembretes e aviso de retorno por WhatsApp</b> (somente com o seu consentimento);</li>
       <li><b>Controle financeiro e obrigações legais</b>, como registros de pagamentos.</li>
     </ul>
   </section>
 
-  <section class="space-y-2">
-    <h2 class="text-lg font-bold text-gray-900">4. Com quem compartilhamos</h2>
+  <section>
+    <h2>4. Com quem compartilhamos</h2>
     <p>Não vendemos seus dados. Eles passam apenas por fornecedores necessários ao serviço: o WhatsApp (envio das mensagens), o Google Agenda (agenda do barbeiro) e os provedores de hospedagem e de cópia de segurança do sistema. Este site também carrega fontes e imagens de serviços externos, que podem receber o seu endereço IP ao abrir a página.</p>
   </section>
 
-  <section class="space-y-2">
-    <h2 class="text-lg font-bold text-gray-900">5. Por quanto tempo guardamos</h2>
+  <section>
+    <h2>5. Por quanto tempo guardamos</h2>
     {% if retention > 0 %}
     <p>Mantemos seus dados enquanto você for nosso cliente. Depois de {{ retention }} meses sem atendimento, seu nome e telefone são anonimizados automaticamente. Registros financeiros, já sem identificação, podem ser mantidos para cumprir obrigações legais. As cópias de segurança expiram em poucos meses.</p>
     {% else %}
@@ -56,18 +66,19 @@
     {% endif %}
   </section>
 
-  <section class="space-y-2">
-    <h2 class="text-lg font-bold text-gray-900">6. Seus direitos</h2>
+  <section>
+    <h2>6. Seus direitos</h2>
     <p>Pela Lei Geral de Proteção de Dados (LGPD) você pode, a qualquer momento, pedir: confirmação de que tratamos seus dados, acesso a eles, correção, anonimização ou eliminação, informações sobre compartilhamento e a revogação do consentimento. Basta falar com a barbearia pelo contato acima.</p>
     <p><b>Parar de receber mensagens:</b> use o link pessoal do seu agendamento (enviado na confirmação) e escolha “Parar de receber mensagens automáticas”.</p>
   </section>
 
-  <section class="space-y-2">
-    <h2 class="text-lg font-bold text-gray-900">7. Segurança</h2>
+  <section>
+    <h2>7. Segurança</h2>
     <p>O acesso ao sistema é protegido por senha e conexão segura (HTTPS), e mantemos cópias de segurança do banco de dados.</p>
   </section>
 
-  <a href="/" class="inline-block text-blue-700 underline">Voltar ao site</a>
+  <p style="margin-top:3rem"><a href="/" class="btn btn-line btn-sm">Voltar ao site</a></p>
+  </div>
 </main>
 </body>
 </html>
