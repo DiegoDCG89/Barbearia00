@@ -51,6 +51,13 @@ Para agendar, o cliente cria uma conta em `/entrar` (nome, WhatsApp, e-mail opci
 - **Níveis:** `cliente` só vê a própria agenda e histórico; `barbeiro` acessa o painel inteiro (inclusive financeiro e usuários), então só promova quem é da equipe.
 - Agendamentos feitos **antes** das contas não aparecem em "Minha conta" (não têm vínculo com usuário), mas continuam na Agenda e funcionam pelo link.
 
+## Vender produtos
+- **Com o corte:** Agenda → **Concluir** → "Produtos vendidos junto (opcional)". O valor entra no financeiro como receita `produto`, separado do serviço, e o estoque baixa sozinho.
+- **Avulsa:** aba **Caixa** do painel (vários produtos de uma vez). A aba **Estoque** continua servindo para entradas, saídas e ajustes.
+
+## Recuperação de senha por e-mail (opcional)
+Para o botão "Esqueci minha senha" enviar e-mail, configure na Vercel `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` e `SMTP_FROM`. Exemplo com Gmail: `smtp.gmail.com`, porta `587`, seu e-mail e uma **senha de app** (Conta Google → Segurança → Verificação em 2 etapas → Senhas de app). Sem essas variáveis o botão avisa que o e-mail não está disponível, e o barbeiro usa **Usuários → Link de senha** (WhatsApp).
+
 ## Limites a conhecer
 - A API do Google permite ~60 leituras/min por planilha; o app usa cache de 15–60 s (mudanças na planilha levam até 1 min para aparecer no site).
 - Na Vercel há várias instâncias: o bloqueio de duplo agendamento é feito conferindo a Agenda depois de criar o evento (o horário mais novo é desfeito), não por trava em memória.
