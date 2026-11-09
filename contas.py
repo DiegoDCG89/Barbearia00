@@ -10,6 +10,10 @@ Segurança, em resumo:
   * trocar a senha derruba as outras sessões (a sessão guarda uma "impressão digital" do hash)
   * limite de tentativas por IP e por login, mensagem genérica ("login ou senha incorretos")
   * rotas POST só aceitam JSON (bloqueia formulários de outros sites) + cookie SameSite=Lax
+Recuperação de senha: (1) "Esqueci minha senha" envia um link por e-mail (precisa das variáveis SMTP_*, ver
+emailer.py); (2) o barbeiro gera um link em Usuários > Link de senha e envia pelo WhatsApp (serve para contas só com
+telefone); (3) o barbeiro pode gerar uma senha temporária. O link é assinado, vale por tempo limitado e só funciona UMA
+vez (a assinatura inclui o hash da senha atual: ao trocar a senha, o link morre).
 Acesso de emergência: login "admin" + variável ADMIN_PASSWORD (deixe vazia para desligar).
 Registrado no app.py: contas.register(app, <módulo do app>) — antes do admin_panel.
 """
@@ -20,11 +24,15 @@ import secrets
 import threading
 import time
 from collections import defaultdict, deque
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
+from urllib.parse import quote
 
 from flask import g, jsonify, redirect, render_template, request, session
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash, generate_password_hash
+
+import emailer
 
 log = logging.getLogger("barbearia.contas")
 
@@ -46,7 +54,9 @@ def register(app, core):
     lock = threading.Lock()
     falhas_ip, falhas_login = defaultdict(deque), defaultdict(deque)
     cadastros_ip = defaultdict(deque)
+    esqueci_ip, esqueci_email = defaultdict(deque), defaultdict(deque)
     dummy = []
+    serializer = URLSafeTimedSerializer(app.secret_key, salt="redefinir-senha")
 
     # ------------------------------------------------------------------ senhas
     def hash_senha(s):
@@ -236,6 +246,13 @@ def register(app, core):
             return redirect("/entrar?next=/minha-conta")
         return nao_cache(app.make_response(render_template("conta.html", shop=core.shop())))
 
+    @app.route("/redefinir-senha")
+    def pagina_redefinir():
+        resp = app.make_response(render_template("redefinir.html", shop=core.shop()))
+        resp.headers["Cache-Control"] = "no-store"
+        resp.headers["Referrer-Policy"] = "no-referrer"  # o link carrega um token: não vaza para terceiros
+        return resp
+
     @app.route("/logout")
     def sair():
         session.clear()
@@ -322,6 +339,77 @@ def register(app, core):
     @route("/api/auth/logout", login=False, methods=["POST"])
     def api_sair(_):
         session.clear()
+        return jsonify(ok=True)
+
+    # ------------------------------------------------------------------ API: recuperação de senha
+    def gerar_token(r, validade_s):
+        return serializer.dumps({"u": r["id"], "f": fp(r.get("senha_hash", "")), "t": validade_s})
+
+    def usuario_do_token(token):
+        """Valida o link de redefinição e devolve a linha do usuário (ou levanta Erro)."""
+        invalido = Erro("Este link é inválido, expirou ou já foi usado. Peça um novo.", 400)
+        if bloqueado(falhas_ip[ip()], 20):
+            raise Erro("Muitas tentativas. Aguarde 15 minutos e tente de novo.", 429)
+        try:
+            dados, ts = serializer.loads(token if isinstance(token, str) else "", max_age=86400, return_timestamp=True)
+            ts = ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+            if (datetime.now(timezone.utc) - ts).total_seconds() > int(dados.get("t", 3600)):
+                raise SignatureExpired("expirou")
+        except (BadSignature, SignatureExpired, ValueError, AttributeError, TypeError):
+            falhou(falhas_ip, ip())
+            raise invalido
+        r = next((r for r in usuarios(True) if r.get("id") == dados.get("u")), None)
+        # a impressão digital do hash garante uso único: trocou a senha, o link morre
+        if r is None or not core.is_active(r) or not core._same(dados.get("f", ""), fp(r.get("senha_hash", ""))):
+            falhou(falhas_ip, ip())
+            raise invalido
+        return r
+
+    @route("/api/auth/forgot", login=False, methods=["POST"])
+    def esqueci_senha(_):
+        j = body()
+        ident = txt(j.get("login"), 120)
+        if not ident:
+            raise Erro("Informe o seu e-mail ou telefone.")
+        if bloqueado(esqueci_ip[ip()], 5, 3600):
+            raise Erro("Muitos pedidos deste aparelho. Tente mais tarde.", 429)
+        esqueci_ip[ip()].append(time.time())
+        if "@" not in ident:  # contas só com telefone: o link vai pelo WhatsApp, enviado pelo barbeiro
+            return jsonify(ok=True, msg="Para recuperar pelo telefone, chame a barbearia no WhatsApp: enviaremos o link para você criar uma nova senha.")
+        if not emailer.configured():
+            raise Erro("A recuperação por e-mail não está disponível agora. Chame a barbearia no WhatsApp para receber o link.", 503)
+        generico = jsonify(ok=True, msg="Se existir uma conta com esse e-mail, enviamos um link para criar uma nova senha. Confira também a caixa de spam.")
+        email = ident.lower()
+        if bloqueado(esqueci_email[email], 3, 3600):
+            return generico
+        r = achar_login(ident)
+        if r and core.is_active(r) and r.get("email"):
+            esqueci_email[email].append(time.time())
+            link = f"{core.base_url()}/redefinir-senha?token={gerar_token(r, 3600)}"
+            nome = (r.get("nome") or "").split(" ")[0]
+            loja = core.shop().get("name", "Barbearia")
+            try:
+                emailer.send(r["email"], f"Redefinição de senha – {loja}",
+                             f"Olá, {nome}!\n\nRecebemos um pedido para criar uma nova senha na {loja}.\n"
+                             f"Clique no link abaixo (vale por 1 hora e só pode ser usado uma vez):\n\n{link}\n\n"
+                             "Se você não pediu isso, ignore esta mensagem: sua senha continua a mesma.", from_name=loja)
+            except Exception:
+                log.exception("enviar e-mail de recuperação")  # a resposta é a mesma: não revela se a conta existe
+        return generico
+
+    @route("/api/auth/reset/check", login=False, methods=["POST"])
+    def reset_checar(_):
+        r = usuario_do_token(body().get("token"))
+        return jsonify(ok=True, nome=(r.get("nome") or "").split(" ")[0])
+
+    @route("/api/auth/reset", login=False, methods=["POST"])
+    def reset_senha(_):
+        j = body()
+        r = usuario_do_token(j.get("token"))
+        nova = j.get("nova")
+        validar_senha(nova, r.get("email", ""), r.get("telefone", ""))
+        with lock:
+            salvar(r["_row"], senha_hash=hash_senha(nova))  # muda o hash: o link e as outras sessões caem
         return jsonify(ok=True)
 
     # ------------------------------------------------------------------ API: minha conta
@@ -413,6 +501,16 @@ def register(app, core):
             raise Erro("Nada para alterar.")
         salvar(r["_row"], **mud)
         return jsonify(ok=True)
+
+    @route("/api/admin/users/<uid>/link", staff=True, methods=["POST"])
+    def link_senha(u, uid):
+        """Gera o link de redefinição (24 h) para o barbeiro mandar pelo WhatsApp. Não troca a senha atual."""
+        r = alvo(u, uid)
+        url = f"{core.base_url()}/redefinir-senha?token={gerar_token(r, 86400)}"
+        tel = core.norm_phone(r.get("telefone"))
+        nome = (r.get("nome") or "").split(" ")[0]
+        msg = f"Olá, {nome}! Para criar uma nova senha na {core.shop().get('name', 'Barbearia')}, acesse: {url} (o link vale por 24 horas e só pode ser usado uma vez)."
+        return nao_cache(jsonify(ok=True, url=url, wa=f"https://wa.me/55{tel}?text={quote(msg)}" if tel else ""))
 
     @route("/api/admin/users/<uid>/senha", staff=True, methods=["POST"])
     def senha_temporaria(u, uid):
