@@ -60,6 +60,10 @@ label input,label select,label textarea{display:block;width:100%;margin-top:6px;
 label.chk{display:flex;gap:8px;align-items:center;color:var(--mute);text-transform:none;letter-spacing:normal;font-size:13px;font-weight:500}
 label.chk input{width:auto;margin:0;accent-color:var(--gold)}
 .muted{color:var(--mute)}
+.text-gold-gradient{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.italic{font-style:italic}
+.cap{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:var(--gold);margin-bottom:6px}
+.big{font-family:var(--display);font-size:2rem;font-weight:400;line-height:1}
 .pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:0;border:1px solid var(--line);background:transparent;color:var(--mute);vertical-align:middle}
 .pill.ok{border-color:var(--ok);color:var(--ok);background:var(--okbg)}.pill.bad{border-color:var(--bad);color:var(--bad);background:var(--badbg)}.pill.warn{border-color:var(--gold);color:var(--gold);background:var(--warnbg)}
 .appt{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
@@ -104,6 +108,7 @@ dialog h3{margin:0 0 14px;font-size:1.9rem;font-weight:300;line-height:1}
   </div>
   <nav id="nav" aria-label="Seções">
     <button data-tab="agenda">Agenda</button>
+    <button data-tab="caixa">Caixa</button>
     <button data-tab="resumo">Resumo</button>
     <button data-tab="lanc">Lançamentos</button>
     <button data-tab="estoque">Estoque</button>
@@ -155,19 +160,51 @@ async function barbers() { return S.barbers || (S.barbers = await api('/api/admi
 function ask({title, fields, values = {}, ok = 'Salvar'}) {
   return new Promise(resolve => {
     const dlg = $('#dlg'), f = $('#dlgform'); let done = false;
+    const itens = {};  // campos do tipo 'items': linhas [{id, q}]
     $('#dlgtitle').textContent = title;
     f.innerHTML = fields.map(fd => {
       const v = values[fd.k] ?? fd.def ?? '', req = fd.req ? ' required' : '';
       if (fd.type === 'select') return `<label>${esc(fd.label)}<select name="${fd.k}"${req}>${options(fd.opts, v)}</select></label>`;
+      if (fd.type === 'items') return `<div class="field" data-items="${esc(fd.k)}" style="margin-bottom:14px"><span class="cap">${esc(fd.label)}</span>
+        <div class="row"><select class="it-sel" style="flex:1;min-width:0" aria-label="Produto">${options([['', 'Escolher produto…']].concat(fd.opts), '')}</select>
+        <input class="it-qty" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Quantidade" style="width:70px">
+        <button type="button" class="btn sm ghost it-add">Adicionar</button></div><div class="it-list"></div></div>`;
       if (fd.type === 'check') return `<label class="chk"><input type="checkbox" name="${fd.k}"${v === true || v === 'sim' ? ' checked' : ''}> ${esc(fd.label)}</label>`;
       const ex = fd.type === 'number' ? ` inputmode="decimal" step="${fd.step || '0.01'}"${fd.min !== undefined ? ` min="${fd.min}"` : ''}` : ` maxlength="${fd.max || 120}"`;
       return `<label>${esc(fd.label)}<input type="${fd.type === 'number' ? 'number' : fd.type || 'text'}" name="${fd.k}" value="${esc(v)}"${req}${ex}></label>`;
     }).join('') + `<div class="row end"><button type="button" class="btn ghost" id="dlgx">Cancelar</button><button class="btn">${esc(ok)}</button></div>`;
     const finish = val => { if (!done) { done = true; resolve(val); } };
+    fields.filter(fd => fd.type === 'items').forEach(fd => { itens[fd.k] = []; });
+    const pintar = k => {
+      const box = f.querySelector(`[data-items="${k}"] .it-list`), l = itens[k], cat = fields.find(x => x.k === k).catalog;
+      box.innerHTML = l.length ? l.map(i => `<div class="row" style="justify-content:space-between;margin-top:8px"><span>${esc(cat[i.id].nome)} × ${i.q}</span>
+        <span><b>${brl(cat[i.id].preco * i.q)}</b> <button type="button" class="btn sm red it-del" data-p="${esc(i.id)}" aria-label="Remover">×</button></span></div>`).join('')
+        + `<div class="row" style="justify-content:flex-end;margin-top:8px"><span class="muted">Produtos:</span> <b>${brl(l.reduce((t, i) => t + cat[i.id].preco * i.q, 0))}</b></div>` : '';
+    };
+    f.onclick = e => {
+      const wrap = e.target.closest('[data-items]'); if (!wrap) return;
+      const k = wrap.dataset.items, cat = fields.find(x => x.k === k).catalog;
+      if (e.target.closest('.it-add')) {
+        const id = wrap.querySelector('.it-sel').value, q = Math.max(1, parseInt(wrap.querySelector('.it-qty').value, 10) || 1);
+        if (!id) return;
+        const ex = itens[k].find(i => i.id === id), novo = (ex ? ex.q : 0) + q;
+        if (novo > cat[id].estoque) { toast(`Só há ${cat[id].estoque} em estoque.`, true); return; }
+        if (ex) ex.q = novo; else itens[k].push({id, q});
+        wrap.querySelector('.it-qty').value = 1; wrap.querySelector('.it-sel').value = ''; pintar(k);
+      }
+      const del = e.target.closest('.it-del');
+      if (del) { itens[k] = itens[k].filter(i => i.id !== del.dataset.p); pintar(k); }
+    };
+    f.onkeydown = e => {  // Enter na quantidade adiciona o produto (não conclui o diálogo sem querer)
+      if (e.key === 'Enter' && e.target.classList.contains('it-qty')) { e.preventDefault(); e.target.closest('[data-items]').querySelector('.it-add').click(); }
+    };
     f.onsubmit = e => {
       e.preventDefault();
       const out = {};
-      fields.forEach(fd => { const el = f.elements[fd.k]; out[fd.k] = fd.type === 'check' ? el.checked : el.value; });
+      fields.forEach(fd => {
+        if (fd.type === 'items') { out[fd.k] = itens[fd.k].map(i => ({product: i.id, quantidade: i.q})); return; }
+        const el = f.elements[fd.k]; out[fd.k] = fd.type === 'check' ? el.checked : el.value;
+      });
       finish(out); dlg.close();
     };
     $('#dlgx').onclick = () => dlg.close();
@@ -175,6 +212,25 @@ function ask({title, fields, values = {}, ok = 'Salvar'}) {
     dlg.showModal();
     const first = f.querySelector('input,select'); if (first) first.focus();
   });
+}
+
+// janela com o link de redefinição de senha (copiar / abrir no WhatsApp)
+function mostrarLink(r) {
+  const dlg = $('#dlg'), f = $('#dlgform');
+  $('#dlgtitle').textContent = 'Link para criar nova senha';
+  f.onclick = f.onkeydown = dlg.onclose = null;
+  f.onsubmit = e => { e.preventDefault(); dlg.close(); };
+  f.innerHTML = `<p class="muted" style="margin-top:0">Vale por 24 horas e só funciona uma vez. A senha atual continua valendo até a pessoa criar a nova.</p>
+    <label>Link<input id="lk" readonly value="${esc(r.url)}"></label>
+    <div class="row end"><button type="button" class="btn ghost" id="lkc">Copiar link</button>
+      ${r.wa ? `<a class="btn" href="${esc(r.wa)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Abrir WhatsApp</a>` : ''}
+      <button class="btn ghost">Fechar</button></div>`;
+  $('#lkc').onclick = async () => {
+    const i = $('#lk'); i.select();
+    try { await navigator.clipboard.writeText(r.url); } catch (_) { document.execCommand('copy'); }
+    toast('Link copiado');
+  };
+  dlg.showModal();
 }
 
 // ------------------------------------------------------------ navegação
@@ -344,6 +400,37 @@ async function loadSite() {
     <p class="muted" style="font-size:13px">As mudanças aparecem no site em até 1 minuto.</p>`;
 }
 
+// ------------------------------------------------------------ CAIXA (venda avulsa de produtos)
+S.cart = [];
+async function loadCaixa() {
+  const [prods, bs, tx] = await Promise.all([api('/api/admin/products'), barbers(), api('/api/admin/transactions?month=' + hoje().slice(0, 7))]);
+  S.prod = prods; S.bs = bs; S.vendasHoje = tx.filter(t => t.categoria === 'produto' && t.data === hoje());
+  renderCaixa();
+}
+function renderCaixa() {
+  const disp = S.prod.filter(p => p.ativo && p.estoque > 0), cat = Object.fromEntries(S.prod.map(p => [p.id, p]));
+  S.cart = S.cart.filter(i => cat[i.id]);
+  const total = S.cart.reduce((t, i) => t + cat[i.id].preco * i.q, 0);
+  view.innerHTML = `<h2>Venda de produtos</h2>
+    <div class="card">
+      <span class="cap">Adicionar à venda</span>
+      <div class="row"><select id="cp" aria-label="Produto" style="flex:1;min-width:200px">${options([['', disp.length ? 'Escolher produto…' : 'Nenhum produto em estoque']].concat(disp.map(p => [p.id, `${p.nome} · ${brl(p.preco)} (${p.estoque} un.)`])), '')}</select>
+        <input id="cq" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Quantidade" style="width:76px">
+        <button class="btn" data-act="cart-add">Adicionar</button></div>
+      ${S.cart.length ? `<div class="tbl" style="margin-top:14px"><table style="min-width:0"><tbody>${S.cart.map(i => `<tr><td>${esc(cat[i.id].nome)}</td><td class="n">× ${i.q}</td><td class="n">${brl(cat[i.id].preco * i.q)}</td>
+          <td class="n"><button class="btn sm red" data-act="cart-del" data-id="${esc(i.id)}" aria-label="Remover">×</button></td></tr>`).join('')}</tbody></table></div>
+        <div class="row" style="justify-content:space-between;margin:16px 0 6px"><span class="cap" style="margin:0">Total</span><span class="big">${brl(total)}</span></div>
+        <div class="grid" style="margin-top:10px"><label>Forma de pagamento<select id="cf">${formaOpts('pix')}</select></label>
+          <label>Vendido por (opcional)<select id="cv">${options([['', '—']].concat(S.bs.filter(b => b.ativo).map(b => [b.nome, b.nome])), '')}</select></label></div>
+        <button class="btn" data-act="cart-fin" style="width:100%;padding:15px">Finalizar venda · ${brl(total)}</button>`
+        : '<p class="muted" style="margin:14px 0 0">Adicione os produtos da venda. Para vender junto com um corte, use “Concluir” na Agenda.</p>'}
+    </div>
+    <h2>Vendas de produtos hoje</h2>
+    <div class="tbl"><table><thead><tr><th>Produto</th><th>Forma</th><th class="n">Valor</th></tr></thead><tbody>
+      ${S.vendasHoje.map(t => `<tr><td>${esc(t.descricao)}${t.barbeiro ? `<div class="muted" style="font-size:12px">${esc(t.barbeiro)}</div>` : ''}</td><td>${esc(FORMAS[t.forma_pgto] || '—')}</td><td class="n pos">${brl(t.valor)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Nenhuma venda de produto hoje.</td></tr>'}
+    </tbody></table></div>`;
+}
+
 // ------------------------------------------------------------ USUÁRIOS
 async function loadUsuarios() {
   S.users = await api('/api/admin/users');
@@ -360,11 +447,12 @@ function renderUsuarios() {
         <span class="muted">${esc(u.telefone)}${u.email ? ' · ' + esc(u.email) : ''}${u.criado_em ? ' · desde ' + esc(u.criado_em.split('-').reverse().join('/')) : ''}</span></div>
       ${u.voce ? '' : `<div class="row">
         <button class="btn sm ghost" data-act="u-papel" data-id="${esc(u.id)}" data-p="${u.papel === 'barbeiro' ? 'cliente' : 'barbeiro'}">${u.papel === 'barbeiro' ? 'Tornar cliente' : 'Tornar barbeiro'}</button>
-        <button class="btn sm ghost" data-act="u-senha" data-id="${esc(u.id)}">Nova senha</button>
+        <button class="btn sm ghost" data-act="u-link" data-id="${esc(u.id)}">Link de senha</button>
+        <button class="btn sm ghost" data-act="u-senha" data-id="${esc(u.id)}">Senha temporária</button>
         <button class="btn sm ${u.ativo ? 'red' : ''}" data-act="u-ativo" data-id="${esc(u.id)}" data-v="${u.ativo ? '0' : '1'}">${u.ativo ? 'Desativar' : 'Reativar'}</button></div>`}</div>`).join('') || '<p class="muted">Nenhum usuário encontrado.</p>';
 }
 
-const LOAD = {usuarios: loadUsuarios, agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
+const LOAD = {caixa: loadCaixa, usuarios: loadUsuarios, agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
 
 // ------------------------------------------------------------ eventos
 view.addEventListener('click', async e => {
@@ -373,10 +461,14 @@ view.addEventListener('click', async e => {
   if (act === 'retry') return show(S.tab);
   if (act === 'day') { const dt = new Date(S.day + 'T12:00:00'); if (+d.n) dt.setDate(dt.getDate() + +d.n); else return (S.day = hoje(), show('agenda')); S.day = dt.toLocaleDateString('en-CA'); return show('agenda'); }
   if (act === 'done') {
+    let prods = [];
+    try { prods = (await api('/api/admin/products')).filter(p => p.ativo && p.estoque > 0); } catch (_) { /* sem produtos: conclui só o serviço */ }
     const v = await ask({title: 'Concluir atendimento', ok: 'Concluir', values: {method: 'pix', discount: '', tip: ''}, fields: [
       {k: 'method', label: 'Forma de pagamento', type: 'select', req: true, opts: Object.entries(FORMAS)},
       {k: 'discount', label: `Desconto (R$) — serviço: ${brl(d.preco)}`, type: 'number', min: 0},
-      {k: 'tip', label: 'Gorjeta (R$), entra à parte', type: 'number', min: 0}]});
+      {k: 'tip', label: 'Gorjeta (R$), entra à parte', type: 'number', min: 0},
+      ...(prods.length ? [{k: 'products', label: 'Produtos vendidos junto (opcional)', type: 'items',
+        opts: prods.map(p => [p.id, `${p.nome} · ${brl(p.preco)} (${p.estoque} un.)`]), catalog: Object.fromEntries(prods.map(p => [p.id, p]))}] : [])]});
     if (v) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'concluido', ...v}), 'Atendimento concluído');
   }
   if (act === 'miss' && confirm('Marcar que o cliente faltou? O horário volta a ficar livre.')) run(() => api(`/api/admin/appointments/${encodeURIComponent(d.code)}/status`, {status: 'faltou'}), 'Marcado como faltou');
@@ -386,10 +478,30 @@ view.addEventListener('click', async e => {
     return run(() => api('/api/admin/users/' + encodeURIComponent(d.id), {papel: d.p}), 'Nível de acesso atualizado');
   if (act === 'u-ativo' && confirm(d.v === '1' ? 'Reativar esta conta?' : 'Desativar esta conta? A pessoa sai do site na hora e não consegue entrar nem agendar.'))
     return run(() => api('/api/admin/users/' + encodeURIComponent(d.id), {ativo: d.v === '1'}), d.v === '1' ? 'Conta reativada' : 'Conta desativada');
+  if (act === 'u-link') {
+    try { mostrarLink(await api('/api/admin/users/' + encodeURIComponent(d.id) + '/link', {})); }
+    catch (err) { toast(err.message, true); }
+    return;
+  }
   if (act === 'u-senha' && confirm('Gerar uma senha temporária? A senha atual deixa de funcionar e a pessoa sai dos aparelhos conectados.')) {
     try { const r = await api('/api/admin/users/' + encodeURIComponent(d.id) + '/senha', {}); prompt('Senha temporária (copie e envie à pessoa; ela pode trocar em "Minha conta"):', r.senha); }
     catch (err) { toast(err.message, true); }
     return;
+  }
+  if (act === 'cart-add') {
+    const id = $('#cp').value, q = Math.max(1, parseInt($('#cq').value, 10) || 1);
+    if (!id) return toast('Escolha um produto.', true);
+    const p = S.prod.find(x => x.id === id), ex = S.cart.find(i => i.id === id), novo = (ex ? ex.q : 0) + q;
+    if (novo > p.estoque) return toast(`Só há ${p.estoque} em estoque.`, true);
+    if (ex) ex.q = novo; else S.cart.push({id, q});
+    return renderCaixa();
+  }
+  if (act === 'cart-del') { S.cart = S.cart.filter(i => i.id !== d.id); return renderCaixa(); }
+  if (act === 'cart-fin') {
+    return run(async () => {
+      await api('/api/admin/sales', {items: S.cart.map(i => ({product: i.id, quantidade: i.q})), method: $('#cf').value, barbeiro: $('#cv').value});
+      S.cart = [];
+    }, 'Venda registrada');
   }
   if (act === 'newtx') return newTx();
   if (act === 'edittx') return editTx(d.id);
@@ -438,6 +550,9 @@ view.addEventListener('change', e => {
   if (t.id === 'hb') { S.hb = t.value; show('horarios'); }
 });
 view.addEventListener('input', e => { if (e.target.id === 'qusers') renderUsuarios(); });
+view.addEventListener('keydown', e => {  // Enter na quantidade adiciona ao carrinho
+  if (e.key === 'Enter' && e.target.id === 'cq') { e.preventDefault(); document.querySelector('[data-act="cart-add"]').click(); }
+});
 view.addEventListener('submit', e => {
   if (e.target.id !== 'siteform') return;
   e.preventDefault();
