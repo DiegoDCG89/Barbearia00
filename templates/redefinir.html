@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#090706">
+<title>Nova senha · {{ shop.name }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='noir.css') }}?v=1">
+</head>
+<body>
+<header class="nav">
+  <div class="nav-in">
+    <a class="logo" href="/" aria-label="{{ shop.name }}">{% include '_logo.html' %}</a>
+    <div class="nav-right"><a href="/entrar">Entrar</a></div>
+  </div>
+</header>
+
+<main class="page">
+  <span class="kicker">Segurança</span>
+  <h1>Criar nova senha</h1>
+  <p class="sub" id="sub">Verificando o link…</p>
+
+  <div class="panel" id="box" hidden>
+    <form id="f" novalidate>
+      <div class="field"><label class="lbl" for="n1">Nova senha</label>
+        <div class="pw"><input class="inp" id="n1" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><button type="button" data-eye="n1">mostrar</button></div>
+        <p class="hint">Mínimo de 8 caracteres.</p></div>
+      <div class="field"><label class="lbl" for="n2">Repita a senha</label>
+        <input class="inp" id="n2" type="password" autocomplete="new-password" maxlength="128" required></div>
+      <p class="err" id="e" role="alert"></p>
+      <button class="btn btn-gold btn-block" type="submit">Salvar nova senha</button>
+    </form>
+  </div>
+
+  <div class="panel stack" id="bad" hidden>
+    <div class="alert bad" id="bad-msg"></div>
+    <a class="btn btn-line btn-block btn-sm" href="/entrar">Voltar ao login</a>
+  </div>
+
+  <div class="panel stack" id="ok" hidden>
+    <div class="alert ok">Senha alterada! Você já pode entrar com a nova senha.</div>
+    <a class="btn btn-gold btn-block" href="/entrar">Entrar</a>
+  </div>
+</main>
+{% raw %}
+<script>
+const $ = s => document.querySelector(s);
+const token = new URLSearchParams(location.search).get('token') || '';
+
+async function post(url, body) {
+  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Não foi possível concluir. Tente de novo.');
+  return j;
+}
+function ruim(msg) { $('#sub').textContent = ''; $('#box').hidden = true; $('#bad-msg').textContent = msg; $('#bad').hidden = false; }
+
+document.querySelectorAll('[data-eye]').forEach(b => b.onclick = () => {
+  const i = $('#' + b.dataset.eye), v = i.type === 'password'; i.type = v ? 'text' : 'password'; b.textContent = v ? 'ocultar' : 'mostrar';
+});
+
+(async () => {
+  if (!token) return ruim('Link incompleto. Abra o link do e-mail ou da mensagem que você recebeu.');
+  try {
+    const r = await post('/api/auth/reset/check', {token});
+    $('#sub').textContent = 'Olá, ' + r.nome + '! Escolha uma nova senha para a sua conta.'; $('#box').hidden = false; $('#n1').focus();
+  } catch (e) { ruim(e.message); }
+})();
+
+$('#f').onsubmit = async e => {
+  e.preventDefault();
+  const er = $('#e'), btn = e.target.querySelector('.btn'), txt = btn.textContent; er.textContent = '';
+  if ($('#n1').value.length < 8) { er.textContent = 'A senha precisa ter pelo menos 8 caracteres.'; return; }
+  if ($('#n1').value !== $('#n2').value) { er.textContent = 'As senhas não são iguais.'; return; }
+  btn.disabled = true; btn.textContent = 'Aguarde…';
+  try {
+    await post('/api/auth/reset', {token, nova: $('#n1').value});
+    $('#box').hidden = true; $('#sub').textContent = ''; $('#ok').hidden = false; return;
+  } catch (err) { er.textContent = err.message; }
+  btn.disabled = false; btn.textContent = txt;
+};
+</script>
+{% endraw %}
+</body>
+</html>
