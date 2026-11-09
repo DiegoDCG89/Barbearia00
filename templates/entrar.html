@@ -37,6 +37,17 @@
         <div class="pw"><input class="inp" id="ls" name="senha" type="password" autocomplete="current-password" required maxlength="128"><button type="button" data-eye="ls">mostrar</button></div></div>
       <p class="err" id="e-in" role="alert"></p>
       <button class="btn btn-gold btn-block" type="submit">Entrar</button>
+      <p style="margin-top:1.1rem;text-align:center"><button type="button" id="b-fg" class="link-btn" style="letter-spacing:.1em;text-transform:none;font-weight:500;font-size:.8rem;color:var(--muted-fg);text-decoration:underline">Esqueci minha senha</button></p>
+    </form>
+
+    <form id="f-fg" hidden novalidate>
+      <p class="muted" style="font-size:.85rem;margin-bottom:1.25rem">Informe o e-mail da sua conta e enviaremos um link para você criar uma nova senha. Se você se cadastrou só com o telefone, chame a barbearia no WhatsApp.</p>
+      <div class="field"><label class="lbl" for="fg">E-mail ou telefone</label>
+        <input class="inp" id="fg" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required maxlength="120"></div>
+      <p class="err" id="e-fg" role="alert"></p>
+      <div class="alert ok" id="ok-fg" hidden role="status" style="margin-bottom:1rem"></div>
+      <button class="btn btn-gold btn-block" type="submit">Enviar link</button>
+      <p style="margin-top:1.1rem;text-align:center"><button type="button" id="b-back" class="link-btn" style="letter-spacing:.1em;text-transform:none;font-weight:500;font-size:.8rem;color:var(--muted-fg);text-decoration:underline">Voltar ao login</button></p>
     </form>
 
     <form id="f-up" hidden novalidate>
@@ -67,6 +78,7 @@ const seguro = n => (typeof n === 'string' && n.startsWith('/') && !n.startsWith
 let openedAt = Date.now();
 
 function modo(up) {
+  $('#f-fg').hidden = true; document.querySelector('.tabs').hidden = false;
   $('#f-in').hidden = up; $('#f-up').hidden = !up;
   $('#t-in').setAttribute('aria-selected', String(!up)); $('#t-up').setAttribute('aria-selected', String(up));
   $('#e-in').textContent = $('#e-up').textContent = '';
@@ -105,6 +117,26 @@ $('#f-up').onsubmit = e => {
   if (!$('#uc').checked) { er.textContent = 'É necessário aceitar a Política de Privacidade.'; return; }
   enviar(e.target, '/api/auth/register', {nome: $('#un').value, telefone: $('#ut').value, email: $('#ue').value, senha: $('#us').value,
     consent: true, website: $('#uw').value, elapsed: Date.now() - openedAt}, er);
+};
+// recuperação de senha
+$('#b-fg').onclick = () => {
+  $('#f-in').hidden = true; $('#f-up').hidden = true; document.querySelector('.tabs').hidden = true;
+  $('#f-fg').hidden = false; $('#e-fg').textContent = ''; $('#ok-fg').hidden = true; $('#fg').value = $('#li').value; $('#fg').focus();
+};
+$('#b-back').onclick = () => modo(false);
+$('#f-fg').onsubmit = async e => {
+  e.preventDefault();
+  const er = $('#e-fg'), ok = $('#ok-fg'), btn = e.target.querySelector('.btn'), txt = btn.textContent;
+  er.textContent = ''; ok.hidden = true;
+  if (!$('#fg').value.trim()) { er.textContent = 'Informe o seu e-mail ou telefone.'; return; }
+  btn.disabled = true; btn.textContent = 'Aguarde…';
+  try {
+    const r = await fetch('/api/auth/forgot', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({login: $('#fg').value})});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) er.textContent = j.error || 'Não foi possível enviar. Tente de novo.';
+    else { ok.textContent = j.msg || 'Pedido enviado.'; ok.hidden = false; }
+  } catch (_) { er.textContent = 'Falha de conexão. Tente de novo.'; }
+  btn.disabled = false; btn.textContent = txt;
 };
 if (CRIAR) modo(true);
 </script>
