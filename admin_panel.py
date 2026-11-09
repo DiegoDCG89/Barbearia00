@@ -283,6 +283,45 @@ def register(app, core):
         out.sort(key=lambda x: x["hora"])
         return jsonify(out)
 
+    # ------------------------------------------------------------------ venda de produtos (avulsa e junto com o atendimento)
+    def itens_venda(raw, max_linhas=30):
+        """Valida [{product, quantidade}] e devolve [(linha_do_produto, qtd)], juntando repetidos.
+        Confere o estoque de TODOS antes de gravar qualquer coisa (tudo ou nada)."""
+        if raw in (None, []):
+            return []
+        if not isinstance(raw, list) or len(raw) > max_linhas:
+            raise Erro("Lista de produtos inválida.")
+        juntos = {}
+        for it in raw:
+            if not isinstance(it, dict):
+                raise Erro("Lista de produtos inválida.")
+            pid = str(it.get("product") or "")
+            juntos[pid] = juntos.get(pid, 0) + int(dinheiro(it.get("quantidade"), "quantidade", 1, 1000))
+        produtos = {r.get("id"): r for r in core.table("Produtos", 0)}
+        niveis = core.stock_levels()
+        out = []
+        for pid, q in juntos.items():
+            p = produtos.get(pid)
+            if p is None:
+                raise Erro("Produto não encontrado.", 404)
+            if niveis.get(pid, 0) < q:
+                raise Erro(f"Estoque insuficiente de {p.get('nome')} (restam {int(niveis.get(pid, 0))}).", 409)
+            out.append((p, q))
+        return out
+
+    def vender(itens, forma, barbeiro, data, origem, motivo):
+        """Dá baixa no estoque e lança uma receita (categoria produto) por item. Devolve o total vendido."""
+        agora, total = core.now().isoformat(timespec="seconds"), 0.0
+        for p, q in itens:
+            movimento(p["id"], "saida", q, motivo)
+            valor = round(core.num(p.get("preco")) * q, 2)
+            add("Lancamentos", {
+                "id": novo_id("v"), "data": data, "tipo": "receita", "categoria": "produto",
+                "descricao": f"{p['nome']} x{q}", "valor": valor, "forma_pgto": forma,
+                "barbeiro": barbeiro, "origem": origem(p), "criado_em": agora})
+            total += valor
+        return round(total, 2)
+
     @route("/api/admin/appointments/<code>/status", methods=["POST"])
     def appointment_status(code):
         j = body()
@@ -294,6 +333,7 @@ def register(app, core):
             raise Erro("Escolha a forma de pagamento.")
         desconto = dinheiro(j.get("discount") or 0, "desconto")
         gorjeta = dinheiro(j.get("tip") or 0, "gorjeta")
+        itens = itens_venda(j.get("products")) if novo == "concluido" else []  # produtos vendidos junto com o corte
         with core._book_lock:
             core.invalidate_cal()
             a = core.find_appt(code)
@@ -320,6 +360,11 @@ def register(app, core):
                         "descricao": f"Gorjeta – {a['cliente']}", "valor": gorjeta, "forma_pgto": forma,
                         "barbeiro": a["barbeiro"], "origem": "gorjeta:" + code,
                         "criado_em": n.isoformat(timespec="seconds")})
+                if itens:
+                    # se uma tentativa anterior já lançou estes produtos, não repete (nem baixa o estoque de novo)
+                    ja = {r.get("origem") for r in core.table("Lancamentos", 0)}
+                    novos = [(pr, q) for pr, q in itens if f"venda:{code}:{pr['id']}" not in ja]
+                    vender(novos, forma, a["barbeiro"], a["data"], lambda pr: f"venda:{code}:{pr['id']}", "venda com atendimento")
                 core.patch_appt(a, status="concluido")
         return jsonify(ok=True)
 
@@ -404,21 +449,20 @@ def register(app, core):
 
     @route("/api/admin/sales", methods=["POST"])
     def sale():
+        """Venda avulsa. Aceita {items:[{product, quantidade}], method, barbeiro} (carrinho)
+        ou o formato antigo de um produto só: {product, quantidade, method, barbeiro}."""
         j = body()
-        p = achar("Produtos", "id", str(j.get("product", "")))
-        qtd = int(dinheiro(j.get("quantidade"), "quantidade", 1, 1000))
+        raw = j.get("items")
+        if raw is None:
+            raw = [{"product": j.get("product"), "quantidade": j.get("quantidade")}]
+        itens = itens_venda(raw)
+        if not itens:
+            raise Erro("Adicione pelo menos um produto.")
         forma = txt(j.get("method"), 10).lower()
         if forma not in FORMAS:
             raise Erro("Escolha a forma de pagamento.")
-        if core.stock_levels().get(p["id"], 0) < qtd:
-            raise Erro("Estoque insuficiente.", 409)
-        movimento(p["id"], "saida", qtd, "venda")
-        add("Lancamentos", {
-            "id": novo_id("v"), "data": core.now().date().isoformat(), "tipo": "receita", "categoria": "produto",
-            "descricao": f"{p['nome']} x{qtd}", "valor": round(core.num(p.get("preco")) * qtd, 2),
-            "forma_pgto": forma, "barbeiro": txt(j.get("barbeiro"), 60), "origem": "venda",
-            "criado_em": core.now().isoformat(timespec="seconds")})
-        return jsonify(ok=True)
+        total = vender(itens, forma, txt(j.get("barbeiro"), 60), core.now().date().isoformat(), lambda pr: "venda", "venda")
+        return jsonify(ok=True, total=total)
 
     # ------------------------------------------------------------------ horários e folgas
     @route("/api/admin/hours", methods=["GET", "POST"])
