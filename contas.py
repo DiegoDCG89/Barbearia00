@@ -429,7 +429,8 @@ def register(app, core):
                 st = core.appt_start(a)
                 futuro = bool(st and st >= n and a["status"] == "agendado")
                 item = {"codigo": a["codigo"], "data": a["data"], "hora": a["hora"], "servico": a["servico"],
-                        "barbeiro": a["barbeiro"], "preco": core.num(a["preco"]), "status": a["status"],
+                        "barbeiro": a["barbeiro"], "barbeiro_whatsapp": core.barber_phone(a.get("barbeiro_id")),
+                        "preco": core.num(a["preco"]), "status": a["status"],
                         "futuro": futuro, "pode_alterar": futuro and core.change_state(a)[0],
                         "link": f"/agendamento/{a['codigo']}"}
                 (proximos if futuro else historico).append(item)
@@ -510,7 +511,7 @@ def register(app, core):
         tel = core.norm_phone(r.get("telefone"))
         nome = (r.get("nome") or "").split(" ")[0]
         msg = f"Olá, {nome}! Para criar uma nova senha na {core.shop().get('name', 'Barbearia')}, acesse: {url} (o link vale por 24 horas e só pode ser usado uma vez)."
-        return nao_cache(jsonify(ok=True, url=url, wa=f"https://wa.me/55{tel}?text={quote(msg)}" if tel else ""))
+        return nao_cache(jsonify(ok=True, url=url, tel=tel, msg=msg, wa=f"https://wa.me/55{tel}?text={quote(msg)}" if tel else ""))
 
     @route("/api/admin/users/<uid>/senha", staff=True, methods=["POST"])
     def senha_temporaria(u, uid):
