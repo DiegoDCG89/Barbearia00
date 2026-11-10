@@ -101,6 +101,9 @@ dialog h3{margin:0 0 14px;font-size:1.9rem;font-weight:300;line-height:1}
     <span class="muted" style="font-size:13px">{{ eu.nome }}</span>
     <a class="lnk" href="/minha-conta">Minha conta</a>
     <a class="lnk" href="/" target="_blank" rel="noopener">Ver site</a>
+    <a class="lnk" id="l-fin" href="#" target="_blank" rel="noopener" hidden>Planilha financeira</a>
+    <a class="lnk" id="l-est" href="#" target="_blank" rel="noopener" hidden>Planilha de estoque</a>
+    <a class="lnk" id="l-age" href="#" target="_blank" rel="noopener" hidden>Google Agenda</a>
     <a class="lnk" href="/logout">Sair</a>
   </div>
   <nav id="nav" aria-label="Seções">
@@ -108,10 +111,12 @@ dialog h3{margin:0 0 14px;font-size:1.9rem;font-weight:300;line-height:1}
     <button data-tab="caixa">Caixa</button>
     <button data-tab="resumo">Resumo</button>
     <button data-tab="lanc">Lançamentos</button>
+    <button data-tab="despesas">Despesas</button>
     <button data-tab="estoque">Estoque</button>
     <button data-tab="cad">Cadastros</button>
     <button data-tab="horarios">Horários</button>
     <button data-tab="usuarios">Usuários</button>
+    <button data-tab="mensagens">Mensagens</button>
     <button data-tab="site">Site</button>
   </nav>
 </header>
@@ -119,6 +124,7 @@ dialog h3{margin:0 0 14px;font-size:1.9rem;font-weight:300;line-height:1}
 <dialog id="dlg"><h3 id="dlgtitle"></h3><form id="dlgform" method="dialog"></form></dialog>
 <div id="toast" role="status"></div>
 
+<script>const SHOP = {{ {'name': shop.name, 'address': shop.address}|tojson }};</script>
 {% raw %}
 <script>
 const $ = (s, r = document) => r.querySelector(s);
@@ -211,17 +217,98 @@ function ask({title, fields, values = {}, ok = 'Salvar'}) {
   });
 }
 
-// janela com o link de redefinição de senha (copiar / abrir no WhatsApp)
-function mostrarLink(r) {
+// ------------------------------------------------------------ MENSAGENS (WhatsApp) — escolhendo o barbeiro
+const fmtTel = t => { t = String(t || '').replace(/\D/g, ''); return t.length === 11 ? `(${t.slice(0, 2)}) ${t.slice(2, 7)}-${t.slice(7)}` : t.length === 10 ? `(${t.slice(0, 2)}) ${t.slice(2, 6)}-${t.slice(6)}` : t; };
+const primeiro = n => String(n || '').trim().split(/\s+/)[0] || '';
+const diaTxt = iso => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: '2-digit'});
+const maisDia = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-CA'); };
+const assinatura = b => `\n\n— ${b ? b.nome + ', ' : ''}${SHOP.name}${b && b.telefone ? '\nWhatsApp: ' + fmtTel(b.telefone) : ''}`;
+
+// ctx: {para: 'cliente'|'barbeiro', nome, tel (cliente), barbeiroId, appt, data}
+async function abrirMensagem(ctx) {
+  const bs = (await barbers()).filter(b => b.ativo), cli = ctx.para === 'cliente', ap = ctx.appt || null, iso = ctx.data || S.day;
+  if (!cli && !bs.length) return toast('Cadastre um barbeiro primeiro (aba Cadastros).', true);
+  let barb = bs.find(b => b.id === ctx.barbeiroId) || bs.find(b => b.telefone) || bs[0] || null;
+  const nome = primeiro(ctx.nome), quando = ap ? `${diaTxt(iso)} às ${ap.hora}` : '';
+  const MOD = cli
+    ? [...(ap ? [['lembrete', 'Lembrete do horário'], ['confirmacao', 'Confirmação do horário'], ['remarcar', 'Pedir para remarcar']] : []),
+       ['pos', 'Pós-atendimento'], ['volta', 'Chamar de volta'], ['livre', 'Mensagem livre']]
+    : [['hoje', 'Agenda de hoje'], ['amanha', 'Agenda de amanhã'], ...(ap ? [['cliente', 'Dados deste cliente']] : []), ['livre', 'Mensagem livre']];
+  const gerar = async modelo => {
+    switch (modelo) {
+      case 'lembrete': return `Olá, ${nome}! Passando para lembrar do seu horário na ${SHOP.name}: ${ap.servico} com ${ap.barbeiro}, ${quando}.${SHOP.address ? '\nEndereço: ' + SHOP.address + '.' : ''}\nSe precisar remarcar, é só me avisar por aqui.` + assinatura(barb);
+      case 'confirmacao': return `Olá, ${nome}! Seu horário está confirmado: ${ap.servico} com ${ap.barbeiro}, ${quando}. Te esperamos!` + assinatura(barb);
+      case 'remarcar': return `Olá, ${nome}! Preciso ajustar o seu horário de ${quando}. Podemos remarcar? Me diga qual horário fica melhor para você.` + assinatura(barb);
+      case 'pos': return `Olá, ${nome}! Foi um prazer te atender. Qualquer ajuste no corte, é só me chamar. Até a próxima!` + assinatura(barb);
+      case 'volta': return `Olá, ${nome}! Faz um tempo que você não passa por aqui. Quer agendar um horário? ${location.origin}` + assinatura(barb);
+      case 'hoje': case 'amanha': {
+        const dia = modelo === 'hoje' ? hoje() : maisDia(hoje(), 1);
+        const l = (await api('/api/admin/appointments?day=' + dia)).filter(a => a.barbeiro_id === barb.id && a.status !== 'faltou');
+        return `Olá, ${primeiro(barb.nome)}! Sua agenda de ${diaTxt(dia)} na ${SHOP.name}:\n` + (l.length ? l.map(a => `${a.hora} – ${a.cliente} (${a.servico})`).join('\n') : 'Sem horários marcados.');
+      }
+      case 'cliente': return `Olá, ${primeiro(barb.nome)}! Cliente ${ap.cliente}${ap.telefone ? ' (' + fmtTel(ap.telefone) + ')' : ''}: ${ap.servico}, ${quando}.`;
+      default: return cli ? `Olá, ${nome}!` + assinatura(barb) : `Olá, ${primeiro(barb.nome)}! `;
+    }
+  };
   const dlg = $('#dlg'), f = $('#dlgform');
+  $('#dlgtitle').textContent = cli ? 'Mensagem para ' + (ctx.nome || 'cliente') : 'Mensagem para o barbeiro';
+  f.onclick = f.onkeydown = dlg.onclose = null; f.onsubmit = e => { e.preventDefault(); dlg.close(); };
+  const bopts = bs.map(b => [b.id, b.nome + (b.telefone ? ' · ' + fmtTel(b.telefone) : ' · sem WhatsApp')]);
+  f.innerHTML = `<label>${cli ? 'Assinar como (barbeiro)' : 'Barbeiro (destinatário)'}<select id="mb">${options(cli ? [['', 'Sem assinatura de barbeiro']].concat(bopts) : bopts, barb ? barb.id : '')}</select></label>
+    <label>Modelo<select id="mm">${options(MOD, MOD[0][0])}</select></label>
+    <label>Mensagem<textarea id="mt" rows="8"></textarea></label>
+    <p class="muted" id="mh" style="font-size:12px;margin:-4px 0 12px"></p>
+    <div class="row end"><button type="button" class="btn ghost" id="mx">Fechar</button>
+      <a class="btn" id="mw" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Abrir WhatsApp</a></div>`;
+  const destino = () => cli ? String(ctx.tel || '').replace(/\D/g, '') : (barb ? barb.telefone : '');
+  const atualizar = () => {
+    const tel = destino(), a = $('#mw');
+    if (tel) { a.href = `https://wa.me/55${tel}?text=${encodeURIComponent($('#mt').value)}`; a.removeAttribute('aria-disabled'); a.style.opacity = ''; }
+    else { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); a.style.opacity = '.4'; }
+    $('#mh').textContent = cli ? (tel ? `Será enviada para ${fmtTel(tel)}.` : 'Este cliente não tem telefone cadastrado.')
+      : (tel ? `Será enviada para ${barb.nome}: ${fmtTel(tel)}.` : 'Este barbeiro ainda não tem WhatsApp cadastrado (Cadastros → Barbeiros → Editar).');
+  };
+  const refazer = async () => { barb = bs.find(b => b.id === $('#mb').value) || null; $('#mt').value = await gerar($('#mm').value); atualizar(); };
+  $('#mb').onchange = $('#mm').onchange = refazer;
+  $('#mt').oninput = atualizar; $('#mx').onclick = () => dlg.close();
+  $('#mt').value = await gerar(MOD[0][0]); atualizar();
+  dlg.showModal();
+}
+
+async function loadMensagens() {
+  const [bs, us] = await Promise.all([barbers(), api('/api/admin/users')]); S.users = us;
+  view.innerHTML = `<h2>Mensagens por WhatsApp</h2>
+    <p class="muted" style="margin-top:-6px">Escolha para quem enviar. O WhatsApp abre com a mensagem pronta; quem envia é a conta do WhatsApp aberta no seu aparelho. Ao escrever para um cliente você escolhe qual barbeiro assina (nome e número dele vão no fim da mensagem).</p>
+    <h2 style="font-size:1.5rem">Equipe</h2>
+    <div class="tbl"><table><tbody>${bs.filter(b => b.ativo).map(b => `<tr><td>${esc(b.nome)}<div class="muted" style="font-size:12px">${esc(b.funcao || '')}</div></td>
+      <td>${b.telefone ? esc(fmtTel(b.telefone)) : '<span class="pill warn">sem WhatsApp</span>'}</td>
+      <td class="n"><button class="btn sm" data-act="m-bar" data-id="${esc(b.id)}">Mensagem</button></td></tr>`).join('') || '<tr><td class="muted">Nenhum barbeiro ativo.</td></tr>'}</tbody></table></div>
+    <h2 style="font-size:1.5rem">Clientes</h2>
+    <div class="bar"><input type="search" id="qmsg" placeholder="Buscar por nome ou telefone" style="flex:1;min-width:200px" aria-label="Buscar cliente"></div>
+    <div id="mlist"></div>`;
+  renderMsgClientes();
+}
+function renderMsgClientes() {
+  const q = ($('#qmsg') ? $('#qmsg').value : '').trim().toLowerCase(), dig = q.replace(/\D/g, '');
+  const l = S.users.filter(u => u.telefone && (!q || (u.nome || '').toLowerCase().includes(q) || (dig && u.telefone.includes(dig)))).slice(0, 30);
+  $('#mlist').innerHTML = l.map(u => `<div class="card appt"><div class="i"><b>${esc(u.nome)}</b><br><span class="muted">${esc(fmtTel(u.telefone))}</span></div>
+      <button class="btn sm" data-act="m-cli" data-id="${esc(u.id)}">Mensagem</button></div>`).join('') || '<p class="muted">Nenhum cliente encontrado.</p>';
+}
+
+// janela com o link de redefinição de senha (copiar / abrir no WhatsApp, escolhendo quem assina)
+async function mostrarLink(r) {
+  const bs = (await barbers()).filter(b => b.ativo), dlg = $('#dlg'), f = $('#dlgform');
   $('#dlgtitle').textContent = 'Link para criar nova senha';
   f.onclick = f.onkeydown = dlg.onclose = null;
   f.onsubmit = e => { e.preventDefault(); dlg.close(); };
+  const waUrl = id => { const b = bs.find(x => x.id === id); return `https://wa.me/55${r.tel}?text=${encodeURIComponent(r.msg + (b ? assinatura(b) : ''))}`; };
   f.innerHTML = `<p class="muted" style="margin-top:0">Vale por 24 horas e só funciona uma vez. A senha atual continua valendo até a pessoa criar a nova.</p>
     <label>Link<input id="lk" readonly value="${esc(r.url)}"></label>
+    ${r.tel ? `<label>Assinar a mensagem como<select id="lks">${options([['', 'Sem assinatura']].concat(bs.map(b => [b.id, b.nome + (b.telefone ? ' · ' + fmtTel(b.telefone) : '')])), '')}</select></label>` : ''}
     <div class="row end"><button type="button" class="btn ghost" id="lkc">Copiar link</button>
-      ${r.wa ? `<a class="btn" href="${esc(r.wa)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Abrir WhatsApp</a>` : ''}
+      ${r.tel ? `<a class="btn" id="lkw" href="${esc(waUrl(''))}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Abrir WhatsApp</a>` : ''}
       <button class="btn ghost">Fechar</button></div>`;
+  if (r.tel) $('#lks').onchange = () => { $('#lkw').href = waUrl($('#lks').value); };
   $('#lkc').onclick = async () => {
     const i = $('#lk'); i.select();
     try { await navigator.clipboard.writeText(r.url); } catch (_) { document.execCommand('copy'); }
@@ -246,18 +333,22 @@ async function loadAgenda() {
   const list = await api('/api/admin/appointments?day=' + S.day);
   const dt = new Date(S.day + 'T12:00:00'), tit = dt.toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: 'long'});
   const total = list.filter(a => a.status !== 'faltou').reduce((s, a) => s + a.preco, 0);
+  S.agendaList = list;
   view.innerHTML = `<div class="bar">
       <button class="btn ghost" data-act="day" data-n="-1" aria-label="Dia anterior">‹</button>
       <input type="date" id="dayin" value="${esc(S.day)}" aria-label="Dia">
       <button class="btn ghost" data-act="day" data-n="1" aria-label="Próximo dia">›</button>
       <button class="btn ghost" data-act="day" data-n="0">Hoje</button></div>
-    <h2 style="text-transform:capitalize">${esc(tit)} <span class="muted" style="font-weight:400;font-size:14px">· ${list.length} atendimento(s) · ${brl(total)}</span></h2>
+    <h2>${esc(cap(tit))} <span class="muted" style="font-weight:400;font-size:14px">· ${list.length} atendimento(s) · ${brl(total)}</span></h2>
     ${list.map(a => {
       const [lb, cl] = STATUS[a.status] || [a.status, ''], ph = String(a.telefone || '').replace(/\D/g, '');
       return `<div class="card appt"><div class="t">${esc(a.hora)}<div class="muted" style="font-weight:400;font-size:12px">até ${esc(a.fim)}</div></div>
         <div class="i"><b>${esc(a.cliente)}</b> <span class="pill ${cl}">${lb}</span><br>
         <span class="muted">${esc(a.servico)} · ${esc(a.barbeiro)} · ${brl(a.preco)}</span><br>
-        ${ph ? `<a class="lnk" style="padding-left:0" href="https://wa.me/55${ph}" target="_blank" rel="noopener">WhatsApp ${esc(ph)}</a>` : ''}</div>
+        ${ph ? `<a class="lnk" style="padding-left:0" href="https://wa.me/55${ph}" target="_blank" rel="noopener">WhatsApp ${esc(fmtTel(ph))}</a>` : ''}
+        <div class="row" style="margin-top:8px">
+          ${ph ? `<button class="btn sm ghost" data-act="msg-cli" data-code="${esc(a.codigo)}">Mensagem ao cliente</button>` : ''}
+          <button class="btn sm ghost" data-act="msg-bar" data-code="${esc(a.codigo)}">Avisar barbeiro</button></div></div>
         ${a.status === 'agendado' ? `<div class="row">
           <button class="btn sm" data-act="done" data-code="${esc(a.codigo)}" data-preco="${a.preco}">Concluir</button>
           <button class="btn sm ghost" data-act="miss" data-code="${esc(a.codigo)}">Faltou</button>
@@ -285,7 +376,9 @@ async function loadResumo() {
       <div><h2>Por forma de pagamento</h2><div class="tbl"><table style="min-width:0"><tbody>
         ${Object.entries(d.por_forma).map(([k, v]) => `<tr><td>${esc(FORMAS[k] || 'Sem forma informada')}</td><td class="n">${brl(v)}</td></tr>`).join('') || '<tr><td class="muted">Sem receitas neste mês.</td></tr>'}</tbody></table></div></div>
       <div><h2>Por barbeiro</h2><div class="tbl"><table style="min-width:0"><tbody>
-        ${d.por_barbeiro.map(b => `<tr><td>${esc(b.nome)}</td><td class="n">${brl(b.total)}</td></tr>`).join('') || '<tr><td class="muted">Sem receitas neste mês.</td></tr>'}</tbody></table></div></div></div>`;
+        ${d.por_barbeiro.map(b => `<tr><td>${esc(b.nome)}</td><td class="n">${brl(b.total)}</td></tr>`).join('') || '<tr><td class="muted">Sem receitas neste mês.</td></tr>'}</tbody></table></div></div>
+      <div><h2>Despesas por categoria</h2><div class="tbl"><table style="min-width:0"><tbody>
+        ${(d.despesas_por_categoria || []).map(c => `<tr><td>${esc(cap(c.nome))}</td><td class="n neg">${brl(c.total)}</td></tr>`).join('') || '<tr><td class="muted">Sem despesas neste mês.</td></tr>'}</tbody></table></div></div></div>`;
 }
 
 // ------------------------------------------------------------ LANÇAMENTOS
@@ -299,9 +392,9 @@ async function loadLanc() {
     ${rows.map(t => `<tr><td>${fdata(t.data)}</td><td>${esc(t.descricao)}<div class="muted" style="font-size:12px">${esc(t.categoria)}${t.barbeiro ? ' · ' + esc(t.barbeiro) : ''}</div></td>
       <td>${t.tipo === 'despesa' ? '<span class="pill bad">despesa</span>' : FORMAS[t.forma_pgto] ? esc(FORMAS[t.forma_pgto]) : '<span class="pill warn">classificar</span>'}</td>
       <td class="n ${t.tipo === 'despesa' ? 'neg' : 'pos'}">${t.tipo === 'despesa' ? '−' : ''}${brl(t.valor)}</td>
-      <td class="n"><button class="btn sm ghost" data-act="edittx" data-id="${esc(t.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada por aqui.</td></tr>'}
+      <td class="n"><div class="row end"><button class="btn sm ghost" data-act="edittx" data-id="${esc(t.id)}">Editar</button>${t.origem === 'painel' ? `<button class="btn sm red" data-act="deltx" data-id="${esc(t.id)}">Excluir</button>` : ''}</div></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada por aqui.</td></tr>'}
     </tbody></table></div>
-    <p class="muted" style="font-size:13px">Atendimentos concluídos entram sozinhos. Para apagar um lançamento, use a planilha financeira.</p>`;
+    <p class="muted" style="font-size:13px">Atendimentos concluídos e vendas entram sozinhos (só podem ser editados). Lançamentos feitos à mão no painel também podem ser excluídos. Para registrar gastos, use a aba Despesas.</p>`;
 }
 async function newTx() {
   const bs = await barbers();
@@ -316,11 +409,48 @@ async function newTx() {
 }
 async function editTx(id) {
   const t = S.tx.find(x => x.id === id); if (!t) return;
-  const v = await ask({title: 'Editar lançamento', values: t, fields: [
+  const desp = t.tipo === 'despesa';
+  const v = await ask({title: desp ? 'Editar despesa' : 'Editar lançamento', values: {...t, categoria: (t.categoria || '').toLowerCase()}, fields: [
     {k: 'descricao', label: 'Descrição', req: true}, {k: 'valor', label: 'Valor (R$)', type: 'number', req: true, min: 0},
-    ...(t.tipo === 'receita' ? [{k: 'forma_pgto', label: 'Forma de pagamento', type: 'select', opts: [['', '—']].concat(Object.entries(FORMAS))}] : []),
-    {k: 'categoria', label: 'Categoria', max: 40}]});
-  if (v) run(() => api('/api/admin/transactions/' + encodeURIComponent(id), v), 'Lançamento atualizado');
+    {k: 'data', label: 'Data', type: 'date', req: true},
+    {k: 'forma_pgto', label: 'Forma de pagamento', type: 'select', opts: [['', '—']].concat(Object.entries(FORMAS))},
+    desp ? {k: 'categoria', label: 'Categoria', type: 'select', opts: catOpts(t.categoria)} : {k: 'categoria', label: 'Categoria', max: 40}]});
+  if (v) run(() => api('/api/admin/transactions/' + encodeURIComponent(id), v), desp ? 'Despesa atualizada' : 'Lançamento atualizado');
+}
+
+// ------------------------------------------------------------ DESPESAS
+const CATS = ['aluguel', 'energia', 'água', 'internet e telefone', 'produtos e estoque', 'salários e comissões', 'marketing', 'manutenção', 'impostos e taxas', 'material de uso', 'outros'];
+const cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+const catOpts = atual => { const l = CATS.slice(), a = (atual || '').toLowerCase(); if (a && !l.includes(a)) l.unshift(a); return l.map(c => [c, cap(c)]); };
+async function loadDespesas() {
+  S.tx = (await api('/api/admin/transactions?month=' + S.month)).filter(t => t.tipo === 'despesa');
+  const total = S.tx.reduce((t, x) => t + x.valor, 0), porCat = {};
+  S.tx.forEach(x => { const c = (x.categoria || 'outros').toLowerCase(); porCat[c] = (porCat[c] || 0) + x.valor; });
+  const padrao = S.month === hoje().slice(0, 7) ? hoje() : S.month + '-01';
+  view.innerHTML = `<div class="bar"><input type="month" id="monthin" value="${esc(S.month)}" aria-label="Mês"></div>
+    <div class="grid"><div class="card kpi"><div class="l">Despesas do mês</div><div class="v neg">${brl(total)}</div></div>
+      <div class="card kpi"><div class="l">Lançamentos</div><div class="v">${S.tx.length}</div></div></div>
+    <h2>Nova despesa</h2>
+    <form class="card" id="f-desp" novalidate>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+        <label style="grid-column:1/-1">Descrição<input id="dd" maxlength="110" placeholder="Ex.: Aluguel da loja" required></label>
+        <label>Valor (R$)<input id="dv" type="number" min="0.01" step="0.01" inputmode="decimal" required></label>
+        <label>Data<input id="dt" type="date" value="${padrao}" required></label>
+        <label>Categoria<select id="dc">${options(catOpts(''), 'outros')}</select></label>
+        <label>Forma de pagamento<select id="df">${options([['', '—']].concat(Object.entries(FORMAS)), '')}</select></label>
+        <label>Repetir por (meses)<input id="dr" type="number" min="1" max="12" step="1" value="1" inputmode="numeric"></label>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0 0 12px">Despesa fixa (aluguel, internet)? Escolha em quantos meses repetir: cria um lançamento por mês, no mesmo dia.</p>
+      <button class="btn">Registrar despesa</button></form>
+    <h2>Por categoria</h2>
+    <div class="tbl"><table style="min-width:0"><tbody>${Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([c, v]) =>
+      `<tr><td>${esc(cap(c))}</td><td class="n neg">${brl(v)}</td><td class="n muted">${total ? Math.round(v / total * 100) : 0}%</td></tr>`).join('') || '<tr><td class="muted">Nenhuma despesa neste mês.</td></tr>'}</tbody></table></div>
+    <h2>Despesas do mês</h2>
+    <div class="tbl"><table><thead><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="n">Valor</th><th></th></tr></thead><tbody>
+    ${S.tx.map(t => `<tr><td>${fdata(t.data)}</td><td>${esc(t.descricao)}<div class="muted" style="font-size:12px">${esc(cap((t.categoria || 'outros').toLowerCase()))}</div></td>
+      <td>${esc(FORMAS[t.forma_pgto] || '—')}</td><td class="n neg">${brl(t.valor)}</td>
+      <td class="n"><div class="row end"><button class="btn sm ghost" data-act="edittx" data-id="${esc(t.id)}">Editar</button>${t.origem === 'painel' ? `<button class="btn sm red" data-act="deltx" data-id="${esc(t.id)}">Excluir</button>` : ''}</div></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma despesa neste mês.</td></tr>'}
+    </tbody></table></div>`;
 }
 
 // ------------------------------------------------------------ ESTOQUE
@@ -351,8 +481,9 @@ async function loadCad() {
   view.innerHTML = `<h2>Serviços <button class="btn sm" data-act="newserv" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Serviço</th><th class="n">Duração</th><th class="n">Preço</th><th></th></tr></thead><tbody>
     ${sv.map(s => `<tr style="${s.ativo ? '' : 'opacity:.5'}"><td>${esc(s.nome)}${s.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(s.descricao)}</div></td><td class="n">${s.minutos} min</td><td class="n">${brl(s.preco)}</td>
       <td class="n"><button class="btn sm ghost" data-act="editserv" data-id="${esc(s.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nenhum serviço.</td></tr>'}</tbody></table></div>
-    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Nome</th><th>Agenda própria</th><th></th></tr></thead><tbody>
+    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Agenda própria</th><th></th></tr></thead><tbody>
     ${bs.map(b => `<tr style="${b.ativo ? '' : 'opacity:.5'}"><td>${esc(b.nome)}${b.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(b.funcao)}</div></td>
+      <td>${b.telefone ? esc(fmtTel(b.telefone)) : '<span class="pill warn">sem WhatsApp</span>'}</td>
       <td>${b.calendario ? '<span class="pill ok">sim</span>' : '<span class="muted">usa a agenda padrão</span>'}</td>
       <td class="n"><button class="btn sm ghost" data-act="editbarb" data-id="${esc(b.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>
     <p class="muted" style="font-size:13px">Itens inativos somem do site, mas o histórico continua. Antes de inativar um barbeiro, confira se ele não tem horários marcados.</p>`;
@@ -361,6 +492,7 @@ const servFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'descric
   {k: 'minutos', label: 'Duração (minutos)', type: 'number', step: '5', min: 5, req: true}, {k: 'preco', label: 'Preço (R$)', type: 'number', min: 0, req: true},
   {k: 'ativo', label: 'Ativo no site', type: 'check'}];
 const barbFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'funcao', label: 'Função (ex.: Barbeiro)', max: 60},
+  {k: 'telefone', label: 'WhatsApp do barbeiro, com DDD (aparece no site para o cliente chamar)', type: 'tel', max: 20},
   {k: 'calendario', label: 'ID da agenda do barbeiro (vazio = agenda padrão)', max: 200}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
 
 // ------------------------------------------------------------ HORÁRIOS E FOLGAS
@@ -444,12 +576,13 @@ function renderUsuarios() {
         <span class="muted">${esc(u.telefone)}${u.email ? ' · ' + esc(u.email) : ''}${u.criado_em ? ' · desde ' + esc(u.criado_em.split('-').reverse().join('/')) : ''}</span></div>
       ${u.voce ? '' : `<div class="row">
         <button class="btn sm ghost" data-act="u-papel" data-id="${esc(u.id)}" data-p="${u.papel === 'barbeiro' ? 'cliente' : 'barbeiro'}">${u.papel === 'barbeiro' ? 'Tornar cliente' : 'Tornar barbeiro'}</button>
+        <button class="btn sm ghost" data-act="m-cli" data-id="${esc(u.id)}">Mensagem</button>
         <button class="btn sm ghost" data-act="u-link" data-id="${esc(u.id)}">Link de senha</button>
         <button class="btn sm ghost" data-act="u-senha" data-id="${esc(u.id)}">Senha temporária</button>
         <button class="btn sm ${u.ativo ? 'red' : ''}" data-act="u-ativo" data-id="${esc(u.id)}" data-v="${u.ativo ? '0' : '1'}">${u.ativo ? 'Desativar' : 'Reativar'}</button></div>`}</div>`).join('') || '<p class="muted">Nenhum usuário encontrado.</p>';
 }
 
-const LOAD = {caixa: loadCaixa, usuarios: loadUsuarios, agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
+const LOAD = {despesas: loadDespesas, mensagens: loadMensagens, caixa: loadCaixa, usuarios: loadUsuarios, agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
 
 // ------------------------------------------------------------ eventos
 view.addEventListener('click', async e => {
@@ -476,7 +609,7 @@ view.addEventListener('click', async e => {
   if (act === 'u-ativo' && confirm(d.v === '1' ? 'Reativar esta conta?' : 'Desativar esta conta? A pessoa sai do site na hora e não consegue entrar nem agendar.'))
     return run(() => api('/api/admin/users/' + encodeURIComponent(d.id), {ativo: d.v === '1'}), d.v === '1' ? 'Conta reativada' : 'Conta desativada');
   if (act === 'u-link') {
-    try { mostrarLink(await api('/api/admin/users/' + encodeURIComponent(d.id) + '/link', {})); }
+    try { await mostrarLink(await api('/api/admin/users/' + encodeURIComponent(d.id) + '/link', {})); }
     catch (err) { toast(err.message, true); }
     return;
   }
@@ -500,6 +633,15 @@ view.addEventListener('click', async e => {
       S.cart = [];
     }, 'Venda registrada');
   }
+  if (act === 'msg-cli' || act === 'msg-bar') {
+    const a = (S.agendaList || []).find(x => x.codigo === d.code); if (!a) return;
+    return abrirMensagem(act === 'msg-cli' ? {para: 'cliente', nome: a.cliente, tel: a.telefone, barbeiroId: a.barbeiro_id, appt: a, data: S.day}
+                                           : {para: 'barbeiro', nome: a.barbeiro, barbeiroId: a.barbeiro_id, appt: a, data: S.day});
+  }
+  if (act === 'm-bar') return abrirMensagem({para: 'barbeiro', barbeiroId: d.id});
+  if (act === 'm-cli') { const u = (S.users || []).find(x => x.id === d.id); return u ? abrirMensagem({para: 'cliente', nome: u.nome, tel: u.telefone}) : undefined; }
+  if (act === 'deltx' && confirm('Excluir este lançamento? Não dá para desfazer.'))
+    return run(() => api('/api/admin/transactions/' + encodeURIComponent(d.id) + '/delete', {}), 'Lançamento excluído');
   if (act === 'newtx') return newTx();
   if (act === 'edittx') return editTx(d.id);
   if (act === 'newprod') { const v = await ask({title: 'Novo produto', fields: prodFields, values: {ativo: true, estoque_minimo: 3}}); if (v) run(() => api('/api/admin/products', v), 'Produto criado'); }
@@ -522,7 +664,7 @@ view.addEventListener('click', async e => {
   if (act === 'newserv') { const v = await ask({title: 'Novo serviço', fields: servFields, values: {ativo: true, minutos: 30}}); if (v) run(() => api('/api/admin/services', v), 'Serviço criado'); }
   if (act === 'editserv') { const s = S.serv.find(x => x.id === d.id), v = await ask({title: 'Editar serviço', fields: servFields, values: s}); if (v) run(() => api('/api/admin/services', {...v, id: d.id}), 'Serviço atualizado'); }
   if (act === 'newbarb') { const v = await ask({title: 'Novo barbeiro', fields: barbFields, values: {ativo: true}}); if (v) run(() => api('/api/admin/barbers', v), 'Barbeiro criado'); }
-  if (act === 'editbarb') { const x = (await barbers()).find(y => y.id === d.id), v = await ask({title: 'Editar barbeiro', fields: barbFields, values: x}); if (v) run(() => api('/api/admin/barbers', {...v, id: d.id}), 'Barbeiro atualizado'); }
+  if (act === 'editbarb') { const x = (await barbers()).find(y => y.id === d.id), v = await ask({title: 'Editar barbeiro', fields: barbFields, values: {...x, telefone: fmtTel(x.telefone)}}); if (v) run(() => api('/api/admin/barbers', {...v, id: d.id}), 'Barbeiro atualizado'); }
   if (act === 'savehours') {
     const days = Array.from({length: 7}, () => ({}));
     view.querySelectorAll('.hrs input').forEach(i => days[+i.dataset.i][i.dataset.k] = i.value);
@@ -546,11 +688,21 @@ view.addEventListener('change', e => {
   if (t.id === 'nofi') { S.noForma = t.checked; show('lanc'); }
   if (t.id === 'hb') { S.hb = t.value; show('horarios'); }
 });
-view.addEventListener('input', e => { if (e.target.id === 'qusers') renderUsuarios(); });
+view.addEventListener('input', e => { if (e.target.id === 'qusers') renderUsuarios(); if (e.target.id === 'qmsg') renderMsgClientes(); });
 view.addEventListener('keydown', e => {  // Enter na quantidade adiciona ao carrinho
   if (e.key === 'Enter' && e.target.id === 'cq') { e.preventDefault(); document.querySelector('[data-act="cart-add"]').click(); }
 });
 view.addEventListener('submit', e => {
+  if (e.target.id === 'f-desp') {
+    e.preventDefault();
+    const desc = $('#dd').value.trim(), valor = parseFloat($('#dv').value), rep = Math.max(1, parseInt($('#dr').value, 10) || 1);
+    if (!desc) return toast('Informe a descrição da despesa.', true);
+    if (!(valor > 0)) return toast('Informe o valor da despesa.', true);
+    if (!$('#dt').value) return toast('Informe a data.', true);
+    run(() => api('/api/admin/transactions', {tipo: 'despesa', data: $('#dt').value, descricao: desc, valor, categoria: $('#dc').value, forma_pgto: $('#df').value, repetir: rep}),
+        rep > 1 ? `${rep} despesas registradas` : 'Despesa registrada');
+    return;
+  }
   if (e.target.id !== 'siteform') return;
   e.preventDefault();
   run(() => api('/api/admin/config', Object.fromEntries(new FormData(e.target))), 'Dados do site salvos');
