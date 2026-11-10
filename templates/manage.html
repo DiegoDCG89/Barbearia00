@@ -55,6 +55,10 @@ function render(msg) {
       <p class="muted" style="font-size:.85rem">${esc(i.address)}</p>
       ${i.status === 'cancelado' ? '<p><span class="pill bad">Cancelado</span></p>' : ''}
     </div>`;
+  if (i.barber_whatsapp) {
+    const txt = `Olá, ${i.barber.split(' ')[0]}! Sou ${i.client}, tenho horário de ${i.service} em ${when(i.start_at)}.`;
+    h += `<a class="btn btn-line btn-block btn-sm" target="_blank" rel="noopener" href="https://wa.me/55${esc(i.barber_whatsapp)}?text=${encodeURIComponent(txt)}">Falar com ${esc(i.barber.split(' ')[0])} no WhatsApp</a>`;
+  }
   if (i.can_change) {
     h += `<div class="stack" style="border-top:1px solid var(--border);padding-top:1.25rem">
         <button id="bres" class="btn btn-gold btn-block">Remarcar horário</button>
