@@ -14,7 +14,8 @@ Sem banco de dados próprio: tudo mora no Google.
 - `/` site público · para **agendar é preciso estar logado** (botão "Agendar" leva ao login e volta)
 - `/entrar` login (**e-mail ou telefone** + senha) e criação de conta · `/minha-conta` agenda própria, histórico, dados e troca de senha
 - `/agendamento/<código>` cancelar/remarcar pelo link do agendamento
-- `/admin` painel (abas: **Agenda, Resumo, Lançamentos, Estoque, Cadastros, Horários, Usuários, Site**)
+- `/admin` painel (abas: **Agenda, Caixa, Resumo, Lançamentos, Despesas, Estoque, Cadastros, Horários, Usuários, Mensagens, Site**)
+- `/redefinir-senha` página aberta pelo link de recuperação de senha
 
 | Nível (`papel`) | Pode |
 |---|---|
@@ -25,7 +26,8 @@ Sem banco de dados próprio: tudo mora no Google.
 
 ## Arquivos
 - `app.py` rotas públicas, regras de horário, login e sincronização · `admin_panel.py` API do painel
-- `contas.py` cadastro, login, níveis de acesso, minha conta e gestão de usuários
+- `contas.py` cadastro, login, níveis de acesso, minha conta, recuperação de senha e gestão de usuários
+- `emailer.py` envio de e-mail por SMTP (só para a recuperação de senha)
 - `sheets.py` acesso às planilhas · `agenda.py` acesso ao Google Agenda
 - `templates/admin.html` painel (CSS/JS próprios) · `templates/entrar.html`, `conta.html` contas · `templates/index.html`, `manage.html`, `privacy.html` site
 - `vercel.json` rota + cron diário
@@ -55,3 +57,24 @@ python app.py      # http://localhost:8080
 - Limite de tentativas de login por IP e por login. Na Vercel esse limite é **por instância** (a memória não é compartilhada), então é uma proteção parcial; para algo mais forte, use as regras de rate limit do Firewall da Vercel em `/api/auth/*`.
 - O e-mail e o telefone **não são verificados** (não há envio de e-mail/SMS). Por isso a agenda de cada conta é ligada ao **id da conta**, nunca ao telefone digitado.
 - Esqueci a senha: o barbeiro gera uma senha temporária em Usuários → Nova senha.
+
+## Vendas de produtos
+- **Junto com o corte:** na Agenda, ao clicar em **Concluir**, a seção "Produtos vendidos junto" soma os produtos ao atendimento. Cada produto vira uma receita (categoria `produto`, mesma forma de pagamento do atendimento) e dá baixa no estoque.
+- **Avulsa:** aba **Caixa** — monte a venda com vários produtos, escolha a forma de pagamento e finalize.
+- O estoque de **todos** os itens é conferido antes de gravar: se faltar um, nada é lançado. Se o Google falhar no meio de uma conclusão, repetir a conclusão não duplica lançamentos nem a baixa do estoque.
+
+## Recuperação de senha
+1. **Por e-mail:** "Esqueci minha senha" na tela de login envia um link (vale 1 hora, uso único). Precisa das variáveis `SMTP_*` (ver `.env.example`).
+2. **Pelo WhatsApp:** em **Usuários → Link de senha** o barbeiro gera o link (24 h, uso único) e abre o WhatsApp com a mensagem pronta. Serve para quem se cadastrou só com telefone.
+3. **Senha temporária:** em **Usuários → Senha temporária**.
+O link é assinado com a `SECRET_KEY` e inclui a impressão digital da senha atual: ao trocar a senha, ele morre. A tela de pedido responde igual exista a conta ou não.
+
+## Telefone do barbeiro e mensagens por WhatsApp
+- **Cadastro:** em Cadastros → Barbeiros → Editar, preencha o *WhatsApp do barbeiro*. A coluna `telefone` é criada sozinha na aba `Barbeiros` se a sua planilha for antiga. **O número aparece no site** (cartão da equipe, confirmação do agendamento, "Meu agendamento" e "Minha conta"); só aparece quem tiver número cadastrado.
+- **Cliente → barbeiro:** botão "WhatsApp" no cartão do barbeiro e "Falar com <nome>" depois de agendar, com a mensagem pronta.
+- **Painel → barbeiro:** na Agenda, "Avisar barbeiro" (dados do cliente, agenda de hoje ou de amanhã) ou aba **Mensagens → Equipe**. Você escolhe o barbeiro e o WhatsApp abre no número dele.
+- **Painel → cliente:** na Agenda, "Mensagem ao cliente" (lembrete, confirmação, pedir para remarcar, pós-atendimento, chamar de volta) ou aba **Mensagens → Clientes**. Você escolhe **qual barbeiro assina**: nome e número dele vão no fim da mensagem. O link de senha (Usuários) também permite escolher quem assina.
+- O WhatsApp abre na conta que estiver logada no aparelho de quem clica: o sistema monta a mensagem e o link, mas não envia sozinho nem "pelo número" do barbeiro escolhido.
+
+## Despesas
+Aba **Despesas**: registre gastos com categoria (aluguel, energia, água, internet, produtos, salários, marketing, manutenção, impostos, material, outros), forma de pagamento e data. *Repetir por (meses)* cria um lançamento por mês (aluguel, internet). Veja o total do mês e por categoria (também no Resumo), edite data/valor/categoria e exclua o que foi lançado à mão. Receitas automáticas (atendimentos, vendas) só podem ser editadas.
