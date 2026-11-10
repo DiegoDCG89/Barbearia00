@@ -58,6 +58,11 @@ Para agendar, o cliente cria uma conta em `/entrar` (nome, WhatsApp, e-mail opci
 ## Recuperação de senha por e-mail (opcional)
 Para o botão "Esqueci minha senha" enviar e-mail, configure na Vercel `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` e `SMTP_FROM`. Exemplo com Gmail: `smtp.gmail.com`, porta `587`, seu e-mail e uma **senha de app** (Conta Google → Segurança → Verificação em 2 etapas → Senhas de app). Sem essas variáveis o botão avisa que o e-mail não está disponível, e o barbeiro usa **Usuários → Link de senha** (WhatsApp).
 
+## Telefone do barbeiro, mensagens e despesas
+- A aba `Barbeiros` ganha a coluna `telefone`. Se a sua planilha é antiga, **não precisa criar nada**: ao salvar o primeiro número pelo painel a coluna é criada sozinha.
+- Atenção: o WhatsApp do barbeiro fica **público no site**. Cadastre só números que a pessoa aceite divulgar (de preferência um número de trabalho).
+- Despesas ficam na aba `Lancamentos` (tipo `despesa`), junto com as receitas, e entram no Resumo.
+
 ## Limites a conhecer
 - A API do Google permite ~60 leituras/min por planilha; o app usa cache de 15–60 s (mudanças na planilha levam até 1 min para aparecer no site).
 - Na Vercel há várias instâncias: o bloqueio de duplo agendamento é feito conferindo a Agenda depois de criar o evento (o horário mais novo é desfeito), não por trava em memória.
