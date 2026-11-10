@@ -485,12 +485,18 @@ def api_public():
         services=[{"id": r["id"], "name": r["nome"], "description": r.get("descricao", ""),
                    "minutes": int(num(r.get("minutos"), 30)), "price": num(r.get("preco"))}
                   for r in table("Servicos") if is_active(r) and r.get("id") and r.get("nome")],
-        barbers=[{"id": r["id"], "name": r["nome"], "role": r.get("funcao", "")}
+        barbers=[{"id": r["id"], "name": r["nome"], "role": r.get("funcao", ""), "whatsapp": norm_phone(r.get("telefone")) or ""}
                  for r in table("Barbeiros") if is_active(r) and r.get("id") and r.get("nome")],
         products=[{"name": r["nome"], "price": num(r.get("preco")), "stock": max(0, int(stock_levels().get(r.get("id", ""), 0)))}
                   for r in table("Produtos") if is_active(r) and r.get("nome")])
     resp.headers["Cache-Control"] = "public, s-maxage=60, stale-while-revalidate=300"
     return resp
+
+
+def barber_phone(barbeiro_id):
+    """WhatsApp (só dígitos) cadastrado para o barbeiro; vazio se não houver."""
+    b = find("Barbeiros", "id", barbeiro_id or "")
+    return (norm_phone(b.get("telefone")) or "") if b else ""
 
 
 @app.route("/api/slots")
@@ -601,7 +607,7 @@ def api_manage(token):
                        status=a["status"], can_change=ok, reason=reason,
                        deadline_hours=CHANGE_DEADLINE_HOURS, reschedules_left=left,
                        max_days=MAX_DAYS_AHEAD, has_phone=bool(a.get("telefone")),
-                       optout=bool(a.get("optout")))
+                       optout=bool(a.get("optout")), barber_whatsapp=barber_phone(a.get("barbeiro_id")))
     except Exception:
         log.exception("manage")
         return jsonify(error="Serviço indisponível. Tente novamente."), 503
