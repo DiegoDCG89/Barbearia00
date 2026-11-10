@@ -221,6 +221,7 @@
       </div>
       <div class="actions" style="padding-top:1rem">
         <a id="gcal" target="_blank" rel="noopener" class="btn btn-gold btn-block btn-sm">Adicionar ao calendário</a>
+        <a id="falar" target="_blank" rel="noopener" class="btn btn-line btn-block btn-sm hidden">Falar com o barbeiro no WhatsApp</a>
         <a href="/minha-conta" class="btn btn-line btn-block btn-sm">Ver meus agendamentos</a>
         <button id="skip" type="button" class="btn btn-line btn-block btn-sm">Fechar janela</button>
       </div>
@@ -279,7 +280,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- CARREGAMENTO DE DADOS ---
     const brl = v => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const SHOP_NAME = {{ shop.name|tojson }};
+    let BARBERS = [];
+    const wa = (tel, texto) => `https://wa.me/55${tel}?text=${encodeURIComponent(texto)}`;
     const publicP = fetch('/api/public').then(r => r.json()).then(d => {
+        BARBERS = d.barbers;
 
         // Serviços (lista em formato de cardápio)
         $('#services').innerHTML = d.services.map(s => `
@@ -305,6 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <h3>${esc(b.name)}</h3>
                 <p>${esc(b.role||'Especialista')}</p>
+                ${b.whatsapp ? `<a class="link-btn contact" target="_blank" rel="noopener" href="${wa(b.whatsapp, 'Olá, ' + b.name.split(' ')[0] + '! Vi o seu contato no site da ' + SHOP_NAME + '.')}">WhatsApp</a>` : ''}
             </article>`).join('');
 
         // Produtos (seção só aparece se houver produtos)
@@ -394,6 +400,13 @@ document.addEventListener("DOMContentLoaded", () => {
             else {
                 $('#gcal').href = j.google_link;
                 if (j.manage_url) { $('#manage').href = j.manage_url; $('#manage').textContent = j.manage_url; $('#managebox').classList.remove('hidden'); }
+                const bar = BARBERS.find(x => x.id === $('#fb').value), serv = $('#fs').selectedOptions[0].textContent.split(' – ')[0];
+                const link = $('#falar');
+                if (bar && bar.whatsapp) {
+                    const dia = $('#fd').value.split('-').reverse().slice(0, 2).join('/');
+                    link.href = wa(bar.whatsapp, `Olá, ${bar.name.split(' ')[0]}! Sou ${ME ? ME.nome : ''} e acabei de agendar ${serv} para ${dia} às ${chosenTime}.`);
+                    link.textContent = `Falar com ${bar.name.split(' ')[0]} no WhatsApp`; link.classList.remove('hidden');
+                } else { link.classList.add('hidden'); }
                 form.classList.add('hidden'); divDone.classList.remove('hidden');
             }
         } catch(e) { err.textContent = "FALHA DE COMUNICAÇÃO."; }
