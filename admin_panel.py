@@ -14,7 +14,7 @@ import math
 import re
 import secrets
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 
 from flask import jsonify, redirect, render_template, request
@@ -149,6 +149,19 @@ def register(app, core):
         core.get_backend().update_row(tab, rownum, vals)
         core.invalidate(tab)
 
+    def garantir_coluna(tab, nome):
+        """Planilhas antigas não têm a coluna nova: cria o cabeçalho na hora (sem apagar nada)."""
+        header = core._cache_header(tab)
+        if nome not in header:
+            core.get_backend().update_row(tab, 1, list(header) + [nome])
+            core.invalidate(tab)
+
+    def mais_meses(d, n):
+        m = d.month - 1 + n
+        ano, mes = d.year + m // 12, m % 12 + 1
+        ultimo = (date(ano + (mes == 12), mes % 12 + 1, 1) - timedelta(days=1)).day
+        return date(ano, mes, min(d.day, ultimo))
+
     def achar(tab, campo, valor):
         r = next((r for r in core.table(tab, 0) if r.get(campo) == valor), None)
         if r is None:
@@ -187,6 +200,7 @@ def register(app, core):
         rec = desp = 0.0
         atend = sem_forma = 0
         forma, barb, dia = defaultdict(float), defaultdict(float), defaultdict(float)
+        cat_desp = defaultdict(float)
         for r in core.table("Lancamentos", 0):
             d = core.parse_date(r.get("data"))
             if not d or d.strftime("%Y-%m") != mes:
@@ -194,6 +208,7 @@ def register(app, core):
             v, tipo = core.num(r.get("valor")), r.get("tipo", "").lower()
             if tipo == "despesa":
                 desp += v
+                cat_desp[(r.get("categoria") or "").strip().lower() or "outros"] += v
             elif tipo == "receita":
                 rec += v
                 f = r.get("forma_pgto", "").lower()
@@ -211,7 +226,9 @@ def register(app, core):
             por_forma={k: round(v, 2) for k, v in forma.items()}, sem_forma=sem_forma,
             por_barbeiro=sorted(({"nome": k, "total": round(v, 2)} for k, v in barb.items()),
                                 key=lambda x: -x["total"]),
-            por_dia=[{"dia": k, "total": round(v, 2)} for k, v in sorted(dia.items())])
+            por_dia=[{"dia": k, "total": round(v, 2)} for k, v in sorted(dia.items())],
+            despesas_por_categoria=sorted(({"nome": k, "total": round(v, 2)} for k, v in cat_desp.items()),
+                                          key=lambda x: -x["total"]))
 
     # ------------------------------------------------------------------ lançamentos
     @route("/api/admin/transactions", methods=["GET", "POST"])
@@ -237,14 +254,22 @@ def register(app, core):
         forma = txt(j.get("forma_pgto"), 10).lower()
         if forma and forma not in FORMAS:
             raise Erro("Forma de pagamento inválida.")
-        add("Lancamentos", {
-            "id": novo_id("l"), "data": data_iso(j.get("data")), "tipo": tipo,
-            "categoria": txt(j.get("categoria"), 40) or "outros",
-            "descricao": txt(j.get("descricao"), 120, "a descrição", True),
-            "valor": dinheiro(j.get("valor"), "valor", 0.01), "forma_pgto": forma,
-            "barbeiro": txt(j.get("barbeiro"), 60), "origem": "painel",
-            "criado_em": core.now().isoformat(timespec="seconds")})
-        return jsonify(ok=True), 201
+        d = core.parse_date(j.get("data"))
+        if not d:
+            raise Erro("Data inválida em a data.")
+        vezes = int(dinheiro(j.get("repetir") or 1, "repetições", 1, 12))
+        if vezes > 1 and tipo != "despesa":
+            raise Erro("Repetir mensalmente só vale para despesas.")
+        desc = txt(j.get("descricao"), 110 if vezes > 1 else 120, "a descrição", True)
+        valor = dinheiro(j.get("valor"), "valor", 0.01)
+        cat = txt(j.get("categoria"), 40) or "outros"
+        barb = txt(j.get("barbeiro"), 60)
+        for i in range(vezes):  # despesa fixa (aluguel, internet...): uma linha por mês
+            add("Lancamentos", {
+                "id": novo_id("l"), "data": mais_meses(d, i).isoformat(), "tipo": tipo, "categoria": cat,
+                "descricao": desc if vezes == 1 else f"{desc} ({i + 1}/{vezes})", "valor": valor, "forma_pgto": forma,
+                "barbeiro": barb, "origem": "painel", "criado_em": core.now().isoformat(timespec="seconds")})
+        return jsonify(ok=True, criados=vezes), 201
 
     @route("/api/admin/transactions/<tid>", methods=["POST"])
     def transaction_edit(tid):
@@ -261,7 +286,19 @@ def register(app, core):
             ch["descricao"] = txt(j["descricao"], 120, "a descrição", True)
         if "categoria" in j:
             ch["categoria"] = txt(j["categoria"], 40) or "outros"
+        if "data" in j:
+            ch["data"] = data_iso(j["data"])
         save_row("Lancamentos", r["_row"], ch)
+        return jsonify(ok=True)
+
+    @route("/api/admin/transactions/<tid>/delete", methods=["POST"])
+    def transaction_delete(tid):
+        """Só apaga o que foi lançado à mão no painel. Receitas automáticas (atendimentos, vendas) ficam: edite-as."""
+        r = achar("Lancamentos", "id", tid)
+        if r.get("origem") != "painel":
+            raise Erro("Só dá para excluir lançamentos feitos à mão no painel. Os automáticos (atendimentos e vendas) podem ser editados.", 409)
+        core.get_backend().update_row("Lancamentos", r["_row"], [""] * len(core._cache_header("Lancamentos")))  # linha em branco = removida
+        core.invalidate("Lancamentos")
         return jsonify(ok=True)
 
     # ------------------------------------------------------------------ agenda do dia
@@ -278,7 +315,7 @@ def register(app, core):
                 vistos.add((cid, ev["id"]))
                 fim = ev["end"].strftime("%H:%M")
                 out.append({"codigo": a["codigo"], "hora": a["hora"], "fim": fim, "cliente": a["cliente"],
-                            "telefone": a["telefone"], "servico": a["servico"], "barbeiro": a["barbeiro"],
+                            "telefone": a["telefone"], "barbeiro_id": a.get("barbeiro_id", ""), "servico": a["servico"], "barbeiro": a["barbeiro"],
                             "preco": core.num(a["preco"]), "status": a["status"]})
         out.sort(key=lambda x: x["hora"])
         return jsonify(out)
@@ -389,11 +426,18 @@ def register(app, core):
     def barbers():
         if request.method == "GET":
             return jsonify([{"id": r.get("id"), "nome": r.get("nome"), "funcao": r.get("funcao"),
-                             "calendario": r.get("calendario"), "ativo": core.is_active(r)}
+                             "calendario": r.get("calendario"), "ativo": core.is_active(r),
+                             "telefone": core.norm_phone(r.get("telefone")) or ""}
                             for r in core.table("Barbeiros", 0) if r.get("id")])
         j = body()
+        tel = ""
+        if txt(j.get("telefone"), 30):
+            tel = core.norm_phone(j.get("telefone"))
+            if not tel:
+                raise Erro("WhatsApp do barbeiro inválido. Use DDD + número, ex.: (12) 99999-9999.")
+            garantir_coluna("Barbeiros", "telefone")
         dados = {"nome": txt(j.get("nome"), 60, "o nome", True), "funcao": txt(j.get("funcao"), 60),
-                 "calendario": txt(j.get("calendario"), 200), "ativo": sim_nao(j.get("ativo", True))}
+                 "calendario": txt(j.get("calendario"), 200), "ativo": sim_nao(j.get("ativo", True)), "telefone": tel}
         if j.get("id"):
             save_row("Barbeiros", achar("Barbeiros", "id", str(j["id"]))["_row"], dados)
         else:
