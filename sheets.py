@@ -22,7 +22,7 @@ SCOPES = [
 SCHEMA = {
     # cadastro
     "Config": ["chave", "valor"],
-    "Barbeiros": ["id", "nome", "funcao", "calendario", "ativo"],
+    "Barbeiros": ["id", "nome", "funcao", "calendario", "ativo", "telefone"],
     "Servicos": ["id", "nome", "descricao", "minutos", "preco", "ativo"],
     "Horarios": ["barbeiro", "dia", "abre", "fecha", "almoco_ini", "almoco_fim"],
     "Folgas": ["barbeiro", "data", "inicio", "fim", "motivo"],
