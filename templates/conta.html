@@ -68,7 +68,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const brl = n => Number(n || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-let DADOS = {proximos: [], historico: []}, ABA = 'prox';
+let DADOS = {proximos: [], historico: []}, ABA = 'prox', EU = '';
 
 async function api(url, body) {
   const r = await fetch(url, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
@@ -85,7 +85,9 @@ function card(a) {
   const [txt, cl] = a.futuro ? ['Agendado', ''] : (ROTULO[a.status] && a.status !== 'agendado' ? ROTULO[a.status] : ['Passado', '']);
   return `<div class="item"><div class="d"><b>${esc(a.hora)}</b><span>${esc(dt.toLocaleDateString('pt-BR', {weekday: 'short', day: '2-digit', month: '2-digit'}))}</span></div>
     <div class="i">${esc(a.servico)} <span class="pill ${cl}">${txt}</span><br><small>com ${esc(a.barbeiro)} · ${brl(a.preco)}</small></div>
-    ${a.futuro ? `<a class="btn btn-line btn-sm" href="${esc(a.link)}">${a.pode_alterar ? 'Remarcar / cancelar' : 'Detalhes'}</a>` : ''}</div>`;
+    ${a.futuro ? `<div class="row" style="display:flex;gap:.5rem;flex-wrap:wrap">
+      ${a.barbeiro_whatsapp ? `<a class="btn btn-line btn-sm" target="_blank" rel="noopener" href="https://wa.me/55${esc(a.barbeiro_whatsapp)}?text=${encodeURIComponent('Olá, ' + a.barbeiro.split(' ')[0] + '! Sou ' + EU + ', tenho horário de ' + a.servico + ' em ' + dt.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) + ' às ' + a.hora + '.')}">Falar com ${esc(a.barbeiro.split(' ')[0])}</a>` : ''}
+      <a class="btn btn-line btn-sm" href="${esc(a.link)}">${a.pode_alterar ? 'Remarcar / cancelar' : 'Detalhes'}</a></div>` : ''}</div>`;
 }
 function render() {
   const l = ABA === 'prox' ? DADOS.proximos : DADOS.historico;
@@ -99,7 +101,7 @@ $('#tb-hist').onclick = () => { ABA = 'hist'; render(); };
 async function iniciar() {
   const me = (await api('/api/me')).user;
   if (!me) { location.href = '/entrar?next=/minha-conta'; return; }
-  $('#ola').textContent = 'Olá, ' + me.nome.split(' ')[0];
+  EU = me.nome; $('#ola').textContent = 'Olá, ' + me.nome.split(' ')[0];
   $('#pn').value = me.nome; $('#pt').value = me.telefone; $('#pe').value = me.email;
   if (me.papel === 'barbeiro') $('#painel').hidden = false;
   try { DADOS = await api('/api/conta/agendamentos'); render(); }
