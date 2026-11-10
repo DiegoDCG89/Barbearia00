@@ -79,6 +79,9 @@ button { font-family: inherit; }
   font: 700 .7rem/1.2 var(--font-sans); text-transform: uppercase; letter-spacing: .3em;
 }
 .link-btn:hover { text-decoration: underline; text-underline-offset: 4px; }
+a.link-btn { display: inline-block; text-decoration: none; }
+a.link-btn:hover { text-decoration: underline; text-underline-offset: 4px; }
+.member .contact { margin-top: .9rem; }
 .link { color: var(--primary); text-underline-offset: 4px; }
 .link:hover { color: var(--foreground); }
 
