@@ -469,10 +469,10 @@ def healthz():
 
 
 # ------------------------------------------------------------------ estoque
-def stock_levels():
+def stock_levels(ttl=TTL_CATALOG):
     """{produto_id: quantidade atual} = entradas − saídas + ajustes (aba Movimentacoes)."""
     lv = defaultdict(float)
-    for m in table("Movimentacoes"):
+    for m in table("Movimentacoes", ttl):
         q, t = num(m.get("quantidade")), m.get("tipo", "").strip().lower()
         lv[m.get("produto_id", "")] += q if t in ("entrada", "ajuste") else -q if t == "saida" else 0
     return lv
@@ -734,7 +734,7 @@ def sync_receitas():
                 try:
                     if a["codigo"] not in lancados:
                         append_row("Lancamentos", {
-                            "id": a["codigo"], "data": a["data"], "tipo": "receita", "categoria": "servico",
+                            "id": a["codigo"] or f"l_{secrets.token_hex(3)}", "data": a["data"], "tipo": "receita", "categoria": "servico",
                             "descricao": f"{a['servico']} – {a['cliente']}", "valor": num(a.get("preco")),
                             "forma_pgto": "", "barbeiro": a["barbeiro"], "origem": a["codigo"],
                             "criado_em": n.isoformat(timespec="seconds")})
