@@ -22,7 +22,7 @@ SCOPES = [
 SCHEMA = {
     # cadastro
     "Config": ["chave", "valor"],
-    "Barbeiros": ["id", "nome", "funcao", "calendario", "ativo", "telefone"],
+    "Barbeiros": ["id", "nome", "funcao", "calendario", "ativo", "telefone", "foto", "descricao"],
     "Servicos": ["id", "nome", "descricao", "minutos", "preco", "ativo"],
     "Horarios": ["barbeiro", "dia", "abre", "fecha", "almoco_ini", "almoco_fim"],
     "Folgas": ["barbeiro", "data", "inicio", "fim", "motivo"],
@@ -90,7 +90,7 @@ def seed(tab):
             ["descricao", "Barbearia em Lorena-SP. Agende online: cortes, barba e produtos."],
             ["intervalo_min", "30"],
         ],
-        "Barbeiros": [["b1", "Barbeiro 1", "Especialista", "", "sim"]],
+        "Barbeiros": [["b1", "Barbeiro 1", "Especialista", "", "sim", "", "", "Especialista em cortes clássicos e modernos."]],
         "Servicos": [
             ["s1", "Corte", "Corte masculino na tesoura ou máquina", 30, 40, "sim"],
             ["s2", "Barba", "Barba com toalha quente", 30, 30, "sim"],
