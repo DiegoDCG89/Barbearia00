@@ -485,8 +485,16 @@ def api_public():
         services=[{"id": r["id"], "name": r["nome"], "description": r.get("descricao", ""),
                    "minutes": int(num(r.get("minutos"), 30)), "price": num(r.get("preco"))}
                   for r in table("Servicos") if is_active(r) and r.get("id") and r.get("nome")],
-        barbers=[{"id": r["id"], "name": r["nome"], "role": r.get("funcao", ""), "whatsapp": norm_phone(r.get("telefone")) or ""}
-                 for r in table("Barbeiros") if is_active(r) and r.get("id") and r.get("nome")],
+        barbers=[{
+            "id": r["id"],
+            "name": r["nome"],
+            "role": r.get("funcao", ""),
+            "whatsapp": norm_phone(r.get("telefone")) or "",
+            "photo": r.get("foto", ""),
+            "description": r.get("descricao", ""),
+            "foto": r.get("foto", ""),
+            "descricao": r.get("descricao", ""),
+        } for r in table("Barbeiros") if is_active(r) and r.get("id") and r.get("nome")],
         products=[{"name": r["nome"], "price": num(r.get("preco")), "stock": max(0, int(stock_levels().get(r.get("id", ""), 0)))}
                   for r in table("Produtos") if is_active(r) and r.get("nome")])
     resp.headers["Cache-Control"] = "public, s-maxage=60, stale-while-revalidate=300"
@@ -642,6 +650,7 @@ def api_manage_cancel(token):
         log.exception("cancel")
         return jsonify(error="Não foi possível cancelar agora. Tente novamente."), 503
 
+
 @app.route("/api/manage/<token>/reschedule", methods=["POST"])
 def api_manage_reschedule(token):
     j = request.get_json(silent=True) or {}
@@ -678,8 +687,6 @@ def api_manage_reschedule(token):
 
 
 # ------------------------------------------------------------------ atendimentos -> financeiro
-# (Mantenha a função sync_receitas() original e apenas substitua o bloco start_sync abaixo)
-
 # Rota chamada pelo Vercel Cron (vercel.json). A Vercel envia "Authorization: Bearer <CRON_SECRET>" sozinha.
 @app.route("/api/cron/sync")
 def api_cron_sync():
