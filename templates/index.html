@@ -14,6 +14,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%88%3C/text%3E%3C/svg%3E">
 <script type="application/ld+json">{{ jsonld|safe }}</script>
 
+<!-- Tipografia: Cormorant Garamond (títulos) + Manrope (texto) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
@@ -104,7 +105,7 @@
   </div>
 </section>
 
-<!-- PRODUTOS -->
+<!-- PRODUTOS (aparece só se houver produtos à venda) -->
 <section id="produtos" class="section section-alt hidden">
   <div class="wrap fade-up">
     <div class="sec-title"><span class="kicker">Leve para casa</span><h2>Cuidados em casa</h2></div>
@@ -240,6 +241,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const $ = s => document.querySelector(s);
 
+    // --- LÓGICA DE ANIMAÇÕES DE SCROLL ---
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries => {
         entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -249,6 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
     }
 
+    // --- MENU MOBILE ---
     const btnMenu = $('#mobile-btn'), menuDiv = $('#mobile-menu');
     let menuOpen = false;
     const setMenu = open => {
@@ -264,6 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnMenu.addEventListener('click', () => setMenu(!menuOpen));
     document.querySelectorAll('.mobile-link').forEach(link => link.addEventListener('click', () => setMenu(false)));
 
+    // --- CONFIGURAÇÃO DO MAPA ---
     try {
         const q = encodeURIComponent({{ shop.address|tojson }});
         const mapEl = $('#mapa-google');
@@ -272,6 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (gpsEl) gpsEl.href = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "https://maps.apple.com/?daddr=" + q + "&dirflg=d" : "https://www.google.com/maps/dir/?api=1&destination=" + q + "&travelmode=driving";
     } catch(e) { console.error(e); }
 
+    // --- SESSÃO (conta do cliente) ---
     let ME = null;
     const meP = fetch('/api/me').then(r => r.json()).then(j => { ME = j.user; atualizarConta(); return ME; }).catch(() => null);
     function atualizarConta() {
@@ -284,6 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
         location.href = '/entrar?next=' + encodeURIComponent('/?' + params.toString());
     };
 
+    // --- CARREGAMENTO DE DADOS ---
     const brl = v => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const SHOP_NAME = {{ shop.name|tojson }};
@@ -292,6 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const publicP = fetch('/api/public').then(r => r.json()).then(d => {
         BARBERS = d.barbers;
 
+        // Serviços (lista em formato de cardápio)
         $('#services').innerHTML = d.services.map(s => `
             <div class="svc">
                 <div class="svc-top">
@@ -303,6 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button type="button" data-open-booking data-service="${s.id}" class="link-btn">Agendar</button>
             </div>`).join('');
 
+        // Equipe
         const n = d.barbers.length, k = Math.min(n, 4);
         if (!n) $('#equipe').classList.add('hidden');
         $('#barbers').className = `team n${k || 3}`;
@@ -328,6 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </article>`;
         }).join('');
 
+        // Produtos (seção só aparece se houver produtos)
         if (d.products.length) {
             $('#produtos').classList.remove('hidden');
             ['#nav-produtos', '#nav-produtos-m'].forEach(s => $(s).classList.remove('hidden'));
@@ -346,14 +355,15 @@ document.addEventListener("DOMContentLoaded", () => {
         $('#fs').innerHTML = '<option value="" disabled selected>ESCOLHER...</option>' + d.services.map(s => `<option value="${s.id}">${esc(s.name)} – ${brl(s.price)} (${s.minutes} min)</option>`).join('');
     }).catch(e => console.error(e));
 
+    // --- MODAL & FORMULÁRIO ---
     const modal = $('#dlg'), form = $('#form'), divDone = $('#done'), inputData = $('#fd'), boxSlots = $('#slots');
     let chosenTime = null, openedAt = Date.now();
 
     async function abrirModal(servico, barbeiro) {
-        await publicP;
+        await publicP;  // os serviços precisam estar na lista antes de escolher um
         form.classList.remove('hidden'); divDone.classList.add('hidden'); $('#managebox').classList.add('hidden');
         const t = new Date(); inputData.min = inputData.value = t.toLocaleDateString('en-CA');
-        if (servico) $('#fs').value = servico;
+        if (servico) $('#fs').value = servico;  // "Agendar" no cartão já escolhe o serviço
         if (barbeiro) $('#fb').value = barbeiro;
         openedAt = Date.now();
         modal.showModal();
@@ -363,10 +373,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.addEventListener('click', async e => {
         const opener = e.target.closest('[data-open-booking]');
         if (!opener) return;
-        if (!(await meP)) return irParaLogin(opener.dataset.service, opener.dataset.barber);
+        if (!(await meP)) return irParaLogin(opener.dataset.service, opener.dataset.barber);  // agendar exige conta
         abrirModal(opener.dataset.service, opener.dataset.barber);
     });
 
+    // voltou do login com ?agendar=... -> abre o agendamento
     const params = new URLSearchParams(location.search);
     const pedido = params.get('agendar'), pedidoBarb = params.get('barber');
     if (pedido) {
