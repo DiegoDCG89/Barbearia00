@@ -650,7 +650,6 @@ def api_manage_cancel(token):
         log.exception("cancel")
         return jsonify(error="Não foi possível cancelar agora. Tente novamente."), 503
 
-
 @app.route("/api/manage/<token>/reschedule", methods=["POST"])
 def api_manage_reschedule(token):
     j = request.get_json(silent=True) or {}
@@ -687,6 +686,8 @@ def api_manage_reschedule(token):
 
 
 # ------------------------------------------------------------------ atendimentos -> financeiro
+# (Mantenha a função sync_receitas() original e apenas substitua o bloco start_sync abaixo)
+
 # Rota chamada pelo Vercel Cron (vercel.json). A Vercel envia "Authorization: Bearer <CRON_SECRET>" sozinha.
 @app.route("/api/cron/sync")
 def api_cron_sync():
