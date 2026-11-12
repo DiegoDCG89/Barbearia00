@@ -231,6 +231,22 @@ def register(app, core):
                                           key=lambda x: -x["total"]))
 
     # ------------------------------------------------------------------ lançamentos
+    def achar_lancamento(tid):
+        """Encontra lançamento pelo id, pela origem ou pelo número da linha (row_<n>), garantindo compatibilidade."""
+        linhas = core.table("Lancamentos", 0)
+        if tid.startswith("row_"):
+            try:
+                rn = int(tid.split("_", 1)[1])
+                r = next((x for x in linhas if x["_row"] == rn), None)
+                if r:
+                    return r
+            except ValueError:
+                pass
+        r = next((x for x in linhas if x.get("id") == tid or (tid and x.get("origem") == tid)), None)
+        if r is None:
+            raise Erro("Lançamento não encontrado (a planilha mudou). Atualize a tela.", 404)
+        return r
+
     @route("/api/admin/transactions", methods=["GET", "POST"])
     def transactions():
         if request.method == "GET":
@@ -238,7 +254,8 @@ def register(app, core):
             for r in core.table("Lancamentos", 0):
                 d = core.parse_date(r.get("data"))
                 if d and d.strftime("%Y-%m") == mes:
-                    out.append({"id": r.get("id"), "data": d.isoformat(), "tipo": r.get("tipo", "").lower(),
+                    tid = r.get("id") or r.get("origem") or f"row_{r['_row']}"
+                    out.append({"id": tid, "row": r["_row"], "data": d.isoformat(), "tipo": r.get("tipo", "").lower(),
                                 "categoria": r.get("categoria"), "descricao": r.get("descricao"),
                                 "valor": core.num(r.get("valor")), "forma_pgto": r.get("forma_pgto", "").lower(),
                                 "barbeiro": r.get("barbeiro"), "origem": r.get("origem"),
@@ -273,8 +290,10 @@ def register(app, core):
 
     @route("/api/admin/transactions/<tid>", methods=["POST"])
     def transaction_edit(tid):
-        j, r = body(), achar("Lancamentos", "id", tid)
+        j, r = body(), achar_lancamento(tid)
         ch = {}
+        if not r.get("id"):
+            ch["id"] = r.get("origem") or novo_id("l")
         if "valor" in j:
             ch["valor"] = dinheiro(j["valor"], "valor", 0.0)
         if "forma_pgto" in j:
@@ -294,7 +313,7 @@ def register(app, core):
     @route("/api/admin/transactions/<tid>/delete", methods=["POST"])
     def transaction_delete(tid):
         """Só apaga o que foi lançado à mão no painel. Receitas automáticas (atendimentos, vendas) ficam: edite-as."""
-        r = achar("Lancamentos", "id", tid)
+        r = achar_lancamento(tid)
         if r.get("origem") != "painel":
             raise Erro("Só dá para excluir lançamentos feitos à mão no painel. Os automáticos (atendimentos e vendas) podem ser editados.", 409)
         core.get_backend().update_row("Lancamentos", r["_row"], [""] * len(core._cache_header("Lancamentos")))  # linha em branco = removida
@@ -335,7 +354,7 @@ def register(app, core):
             pid = str(it.get("product") or "")
             juntos[pid] = juntos.get(pid, 0) + int(dinheiro(it.get("quantidade"), "quantidade", 1, 1000))
         produtos = {r.get("id"): r for r in core.table("Produtos", 0)}
-        niveis = core.stock_levels()
+        niveis = core.stock_levels(0)
         out = []
         for pid, q in juntos.items():
             p = produtos.get(pid)
@@ -405,13 +424,23 @@ def register(app, core):
                 core.patch_appt(a, status="concluido")
         return jsonify(ok=True)
 
+    def garantir_ids(tab, prefixo):
+        """Se alguém cadastrou linha na planilha deixando a coluna `id` em branco, preenche automaticamente."""
+        linhas = core.table(tab, 0)
+        for r in linhas:
+            if not r.get("id") and r.get("nome"):
+                gerado = novo_id(prefixo)
+                save_row(tab, r["_row"], {"id": gerado})
+                r["id"] = gerado
+        return linhas
+
     # ------------------------------------------------------------------ cadastros: serviços e barbeiros
     @route("/api/admin/services", methods=["GET", "POST"])
     def services():
         if request.method == "GET":
             return jsonify([{"id": r.get("id"), "nome": r.get("nome"), "descricao": r.get("descricao"),
                              "minutos": int(core.num(r.get("minutos"), 30)), "preco": core.num(r.get("preco")),
-                             "ativo": core.is_active(r)} for r in core.table("Servicos", 0) if r.get("id")])
+                             "ativo": core.is_active(r)} for r in garantir_ids("Servicos", "s") if r.get("id")])
         j = body()
         dados = {"nome": txt(j.get("nome"), 60, "o nome", True), "descricao": txt(j.get("descricao"), 160),
                  "minutos": int(dinheiro(j.get("minutos"), "duração", 5, 480)),
@@ -429,7 +458,7 @@ def register(app, core):
                              "calendario": r.get("calendario"), "ativo": core.is_active(r),
                              "telefone": core.norm_phone(r.get("telefone")) or "",
                              "foto": r.get("foto", ""), "descricao": r.get("descricao", "")}
-                            for r in core.table("Barbeiros", 0) if r.get("id")])
+                            for r in garantir_ids("Barbeiros", "b") if r.get("id")])
         j = body()
         tel = ""
         if txt(j.get("telefone"), 30):
@@ -448,12 +477,13 @@ def register(app, core):
         dados = {
             "nome": txt(j.get("nome"), 60, "o nome", True),
             "funcao": txt(j.get("funcao"), 60),
-            "calendario": txt(j.get("calendario"), 200),
             "ativo": sim_nao(j.get("ativo", True)),
             "telefone": tel,
             "foto": foto,
             "descricao": desc,
         }
+        if "calendario" in j:
+            dados["calendario"] = txt(j.get("calendario"), 200)
         if j.get("id"):
             save_row("Barbeiros", achar("Barbeiros", "id", str(j["id"]))["_row"], dados)
         else:
@@ -465,9 +495,9 @@ def register(app, core):
     @route("/api/admin/products", methods=["GET", "POST"])
     def products():
         if request.method == "GET":
-            niveis = core.stock_levels()
+            niveis = core.stock_levels(0)
             out = []
-            for r in core.table("Produtos", 0):
+            for r in garantir_ids("Produtos", "p"):
                 if not r.get("id"):
                     continue
                 q = niveis.get(r["id"], 0)
@@ -484,7 +514,11 @@ def register(app, core):
         if j.get("id"):
             save_row("Produtos", achar("Produtos", "id", str(j["id"]))["_row"], dados)
         else:
-            add("Produtos", {"id": novo_id("p"), **dados, "estoque": ESTOQUE_FORMULA}, formulas=True)
+            pid = novo_id("p")
+            est_ini = dinheiro(j.get("estoque_inicial") or 0, "estoque inicial", 0, 100000)
+            add("Produtos", {"id": pid, **dados, "estoque": ESTOQUE_FORMULA}, formulas=True)
+            if est_ini > 0:
+                movimento(pid, "entrada", int(est_ini) if est_ini == int(est_ini) else est_ini, "estoque inicial")
         return jsonify(ok=True)
 
     def movimento(pid, tipo, qtd, motivo):
@@ -502,7 +536,7 @@ def register(app, core):
         qtd = dinheiro(j.get("quantidade"), "quantidade", -100000 if tipo == "ajuste" else 0.01, 100000)
         if qtd == 0:
             raise Erro("Informe a quantidade.")
-        if tipo == "saida" and core.stock_levels().get(p["id"], 0) < qtd:
+        if tipo == "saida" and core.stock_levels(0).get(p["id"], 0) < qtd:
             raise Erro("Estoque insuficiente para essa saída.", 409)
         movimento(p["id"], tipo, qtd, txt(j.get("motivo"), 80) or tipo)
         return jsonify(ok=True)
