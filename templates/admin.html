@@ -10,7 +10,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* Painel — mesma identidade do site (Noir): fundo quase preto quente, dourado, Cormorant + Manrope */
 :root{color-scheme:dark;--bg:#090706;--card:#110f0d;--ink:#ede7dd;--mute:#938b7f;--line:#2d2823;--gold:#d7a85b;--gold-d:#af7940;
 --grad:linear-gradient(120deg,#af7940,#efcc83,#bd853f);--on-gold:#090706;--sec:#1b1715;
 --ok:#6fd3a0;--okbg:rgba(111,211,160,.1);--bad:#ff8a80;--badbg:rgba(222,60,55,.13);--warn:#d7a85b;--warnbg:rgba(215,168,91,.1);--r:4px;
@@ -52,7 +51,7 @@ h3{font-family:var(--display);font-weight:400;font-size:1.6rem}
 .btn:disabled{opacity:.5;cursor:wait;transform:none}
 input,select,textarea{font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;max-width:100%;color-scheme:dark;transition:border-color .2s}
 select option{background:var(--card);color:var(--ink)}
-input::placeholder{color:var(--mute);opacity:.7}
+input::placeholder,textarea::placeholder{color:var(--mute);opacity:.7}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 .btn:focus-visible,nav button:focus-visible,.lnk:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:var(--gold);margin-bottom:12px}
@@ -83,12 +82,13 @@ td.n,th.n{text-align:right;white-space:nowrap}
 .bars div:hover{opacity:1}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
 .alert{background:var(--warnbg);color:var(--warn);border:1px solid rgba(215,168,91,.35);border-radius:var(--r);padding:11px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);padding:22px;width:min(440px,calc(100vw - 24px));box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--ink);padding:22px;width:min(460px,calc(100vw - 24px));box-shadow:0 30px 80px rgba(0,0,0,.6)}
 dialog::backdrop{background:rgba(9,7,6,.85);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
 dialog h3{margin:0 0 14px;font-size:1.9rem;font-weight:300;line-height:1}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--grad);color:var(--on-gold);padding:12px 18px;border-radius:0;font:700 12px/1.3 var(--sans);letter-spacing:.08em;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 #toast.show{opacity:1}#toast.err{background:#de3c37;color:#fff}
 .hrs input[type=time]{width:100%;min-width:92px}
+.b-thumb{width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--gold);vertical-align:middle;margin-right:10px}
 @media (prefers-reduced-motion:reduce){.btn,.btn:hover,#toast{transition:none;transform:none}}
 @media (max-width:560px){.top{gap:6px}.kpi .v{font-size:1.9rem}h2{font-size:1.7rem}}
 </style>
@@ -134,7 +134,6 @@ const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domi
 const S = {day: hoje(), month: hoje().slice(0, 7), tab: 'agenda', noForma: false, tx: [], prod: [], barbers: null, links: {}};
 const view = $('#view');
 
-// ------------------------------------------------------------ utilidades
 let toastT;
 function toast(msg, err) {
   const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
@@ -147,7 +146,6 @@ async function api(url, body) {
   if (!r.ok) throw new Error(d.error || 'Erro inesperado.');
   return d;
 }
-// executa uma ação, avisa o resultado e recarrega a aba
 async function run(fn, okMsg) {
   try { await fn(); if (okMsg) toast(okMsg); await show(S.tab, true); }
   catch (e) { toast(e.message, true); }
@@ -156,22 +154,22 @@ const options = (pairs, sel) => pairs.map(([v, l]) => `<option value="${esc(v)}"
 const formaOpts = (sel, vazio) => options((vazio ? [['', vazio]] : []).concat(Object.entries(FORMAS)), sel);
 async function barbers() { return S.barbers || (S.barbers = await api('/api/admin/barbers')); }
 
-// diálogo de formulário genérico: devolve os valores ou null (cancelou)
 function ask({title, fields, values = {}, ok = 'Salvar'}) {
   return new Promise(resolve => {
     const dlg = $('#dlg'), f = $('#dlgform'); let done = false;
-    const itens = {};  // campos do tipo 'items': linhas [{id, q}]
+    const itens = {};
     $('#dlgtitle').textContent = title;
     f.innerHTML = fields.map(fd => {
-      const v = values[fd.k] ?? fd.def ?? '', req = fd.req ? ' required' : '';
+      const v = values[fd.k] ?? fd.def ?? '', req = fd.req ? ' required' : '', ph = fd.ph ? ` placeholder="${esc(fd.ph)}"` : '';
       if (fd.type === 'select') return `<label>${esc(fd.label)}<select name="${fd.k}"${req}>${options(fd.opts, v)}</select></label>`;
+      if (fd.type === 'textarea') return `<label>${esc(fd.label)}<textarea name="${fd.k}" rows="${fd.rows || 3}" maxlength="${fd.max || 240}"${req}${ph}>${esc(v)}</textarea></label>`;
       if (fd.type === 'items') return `<div class="field" data-items="${esc(fd.k)}" style="margin-bottom:14px"><span class="cap">${esc(fd.label)}</span>
         <div class="row"><select class="it-sel" style="flex:1;min-width:0" aria-label="Produto">${options([['', 'Escolher produto…']].concat(fd.opts), '')}</select>
         <input class="it-qty" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Quantidade" style="width:70px">
         <button type="button" class="btn sm ghost it-add">Adicionar</button></div><div class="it-list"></div></div>`;
       if (fd.type === 'check') return `<label class="chk"><input type="checkbox" name="${fd.k}"${v === true || v === 'sim' ? ' checked' : ''}> ${esc(fd.label)}</label>`;
       const ex = fd.type === 'number' ? ` inputmode="decimal" step="${fd.step || '0.01'}"${fd.min !== undefined ? ` min="${fd.min}"` : ''}` : ` maxlength="${fd.max || 120}"`;
-      return `<label>${esc(fd.label)}<input type="${fd.type === 'number' ? 'number' : fd.type || 'text'}" name="${fd.k}" value="${esc(v)}"${req}${ex}></label>`;
+      return `<label>${esc(fd.label)}<input type="${fd.type === 'number' ? 'number' : fd.type || 'text'}" name="${fd.k}" value="${esc(v)}"${req}${ex}${ph}></label>`;
     }).join('') + `<div class="row end"><button type="button" class="btn ghost" id="dlgx">Cancelar</button><button class="btn">${esc(ok)}</button></div>`;
     const finish = val => { if (!done) { done = true; resolve(val); } };
     fields.filter(fd => fd.type === 'items').forEach(fd => { itens[fd.k] = []; });
@@ -195,7 +193,7 @@ function ask({title, fields, values = {}, ok = 'Salvar'}) {
       const del = e.target.closest('.it-del');
       if (del) { itens[k] = itens[k].filter(i => i.id !== del.dataset.p); pintar(k); }
     };
-    f.onkeydown = e => {  // Enter na quantidade adiciona o produto (não conclui o diálogo sem querer)
+    f.onkeydown = e => {
       if (e.key === 'Enter' && e.target.classList.contains('it-qty')) { e.preventDefault(); e.target.closest('[data-items]').querySelector('.it-add').click(); }
     };
     f.onsubmit = e => {
@@ -210,18 +208,16 @@ function ask({title, fields, values = {}, ok = 'Salvar'}) {
     $('#dlgx').onclick = () => dlg.close();
     dlg.onclose = () => finish(null);
     dlg.showModal();
-    const first = f.querySelector('input,select'); if (first) first.focus();
+    const first = f.querySelector('input,select,textarea'); if (first) first.focus();
   });
 }
 
-// ------------------------------------------------------------ MENSAGENS (WhatsApp) — escolhendo o barbeiro
 const fmtTel = t => { t = String(t || '').replace(/\D/g, ''); return t.length === 11 ? `(${t.slice(0, 2)}) ${t.slice(2, 7)}-${t.slice(7)}` : t.length === 10 ? `(${t.slice(0, 2)}) ${t.slice(2, 6)}-${t.slice(6)}` : t; };
 const primeiro = n => String(n || '').trim().split(/\s+/)[0] || '';
 const diaTxt = iso => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {weekday: 'long', day: '2-digit', month: '2-digit'});
 const maisDia = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-CA'); };
 const assinatura = b => `\n\n— ${b ? b.nome + ', ' : ''}${SHOP.name}${b && b.telefone ? '\nWhatsApp: ' + fmtTel(b.telefone) : ''}`;
 
-// ctx: {para: 'cliente'|'barbeiro', nome, tel (cliente), barbeiroId, appt, data}
 async function abrirMensagem(ctx) {
   const bs = (await barbers()).filter(b => b.ativo), cli = ctx.para === 'cliente', ap = ctx.appt || null, iso = ctx.data || S.day;
   if (!cli && !bs.length) return toast('Cadastre um barbeiro primeiro (aba Cadastros).', true);
@@ -292,7 +288,6 @@ function renderMsgClientes() {
       <button class="btn sm" data-act="m-cli" data-id="${esc(u.id)}">Mensagem</button></div>`).join('') || '<p class="muted">Nenhum cliente encontrado.</p>';
 }
 
-// janela com o link de redefinição de senha (copiar / abrir no WhatsApp, escolhendo quem assina)
 async function mostrarLink(r) {
   const bs = (await barbers()).filter(b => b.ativo), dlg = $('#dlg'), f = $('#dlgform');
   $('#dlgtitle').textContent = 'Link para criar nova senha';
@@ -314,7 +309,6 @@ async function mostrarLink(r) {
   dlg.showModal();
 }
 
-// ------------------------------------------------------------ navegação
 async function show(tab, quiet) {
   S.tab = tab; history.replaceState(null, '', '#' + tab);
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
@@ -324,7 +318,6 @@ async function show(tab, quiet) {
 }
 $('#nav').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) show(b.dataset.tab); };
 
-// ------------------------------------------------------------ AGENDA
 const STATUS = {agendado: ['Agendado', ''], concluido: ['Concluído', 'ok'], faltou: ['Faltou', 'bad']};
 async function loadAgenda() {
   const list = await api('/api/admin/appointments?day=' + S.day);
@@ -354,7 +347,6 @@ async function loadAgenda() {
     <p class="muted" style="font-size:13px">Eventos criados à mão no Google Agenda bloqueiam o horário no site, mas não aparecem aqui.</p>`;
 }
 
-// ------------------------------------------------------------ RESUMO
 async function loadResumo() {
   const d = await api('/api/admin/summary?month=' + S.month), max = Math.max(1, ...d.por_dia.map(x => x.total));
   const dias = new Date(+S.month.slice(0, 4), +S.month.slice(5), 0).getDate(), porDia = Object.fromEntries(d.por_dia.map(x => [x.dia, x.total]));
@@ -378,7 +370,6 @@ async function loadResumo() {
         ${(d.despesas_por_categoria || []).map(c => `<tr><td>${esc(cap(c.nome))}</td><td class="n neg">${brl(c.total)}</td></tr>`).join('') || '<tr><td class="muted">Sem despesas neste mês.</td></tr>'}</tbody></table></div></div></div>`;
 }
 
-// ------------------------------------------------------------ LANÇAMENTOS
 async function loadLanc() {
   S.tx = await api('/api/admin/transactions?month=' + S.month);
   const rows = S.noForma ? S.tx.filter(t => t.tipo === 'receita' && !FORMAS[t.forma_pgto]) : S.tx;
@@ -415,7 +406,6 @@ async function editTx(id) {
   if (v) run(() => api('/api/admin/transactions/' + encodeURIComponent(id), v), desp ? 'Despesa atualizada' : 'Lançamento atualizado');
 }
 
-// ------------------------------------------------------------ DESPESAS
 const CATS = ['aluguel', 'energia', 'água', 'internet e telefone', 'produtos e estoque', 'salários e comissões', 'marketing', 'manutenção', 'impostos e taxas', 'material de uso', 'outros'];
 const cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 const catOpts = atual => { const l = CATS.slice(), a = (atual || '').toLowerCase(); if (a && !l.includes(a)) l.unshift(a); return l.map(c => [c, cap(c)]); };
@@ -450,7 +440,6 @@ async function loadDespesas() {
     </tbody></table></div>`;
 }
 
-// ------------------------------------------------------------ ESTOQUE
 async function loadEstoque() {
   S.prod = await api('/api/admin/products');
   const baixo = S.prod.filter(p => p.ativo && p.baixo).length;
@@ -478,8 +467,14 @@ async function loadCad() {
   view.innerHTML = `<h2>Serviços <button class="btn sm" data-act="newserv" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Serviço</th><th class="n">Duração</th><th class="n">Preço</th><th></th></tr></thead><tbody>
     ${sv.map(s => `<tr style="${s.ativo ? '' : 'opacity:.5'}"><td>${esc(s.nome)}${s.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(s.descricao)}</div></td><td class="n">${s.minutos} min</td><td class="n">${brl(s.preco)}</td>
       <td class="n"><button class="btn sm ghost" data-act="editserv" data-id="${esc(s.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nenhum serviço.</td></tr>'}</tbody></table></div>
-    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Agenda própria</th><th></th></tr></thead><tbody>
-    ${bs.map(b => `<tr style="${b.ativo ? '' : 'opacity:.5'}"><td>${esc(b.nome)}${b.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(b.funcao)}</div></td>
+    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Profissional</th><th>WhatsApp</th><th>Agenda própria</th><th></th></tr></thead><tbody>
+    ${bs.map(b => `<tr style="${b.ativo ? '' : 'opacity:.5'}"><td>
+      <div style="display:flex;align-items:center">
+        ${b.foto ? `<img src="${esc(b.foto)}" alt="" class="b-thumb">` : ''}
+        <div><b>${esc(b.nome)}</b>${b.ativo ? '' : ' <span class="pill">inativo</span>'}
+          <div class="muted" style="font-size:12px">${esc(b.funcao || '')}${b.descricao ? ' · ' + esc(b.descricao) : ''}</div>
+        </div>
+      </div></td>
       <td>${b.telefone ? esc(fmtTel(b.telefone)) : '<span class="pill warn">sem WhatsApp</span>'}</td>
       <td>${b.calendario ? '<span class="pill ok">sim</span>' : '<span class="muted">usa a agenda padrão</span>'}</td>
       <td class="n"><button class="btn sm ghost" data-act="editbarb" data-id="${esc(b.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>
@@ -488,11 +483,16 @@ async function loadCad() {
 const servFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'descricao', label: 'Descrição', max: 160},
   {k: 'minutos', label: 'Duração (minutos)', type: 'number', step: '5', min: 5, req: true}, {k: 'preco', label: 'Preço (R$)', type: 'number', min: 0, req: true},
   {k: 'ativo', label: 'Ativo no site', type: 'check'}];
-const barbFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'funcao', label: 'Função (ex.: Barbeiro)', max: 60},
-  {k: 'telefone', label: 'WhatsApp do barbeiro, com DDD (aparece no site para o cliente chamar)', type: 'tel', max: 20},
-  {k: 'calendario', label: 'ID da agenda do barbeiro (vazio = agenda padrão)', max: 200}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
+const barbFields = [
+  {k: 'nome', label: 'Nome', req: true, max: 60},
+  {k: 'funcao', label: 'Função / Especialidade (ex.: Mestre Barbeiro)', max: 60},
+  {k: 'foto', label: 'URL da foto (link direto .jpg/.png/.webp ou caminho /static/...)', max: 500, ph: 'https://exemplo.com/foto.jpg'},
+  {k: 'descricao', label: 'Descrição / Bio curta (aparece no card do site)', type: 'textarea', max: 240, rows: 3, ph: 'Especialista em cortes clássicos, degradê e barba na toalha quente.'},
+  {k: 'telefone', label: 'WhatsApp do barbeiro, com DDD (aparece no site)', type: 'tel', max: 20},
+  {k: 'calendario', label: 'ID da agenda do barbeiro (vazio = agenda padrão)', max: 200},
+  {k: 'ativo', label: 'Ativo no site', type: 'check'}
+];
 
-// ------------------------------------------------------------ HORÁRIOS E FOLGAS
 async function loadHorarios() {
   const bs = await barbers(), b = S.hb || '*';
   const [hs, folgas] = await Promise.all([api('/api/admin/hours?barber=' + encodeURIComponent(b)), api('/api/admin/timeoff')]);
@@ -510,7 +510,6 @@ async function loadHorarios() {
       <td class="n"><button class="btn sm red" data-act="deloff" data-row="${f.row}" data-d="${esc(f.data)}">Remover</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma folga futura.</td></tr>'}</tbody></table></div>`;
 }
 
-// ------------------------------------------------------------ SITE
 async function loadSite() {
   const c = await api('/api/admin/config');
   view.innerHTML = `<h2>Dados exibidos no site</h2><form class="card" id="siteform">
@@ -526,7 +525,6 @@ async function loadSite() {
     <p class="muted" style="font-size:13px">As mudanças aparecem no site em até 1 minuto.</p>`;
 }
 
-// ------------------------------------------------------------ CAIXA (venda avulsa de produtos)
 S.cart = [];
 async function loadCaixa() {
   const [prods, bs, tx] = await Promise.all([api('/api/admin/products'), barbers(), api('/api/admin/transactions?month=' + hoje().slice(0, 7))]);
@@ -557,7 +555,6 @@ function renderCaixa() {
     </tbody></table></div>`;
 }
 
-// ------------------------------------------------------------ USUÁRIOS
 async function loadUsuarios() {
   S.users = await api('/api/admin/users');
   view.innerHTML = `<div class="bar"><input type="search" id="qusers" placeholder="Buscar por nome, e-mail ou telefone" style="flex:1;min-width:200px" aria-label="Buscar usuário"></div>
@@ -581,7 +578,6 @@ function renderUsuarios() {
 
 const LOAD = {despesas: loadDespesas, mensagens: loadMensagens, caixa: loadCaixa, usuarios: loadUsuarios, agenda: loadAgenda, resumo: loadResumo, lanc: loadLanc, estoque: loadEstoque, cad: loadCad, horarios: loadHorarios, site: loadSite};
 
-// ------------------------------------------------------------ eventos
 view.addEventListener('click', async e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const d = b.dataset, act = d.act;
@@ -589,7 +585,7 @@ view.addEventListener('click', async e => {
   if (act === 'day') { const dt = new Date(S.day + 'T12:00:00'); if (+d.n) dt.setDate(dt.getDate() + +d.n); else return (S.day = hoje(), show('agenda')); S.day = dt.toLocaleDateString('en-CA'); return show('agenda'); }
   if (act === 'done') {
     let prods = [];
-    try { prods = (await api('/api/admin/products')).filter(p => p.ativo && p.estoque > 0); } catch (_) { /* sem produtos: conclui só o serviço */ }
+    try { prods = (await api('/api/admin/products')).filter(p => p.ativo && p.estoque > 0); } catch (_) {}
     const v = await ask({title: 'Concluir atendimento', ok: 'Concluir', values: {method: 'pix', discount: '', tip: ''}, fields: [
       {k: 'method', label: 'Forma de pagamento', type: 'select', req: true, opts: Object.entries(FORMAS)},
       {k: 'discount', label: `Desconto (R$) — serviço: ${brl(d.preco)}`, type: 'number', min: 0},
@@ -686,7 +682,7 @@ view.addEventListener('change', e => {
   if (t.id === 'hb') { S.hb = t.value; show('horarios'); }
 });
 view.addEventListener('input', e => { if (e.target.id === 'qusers') renderUsuarios(); if (e.target.id === 'qmsg') renderMsgClientes(); });
-view.addEventListener('keydown', e => {  // Enter na quantidade adiciona ao carrinho
+view.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'cq') { e.preventDefault(); document.querySelector('[data-act="cart-add"]').click(); }
 });
 view.addEventListener('submit', e => {
@@ -705,12 +701,11 @@ view.addEventListener('submit', e => {
   run(() => api('/api/admin/config', Object.fromEntries(new FormData(e.target))), 'Dados do site salvos');
 });
 
-// ------------------------------------------------------------ início
 (async () => {
   try {
     S.links = await api('/api/admin/links');
     [['l-fin', 'financeiro'], ['l-est', 'estoque'], ['l-age', 'agenda']].forEach(([id, k]) => { if (S.links[k]) { const a = $('#' + id); a.href = S.links[k]; a.hidden = false; } });
-  } catch (e) { /* atalhos são opcionais */ }
+  } catch (e) {}
   const t = location.hash.slice(1);
   show(LOAD[t] ? t : 'agenda');
 })();
