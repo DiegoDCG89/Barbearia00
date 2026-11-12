@@ -452,7 +452,7 @@ async function loadLanc() {
       <label class="chk" style="margin:0"><input type="checkbox" id="nofi"${S.noForma ? ' checked' : ''}> só sem forma de pagamento</label></div>
     <div class="tbl"><table><thead><tr><th>Data</th><th>Descrição</th><th>Forma</th><th class="n">Valor</th><th></th></tr></thead><tbody>
     ${rows.map(t => `<tr><td>${fdata(t.data)}</td><td>${esc(t.descricao)}<div class="muted" style="font-size:12px">${esc(t.categoria)}${t.barbeiro ? ' · ' + esc(t.barbeiro) : ''}</div></td>
-      <td>${t.tipo === 'despesa' ? '<span class="pill bad">despesa</span>' : FORMAS[t.forma_pgto] ? esc(FORMAS[t.forma_pgto]) : '<span class="pill warn">classificar</span>'}</td>
+      <td>${t.tipo === 'despesa' ? '<span class="pill bad">despesa</span>' : FORMAS[t.forma_pgto] ? esc(FORMAS[t.forma_pgto]) : `<select class="q-forma" data-id="${esc(t.id)}" aria-label="Classificar forma de pagamento" style="border-color:var(--gold);color:var(--gold);padding:5px 8px;font-size:12px;font-weight:700"><option value="">⚠ Classificar…</option>${formaOpts('')}</select>`}</td>
       <td class="n ${t.tipo === 'despesa' ? 'neg' : 'pos'}">${t.tipo === 'despesa' ? '−' : ''}${brl(t.valor)}</td>
       <td class="n"><div class="row end"><button class="btn sm ghost" data-act="edittx" data-id="${esc(t.id)}">Editar</button>${t.origem === 'painel' ? `<button class="btn sm red" data-act="deltx" data-id="${esc(t.id)}">Excluir</button>` : ''}</div></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nada por aqui.</td></tr>'}
     </tbody></table></div>
@@ -535,6 +535,9 @@ async function loadEstoque() {
 }
 const prodFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'preco', label: 'Preço (R$)', type: 'number', req: true, min: 0},
   {k: 'estoque_minimo', label: 'Estoque mínimo (alerta)', type: 'number', step: '1', min: 0}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
+const newProdFields = [{k: 'nome', label: 'Nome', req: true, max: 60}, {k: 'preco', label: 'Preço (R$)', type: 'number', req: true, min: 0},
+  {k: 'estoque_inicial', label: 'Estoque inicial (unidades atuais)', type: 'number', step: '1', min: 0},
+  {k: 'estoque_minimo', label: 'Estoque mínimo (alerta)', type: 'number', step: '1', min: 0}, {k: 'ativo', label: 'Ativo no site', type: 'check'}];
 
 // ------------------------------------------------------------ CADASTROS
 async function loadCad() {
@@ -543,7 +546,7 @@ async function loadCad() {
   view.innerHTML = `<h2>Serviços <button class="btn sm" data-act="newserv" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Serviço</th><th class="n">Duração</th><th class="n">Preço</th><th></th></tr></thead><tbody>
     ${sv.map(s => `<tr style="${s.ativo ? '' : 'opacity:.5'}"><td>${esc(s.nome)}${s.ativo ? '' : ' <span class="pill">inativo</span>'}<div class="muted" style="font-size:12px">${esc(s.descricao)}</div></td><td class="n">${s.minutos} min</td><td class="n">${brl(s.preco)}</td>
       <td class="n"><button class="btn sm ghost" data-act="editserv" data-id="${esc(s.id)}">Editar</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nenhum serviço.</td></tr>'}</tbody></table></div>
-    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Profissional</th><th>WhatsApp</th><th>Agenda própria</th><th></th></tr></thead><tbody>
+    <h2>Barbeiros <button class="btn sm" data-act="newbarb" style="margin-left:8px">+ Novo</button></h2><div class="tbl"><table><thead><tr><th>Profissional</th><th>WhatsApp</th><th></th></tr></thead><tbody>
     ${bs.map(b => `<tr style="${b.ativo ? '' : 'opacity:.5'}"><td>
       <div style="display:flex;align-items:center">
         ${b.foto ? `<img src="${esc(b.foto)}" alt="" class="b-thumb">` : ''}
@@ -552,7 +555,6 @@ async function loadCad() {
         </div>
       </div></td>
       <td>${b.telefone ? esc(fmtTel(b.telefone)) : '<span class="pill warn">sem WhatsApp</span>'}</td>
-      <td>${b.calendario ? '<span class="pill ok">sim</span>' : '<span class="muted">usa a agenda padrão</span>'}</td>
       <td class="n"><button class="btn sm ghost" data-act="editbarb" data-id="${esc(b.id)}">Editar</button></td></tr>`).join('')}</tbody></table></div>
     <p class="muted" style="font-size:13px">Itens inativos somem do site, mas o histórico continua. Antes de inativar um barbeiro, confira se ele não tem horários marcados.</p>`;
 }
@@ -565,7 +567,6 @@ const barbFields = [
   {k: 'foto', label: 'Foto do barbeiro', type: 'photo'},
   {k: 'descricao', label: 'Descrição / Bio curta (aparece no card do site)', type: 'textarea', max: 240, rows: 3, ph: 'Especialista em cortes clássicos, degradê e barba na toalha quente.'},
   {k: 'telefone', label: 'WhatsApp do barbeiro, com DDD (aparece no site para o cliente chamar)', type: 'tel', max: 20},
-  {k: 'calendario', label: 'ID da agenda do barbeiro (vazio = agenda padrão)', max: 200},
   {k: 'ativo', label: 'Ativo no site', type: 'check'}
 ];
 
@@ -617,7 +618,7 @@ function renderCaixa() {
   view.innerHTML = `<h2>Venda de produtos</h2>
     <div class="card">
       <span class="cap">Adicionar à venda</span>
-      <div class="row"><select id="cp" aria-label="Produto" style="flex:1;min-width:200px">${options([['', disp.length ? 'Escolher produto…' : 'Nenhum produto em estoque']].concat(disp.map(p => [p.id, `${p.nome} · ${brl(p.preco)} (${p.estoque} un.)`])), '')}</select>
+      <div class="row"><select id="cp" aria-label="Produto" style="flex:1;min-width:200px">${options([['', disp.length ? 'Escolher produto…' : 'Nenhum produto com estoque disponível']].concat(disp.map(p => [p.id, `${p.nome} · ${brl(p.preco)} (${p.estoque} un.)`])), '')}${S.prod.filter(p => p.ativo && p.estoque <= 0).map(p => `<option value="" disabled>${esc(p.nome)} · sem estoque (registre Entrada na aba Estoque)</option>`).join('')}</select>
         <input id="cq" type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Quantidade" style="width:76px">
         <button class="btn" data-act="cart-add">Adicionar</button></div>
       ${S.cart.length ? `<div class="tbl" style="margin-top:14px"><table style="min-width:0"><tbody>${S.cart.map(i => `<tr><td>${esc(cat[i.id].nome)}</td><td class="n">× ${i.q}</td><td class="n">${brl(cat[i.id].preco * i.q)}</td>
@@ -718,7 +719,7 @@ view.addEventListener('click', async e => {
     return run(() => api('/api/admin/transactions/' + encodeURIComponent(d.id) + '/delete', {}), 'Lançamento excluído');
   if (act === 'newtx') return newTx();
   if (act === 'edittx') return editTx(d.id);
-  if (act === 'newprod') { const v = await ask({title: 'Novo produto', fields: prodFields, values: {ativo: true, estoque_minimo: 3}}); if (v) run(() => api('/api/admin/products', v), 'Produto criado'); }
+  if (act === 'newprod') { const v = await ask({title: 'Novo produto', fields: newProdFields, values: {ativo: true, estoque_inicial: 10, estoque_minimo: 3}}); if (v) run(() => api('/api/admin/products', v), 'Produto criado'); }
   if (act === 'editprod') { const p = S.prod.find(x => x.id === d.id), v = await ask({title: 'Editar produto', fields: prodFields, values: {...p, ativo: p.ativo}}); if (v) run(() => api('/api/admin/products', {...v, id: d.id}), 'Produto atualizado'); }
   if (act === 'mov') {
     const p = S.prod.find(x => x.id === d.id), nomeT = {entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste'}[d.t];
@@ -756,6 +757,10 @@ view.addEventListener('click', async e => {
 });
 view.addEventListener('change', e => {
   const t = e.target;
+  if (t.classList.contains('q-forma') && t.value) {
+    run(() => api('/api/admin/transactions/' + encodeURIComponent(t.dataset.id), {forma_pgto: t.value}), 'Forma de pagamento salva');
+    return;
+  }
   if (t.id === 'qusers') return;
   if (t.id === 'dayin' && t.value) { S.day = t.value; show('agenda'); }
   if (t.id === 'monthin' && t.value) { S.month = t.value; show(S.tab); }
