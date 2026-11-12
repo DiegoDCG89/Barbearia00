@@ -264,7 +264,7 @@ def register(app, core):
         valor = dinheiro(j.get("valor"), "valor", 0.01)
         cat = txt(j.get("categoria"), 40) or "outros"
         barb = txt(j.get("barbeiro"), 60)
-        for i in range(vezes):
+        for i in range(vezes):  # despesa fixa (aluguel, internet...): uma linha por mês
             add("Lancamentos", {
                 "id": novo_id("l"), "data": mais_meses(d, i).isoformat(), "tipo": tipo, "categoria": cat,
                 "descricao": desc if vezes == 1 else f"{desc} ({i + 1}/{vezes})", "valor": valor, "forma_pgto": forma,
@@ -293,10 +293,11 @@ def register(app, core):
 
     @route("/api/admin/transactions/<tid>/delete", methods=["POST"])
     def transaction_delete(tid):
+        """Só apaga o que foi lançado à mão no painel. Receitas automáticas (atendimentos, vendas) ficam: edite-as."""
         r = achar("Lancamentos", "id", tid)
         if r.get("origem") != "painel":
             raise Erro("Só dá para excluir lançamentos feitos à mão no painel. Os automáticos (atendimentos e vendas) podem ser editados.", 409)
-        core.get_backend().update_row("Lancamentos", r["_row"], [""] * len(core._cache_header("Lancamentos")))
+        core.get_backend().update_row("Lancamentos", r["_row"], [""] * len(core._cache_header("Lancamentos")))  # linha em branco = removida
         core.invalidate("Lancamentos")
         return jsonify(ok=True)
 
@@ -319,8 +320,10 @@ def register(app, core):
         out.sort(key=lambda x: x["hora"])
         return jsonify(out)
 
-    # ------------------------------------------------------------------ venda de produtos
+    # ------------------------------------------------------------------ venda de produtos (avulsa e junto com o atendimento)
     def itens_venda(raw, max_linhas=30):
+        """Valida [{product, quantidade}] e devolve [(linha_do_produto, qtd)], juntando repetidos.
+        Confere o estoque de TODOS antes de gravar qualquer coisa (tudo ou nada)."""
         if raw in (None, []):
             return []
         if not isinstance(raw, list) or len(raw) > max_linhas:
@@ -344,6 +347,7 @@ def register(app, core):
         return out
 
     def vender(itens, forma, barbeiro, data, origem, motivo):
+        """Dá baixa no estoque e lança uma receita (categoria produto) por item. Devolve o total vendido."""
         agora, total = core.now().isoformat(timespec="seconds"), 0.0
         for p, q in itens:
             movimento(p["id"], "saida", q, motivo)
@@ -366,7 +370,7 @@ def register(app, core):
             raise Erro("Escolha a forma de pagamento.")
         desconto = dinheiro(j.get("discount") or 0, "desconto")
         gorjeta = dinheiro(j.get("tip") or 0, "gorjeta")
-        itens = itens_venda(j.get("products")) if novo == "concluido" else []
+        itens = itens_venda(j.get("products")) if novo == "concluido" else []  # produtos vendidos junto com o corte
         with core._book_lock:
             core.invalidate_cal()
             a = core.find_appt(code)
@@ -394,6 +398,7 @@ def register(app, core):
                         "barbeiro": a["barbeiro"], "origem": "gorjeta:" + code,
                         "criado_em": n.isoformat(timespec="seconds")})
                 if itens:
+                    # se uma tentativa anterior já lançou estes produtos, não repete (nem baixa o estoque de novo)
                     ja = {r.get("origem") for r in core.table("Lancamentos", 0)}
                     novos = [(pr, q) for pr, q in itens if f"venda:{code}:{pr['id']}" not in ja]
                     vender(novos, forma, a["barbeiro"], a["data"], lambda pr: f"venda:{code}:{pr['id']}", "venda com atendimento")
@@ -432,7 +437,9 @@ def register(app, core):
             if not tel:
                 raise Erro("WhatsApp do barbeiro inválido. Use DDD + número, ex.: (12) 99999-9999.")
             garantir_coluna("Barbeiros", "telefone")
-        foto = txt(j.get("foto"), 500)
+        foto = str(j.get("foto") or "").strip()
+        if len(foto) > 48000:
+            raise Erro("A imagem ficou muito grande. Tente outra foto.")
         desc = txt(j.get("descricao"), 240)
         if foto:
             garantir_coluna("Barbeiros", "foto")
@@ -502,6 +509,8 @@ def register(app, core):
 
     @route("/api/admin/sales", methods=["POST"])
     def sale():
+        """Venda avulsa. Aceita {items:[{product, quantidade}], method, barbeiro} (carrinho)
+        ou o formato antigo de um produto só: {product, quantidade, method, barbeiro}."""
         j = body()
         raw = j.get("items")
         if raw is None:
@@ -549,7 +558,7 @@ def register(app, core):
             r = next((r for r in linhas if core.day_index(r.get("dia")) == i and (r.get("barbeiro") or "*") == b), None)
             if r:
                 save_row("Horarios", r["_row"], vals)
-            elif vals["abre"] or b != "*":
+            elif vals["abre"] or b != "*":  # barbeiro sem linha herdaria o horário geral; linha vazia = fechado
                 add("Horarios", {"barbeiro": b, "dia": DIAS[i], **vals})
         return jsonify(ok=True)
 
@@ -580,6 +589,7 @@ def register(app, core):
         r = next((r for r in core.table("Folgas", 0) if r["_row"] == j.get("row")), None)
         if not r or core.parse_date(r.get("data")) != core.parse_date(j.get("data")):
             raise Erro("Folga não encontrada (a planilha mudou). Atualize a tela.", 404)
+        # linha em branco = removida (table() ignora linhas vazias)
         core.get_backend().update_row("Folgas", r["_row"], [""] * len(core._cache_header("Folgas")))
         core.invalidate("Folgas")
         return jsonify(ok=True)
