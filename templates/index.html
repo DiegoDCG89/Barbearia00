@@ -14,12 +14,19 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%88%3C/text%3E%3C/svg%3E">
 <script type="application/ld+json">{{ jsonld|safe }}</script>
 
-<!-- Tipografia: Cormorant Garamond (títulos) + Manrope (texto) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='noir.css') }}?v=1">
-<style>section[id] { scroll-margin-top: 4.5rem; }</style>
+<style>
+  section[id] { scroll-margin-top: 4.5rem; }
+  .member .photo { position: relative; overflow: hidden; }
+  .member .photo img.b-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s ease; }
+  .member:hover .photo img.b-img { transform: scale(1.04); }
+  .member .role { color: var(--gold, #d7a85b); font-size: .78rem; text-transform: uppercase; letter-spacing: .18em; margin-top: .2rem; }
+  .member .bio { color: var(--mute, #938b7f); font-size: .9rem; line-height: 1.5; margin: .55rem 0 .75rem; }
+  .member .b-actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: .5rem; }
+</style>
 <noscript><style>.fade-up { opacity: 1; transform: none; }</style></noscript>
 </head>
 <body>
@@ -97,7 +104,7 @@
   </div>
 </section>
 
-<!-- PRODUTOS (aparece só se houver produtos à venda) -->
+<!-- PRODUTOS -->
 <section id="produtos" class="section section-alt hidden">
   <div class="wrap fade-up">
     <div class="sec-title"><span class="kicker">Leve para casa</span><h2>Cuidados em casa</h2></div>
@@ -233,7 +240,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const $ = s => document.querySelector(s);
 
-    // --- LÓGICA DE ANIMAÇÕES DE SCROLL ---
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries => {
         entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -243,7 +249,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
     }
 
-    // --- MENU MOBILE ---
     const btnMenu = $('#mobile-btn'), menuDiv = $('#mobile-menu');
     let menuOpen = false;
     const setMenu = open => {
@@ -259,7 +264,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnMenu.addEventListener('click', () => setMenu(!menuOpen));
     document.querySelectorAll('.mobile-link').forEach(link => link.addEventListener('click', () => setMenu(false)));
 
-    // --- CONFIGURAÇÃO DO MAPA ---
     try {
         const q = encodeURIComponent({{ shop.address|tojson }});
         const mapEl = $('#mapa-google');
@@ -268,16 +272,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (gpsEl) gpsEl.href = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "https://maps.apple.com/?daddr=" + q + "&dirflg=d" : "https://www.google.com/maps/dir/?api=1&destination=" + q + "&travelmode=driving";
     } catch(e) { console.error(e); }
 
-    // --- SESSÃO (conta do cliente) ---
     let ME = null;
     const meP = fetch('/api/me').then(r => r.json()).then(j => { ME = j.user; atualizarConta(); return ME; }).catch(() => null);
     function atualizarConta() {
         ['#nav-conta', '#nav-conta-m'].forEach(sel => { const a = $(sel); if (!a) return; a.href = ME ? '/minha-conta' : '/entrar'; a.textContent = ME ? 'Minha conta' : 'Entrar'; });
         if (ME) { $('#who-name').textContent = ME.nome; $('#who-phone').textContent = ME.telefone; }
     }
-    const irParaLogin = sv => { location.href = '/entrar?next=' + encodeURIComponent('/?agendar=' + (sv || '1')); };
+    const irParaLogin = (sv, barb) => {
+        const params = new URLSearchParams({agendar: sv || '1'});
+        if (barb) params.set('barber', barb);
+        location.href = '/entrar?next=' + encodeURIComponent('/?' + params.toString());
+    };
 
-    // --- CARREGAMENTO DE DADOS ---
     const brl = v => Number(v).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
     const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const SHOP_NAME = {{ shop.name|tojson }};
@@ -286,7 +292,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const publicP = fetch('/api/public').then(r => r.json()).then(d => {
         BARBERS = d.barbers;
 
-        // Serviços (lista em formato de cardápio)
         $('#services').innerHTML = d.services.map(s => `
             <div class="svc">
                 <div class="svc-top">
@@ -298,22 +303,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button type="button" data-open-booking data-service="${s.id}" class="link-btn">Agendar</button>
             </div>`).join('');
 
-        // Equipe
         const n = d.barbers.length, k = Math.min(n, 4);
         if (!n) $('#equipe').classList.add('hidden');
         $('#barbers').className = `team n${k || 3}`;
-        $('#barbers').innerHTML = d.barbers.map((b, i) => `
+        $('#barbers').innerHTML = d.barbers.map((b, i) => {
+            const fotoUrl = b.photo || b.foto || '';
+            const descTxt = b.description || b.descricao || '';
+            const ini = esc(b.name.split(' ').map(x=>x[0]).slice(0,2).join(''));
+            return `
             <article class="member">
                 <div class="photo">
                     <span class="num">0${i + 1}</span>
-                    <span class="mono" aria-hidden="true">${esc(b.name.split(' ').map(x=>x[0]).slice(0,2).join(''))}</span>
+                    ${fotoUrl
+                      ? `<img src="${esc(fotoUrl)}" alt="${esc(b.name)}" class="b-img" loading="lazy" decoding="async" onerror="this.remove()">`
+                      : `<span class="mono" aria-hidden="true">${ini}</span>`}
                 </div>
                 <h3>${esc(b.name)}</h3>
-                <p>${esc(b.role||'Especialista')}</p>
-                ${b.whatsapp ? `<a class="link-btn contact" target="_blank" rel="noopener" href="${wa(b.whatsapp, 'Olá, ' + b.name.split(' ')[0] + '! Vi o seu contato no site da ' + SHOP_NAME + '.')}">WhatsApp</a>` : ''}
-            </article>`).join('');
+                <p class="role">${esc(b.role||'Especialista')}</p>
+                ${descTxt ? `<p class="bio">${esc(descTxt)}</p>` : ''}
+                <div class="b-actions">
+                    <button type="button" data-open-booking data-barber="${esc(b.id)}" class="link-btn">Agendar com ${esc(b.name.split(' ')[0])}</button>
+                    ${b.whatsapp ? `<a class="link-btn contact" target="_blank" rel="noopener" href="${wa(b.whatsapp, 'Olá, ' + b.name.split(' ')[0] + '! Vi o seu contato no site da ' + SHOP_NAME + '.')}">WhatsApp</a>` : ''}
+                </div>
+            </article>`;
+        }).join('');
 
-        // Produtos (seção só aparece se houver produtos)
         if (d.products.length) {
             $('#produtos').classList.remove('hidden');
             ['#nav-produtos', '#nav-produtos-m'].forEach(s => $(s).classList.remove('hidden'));
@@ -332,31 +346,32 @@ document.addEventListener("DOMContentLoaded", () => {
         $('#fs').innerHTML = '<option value="" disabled selected>ESCOLHER...</option>' + d.services.map(s => `<option value="${s.id}">${esc(s.name)} – ${brl(s.price)} (${s.minutes} min)</option>`).join('');
     }).catch(e => console.error(e));
 
-    // --- MODAL & FORMULÁRIO ---
     const modal = $('#dlg'), form = $('#form'), divDone = $('#done'), inputData = $('#fd'), boxSlots = $('#slots');
     let chosenTime = null, openedAt = Date.now();
 
-    async function abrirModal(servico) {
-        await publicP;  // os serviços precisam estar na lista antes de escolher um
+    async function abrirModal(servico, barbeiro) {
+        await publicP;
         form.classList.remove('hidden'); divDone.classList.add('hidden'); $('#managebox').classList.add('hidden');
         const t = new Date(); inputData.min = inputData.value = t.toLocaleDateString('en-CA');
-        if (servico) $('#fs').value = servico;  // "Agendar" no cartão já escolhe o serviço
+        if (servico) $('#fs').value = servico;
+        if (barbeiro) $('#fb').value = barbeiro;
         openedAt = Date.now();
         modal.showModal();
+        loadSlots();
     }
 
     document.body.addEventListener('click', async e => {
         const opener = e.target.closest('[data-open-booking]');
         if (!opener) return;
-        if (!(await meP)) return irParaLogin(opener.dataset.service);  // agendar exige conta
-        abrirModal(opener.dataset.service);
+        if (!(await meP)) return irParaLogin(opener.dataset.service, opener.dataset.barber);
+        abrirModal(opener.dataset.service, opener.dataset.barber);
     });
 
-    // voltou do login com ?agendar=... -> abre o agendamento
-    const pedido = new URLSearchParams(location.search).get('agendar');
+    const params = new URLSearchParams(location.search);
+    const pedido = params.get('agendar'), pedidoBarb = params.get('barber');
     if (pedido) {
         history.replaceState(null, '', location.pathname);
-        meP.then(me => me ? abrirModal(pedido === '1' ? '' : pedido) : irParaLogin(pedido === '1' ? '' : pedido));
+        meP.then(me => me ? abrirModal(pedido === '1' ? '' : pedido, pedidoBarb || '') : irParaLogin(pedido === '1' ? '' : pedido, pedidoBarb || ''));
     }
 
     const fecharModal = () => { modal.close(); form.reset(); boxSlots.innerHTML = ''; chosenTime = null; };
