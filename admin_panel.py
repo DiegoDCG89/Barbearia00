@@ -633,7 +633,8 @@ def register(app, core):
     def config():
         if request.method == "GET":
             linhas = {r.get("chave"): r.get("valor", "") for r in core.table("Config", 0)}
-            out = {k: linhas.get(k, "") for k in CONFIG_KEYS}
+            # se a chave não estiver na planilha, mostra o valor que o site está usando (variável SHOP_*)
+            out = {k: linhas.get(k) or core.cfg(k) for k in CONFIG_KEYS}
             out["intervalo_min"] = linhas.get("intervalo_min") or "30"
             return jsonify(out)
         j = body()
