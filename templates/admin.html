@@ -25,7 +25,7 @@ header{background:rgba(9,7,6,.82);-webkit-backdrop-filter:blur(12px);backdrop-fi
 .sp{flex:1}
 .lnk{font-size:11px;color:var(--mute);text-decoration:none;padding:4px 6px;text-transform:uppercase;letter-spacing:.2em;transition:color .2s}
 .lnk:hover{color:var(--gold)}
-nav{max-width:1000px;margin:auto;display:flex;gap:2px;overflow-x:auto;padding:0 10px;scrollbar-width:none}
+nav{max-width:1000px;margin:auto;display:flex;flex-wrap:wrap;gap:2px;padding:0 10px}
 nav::-webkit-scrollbar{display:none}
 nav button{border:0;border-bottom:2px solid transparent;background:none;color:var(--mute);font:700 11px/1 var(--sans);text-transform:uppercase;letter-spacing:.22em;padding:14px 12px;cursor:pointer;white-space:nowrap;transition:color .2s}
 nav button:hover{color:var(--gold)}
@@ -112,10 +112,10 @@ dialog h3{margin:0 0 14px;font-size:1.9rem;font-weight:300;line-height:1}
     <button data-tab="despesas">Despesas</button>
     <button data-tab="estoque">Estoque</button>
     <button data-tab="cad">Cadastros</button>
+    <button data-tab="site">Site</button>
     <button data-tab="horarios">Horários</button>
     <button data-tab="usuarios">Usuários</button>
     <button data-tab="mensagens">Mensagens</button>
-    <button data-tab="site">Site</button>
   </nav>
 </header>
 <main id="view" aria-live="polite"></main>
